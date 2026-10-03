@@ -33,6 +33,19 @@ mean profit per prize, the public ledger and the verdicts. It uses only the
 standard library and listens on localhost. `report.py` writes the same page
 with the data baked in, for sharing.
 
+**Live bounties.** The app's "Post a bounty" form sends a biology hypothesis,
+success criterion and prize to Claude (`claude-opus-5-5`), which returns a
+protocol priced from a fixed lab price list, a stated probability of a clear
+answer and a biosafety level. `bounty.py` then applies the market rule in code:
+bid only if p × prize > cost, never above BSL-2. For live mode, put your key in
+a `.env` file in the repo root (git ignores it) and restart the app:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without a key the form shows a saved, clearly labelled example.
+
 A full run takes about a second. `output/` is not committed; regenerate it.
 
 ## How the simulation works
@@ -64,7 +77,8 @@ measured market outcomes.
 | `runner.py` | Builds Track A / Track C runs and sweeps, writes `output/` |
 | `analysis.py` | Recomputes everything from the event log; H1–H3 verdicts → `summary.json` |
 | `run.py` | Entry point: sweeps → save → analyse → print verdicts |
-| `app.py` | Local results app: run buttons + dashboard |
+| `app.py` | Local results app: bounty form, run buttons, dashboard |
+| `bounty.py` | Bounty → Claude experiment design → bid decision (rule applied in code) |
 | `report.py`, `report_template.html` | Dashboard data and page; `report.py` also exports `output/report.html` |
 | `data/table{1,2,3}_*.csv` | Source tables: explanation scores, model pass@1, MDA pass rates |
 | `data/success_table.csv` | Per-world pass probabilities (`p = score^γ`, γ fit to pass@1); built by `data/build_success_table.py`. Used as the `power` odds source in Track A. |

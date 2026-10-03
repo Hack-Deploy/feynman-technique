@@ -73,6 +73,14 @@
   the market is meant to discover. `outcome` now holds only `passed`.
 - **Checks**: `test_ledger_hides_true_probability`; 63 tests PASSED.
 
+## Live bounties (2026-10-03)
+- **Built**: `bounty.py` + a "Post a bounty" form in the app. A biology
+  hypothesis, criterion and prize go to Claude, which returns a protocol priced
+  from a fixed price list, a stated probability and a biosafety level. The bid
+  rule (p × prize > cost, BSL-2 max) runs in code. No key → labelled example.
+- **Checks**: `tests/test_bounty.py` (cost from price list, bid threshold,
+  BSL block, clamping, example fallback, empty form); 69 tests PASSED.
+
 ## Open issues
 - `config.yaml` is not read by the runner/analysis; values are hard-coded.
 - H3 holds by construction: `llm_opus_unthrottled` reuses mda's pass rates.
