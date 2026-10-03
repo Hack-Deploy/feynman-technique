@@ -153,55 +153,56 @@
   **`main`'s own code** at 85b6090 (including the new `power` odds source), and this branch's
   engine reproduces those three files exactly.
 
-## Phase 2: the oracle — BUILT, NOT PASSING (updated 2026-10-03, evening)
+## Phase 2: the oracle (2026-10-03)
 - **Built**: `dm/oracle/` (`make_prereg`, `score`, `explain_score`), `dm/oracle/cases.py`
-  (hidden cases + normalising variance), `dm/oracle/_worker.py` (scoring subprocess: wall-clock
-  timeout, socket calls disabled, API keys stripped from env), `dm/settle.py` (the only caller of
-  the oracle), `dm.types.SubmittedAttempt`. Review agents added a hidden `test_seed`, a `salt`
-  field and `Preregistration.verify` (PR via `review/oracle-fixes`), and an engine guard that
-  refuses replayed verdicts not scored against the posted preregistration.
-- **Verified**:
-  - Normalising variance reproduces all 11 vendor `_WORLD_VARS` on the default cases
-    (two-particle: `pos2`; multi-particle: every agent-facing particle, even where only probes
-    are scored). Hidden layouts use fixed seeds (42/123), so the oracle can rebuild worlds.
-  - Hidden-case design V1 (r0 ∈ U[3, 6], tangential 0.2–0.5, t = 1..10, p1 ∈ {3,4,5},
-    p2 ∈ {3,5}): true laws score nMSE ≤ 5e-6 on gravity, yukawa, fractional, oscillator and
-    coulomb_easy; 1/r fails yukawa on test seeds 0–2 (0.80, 0.25, 0.63).
-  - Used end to end by Phase 5: 60 ForceBench attempts settled through `dm.settle` with no
-    worker errors, timeouts or non-finite scores (≈2 s per settlement).
-  - `tests/readiness/test_oracle_readiness.py` (78 tests): commitment hashing, prereg
-    lifecycle in the engine, and the import rule (only `dm/settle.py` imports `dm.oracle`).
-- **BLOCKER: the oracle can be cheated (found 2026-10-03, reproduced)**. Submitted code runs in
-  the same process as the ground truth and the vendor simulator:
-  - a law that walks up the call stack to the evaluator's `gt` variable scores nMSE = 0 and
-    passes gravity, yukawa and extra_dimensions;
-  - a law that imports `scienceagent.worlds.get_world` and runs the true executor scores 0 and
-    passes yukawa and coulomb_easy.
-  Fix needed: score in two processes — a trusted parent that holds the hidden cases and ground
-  truth, and a sandbox child that only receives initial conditions and returns predictions,
-  with the vendor packages (`scienceagent`, `physchool`) and the vendor source tree blocked
-  from import/reading in the child. Residual risk must be written down: Python in-process
-  restrictions are not a security boundary.
-- **Other outstanding work**:
-  - Salt is defined but never set by `make_prereg`, so a commitment can still be brute-forced
-    over small test seeds. Decision needed: derive it from a secret (e.g. HMAC of
-    `DM_ORACLE_SECRET` with venue/world/seed) so commitments stay reproducible.
-  - No committed tests for the Phase 2 checks themselves: 1/r passes gravity and fails yukawa;
-    `while True` times out and fails; same seed → same commitment from `make_prereg`; cheating
-    laws (stack reading, simulator import, `sys.exit`, NaN, network) fail.
-  - Multi-particle worlds (circle, three_species, dark_matter, ether, hubble) have hidden cases
-    but have never been scored through `settle` (ForceBench only uses two-particle worlds).
-  - `explain_score` (live only) untested.
-- **Discrimination limits (decision needed: accept and report, or change what counts as a pass)**:
-  - yukawa (λ = 2) and fractional (1/r²) are indistinguishable on every design tried; Phase 5
-    confirms: both solvers pass fractional 5/5 with a Yukawa law.
-  - extra_dimensions: 1/r passes (the crossover shows only within r ≈ 0.5, which the cases
-    exclude). The vendor's default cases have the same blind spot.
+  (hidden cases + normalising variance), `dm/settle.py` (the only caller of the oracle),
+  `dm.types.SubmittedAttempt`. Review agents added a hidden `test_seed`, the `salt` field,
+  `Preregistration.verify`, and an engine guard that refuses replayed verdicts not scored
+  against the posted preregistration.
+  - **Two-process scoring.** `dm/oracle/_worker.py` (trusted) builds the world, computes the
+    noise-free ground truth on the hidden cases, and never runs submitted code.
+    `dm/oracle/_sandbox.py` runs the law through the vendor evaluator against a stand-in
+    executor whose trajectories are zeros, and returns only predictions; the worker computes
+    the errors exactly as the vendor evaluators do. The simulator is never imported in the
+    sandbox, and an audit hook refuses imports of `scienceagent`/`physchool`/`jax`, reading
+    the vendor tree or `/proc`, subprocesses and network. No API keys or `DM_ORACLE_SECRET`
+    reach either subprocess. Best effort: Python in-process restrictions are not a security
+    boundary; a determined attacker with arbitrary code could still find a way out (e.g. via
+    ctypes into a fresh interpreter). Running the sandbox in a container would close this.
+  - **Salt (decision 2026-10-03: secret key in env).** `salt = HMAC-SHA256(DM_ORACLE_SECRET,
+    oracle_version|venue|world|test_seed)`, mixed into the case generator and the commitment.
+    Same secret → same cases and commitments on every rerun; without the secret, someone
+    cannot regenerate candidate cases from the public code and match the published commitment.
+    Revealing the salt at close does not reveal the secret. Without `DM_ORACLE_SECRET` the
+    cases are exactly as before (unsalted) and a warning is raised. **To use it: set
+    `DM_ORACLE_SECRET` to a long random string, keep it out of git, and keep it fixed for the
+    life of a market** (changing it changes every hidden case and commitment).
+- **Check** (`tests/test_phase2_oracle.py`, 39 tests, about 100 s):
+  - 1/r fixture passes gravity (nMSE < 1e-4) and fails yukawa; no law → fail; verdict carries
+    the prereg commitment.
+  - Hostile laws all fail: infinite loop (timeout), reading the evaluator's stack (was nMSE 0,
+    now 4.8), importing and running the true simulator (was nMSE 0, now refused), reading
+    vendor source, spawning a process, opening a socket, `sys.exit`, NaN; no secret or API key
+    is visible to the law.
+  - Sandbox scoring equals the vendor's in-process `mean_pos_error` exactly on all 11 worlds
+    (checked by script; 3 worlds in the test suite).
+  - Same seed → same commitment; different seeds and different secrets → different cases;
+    public view hides cases, seed and salt; reveal verifies; all 5 multi-particle worlds get
+    generated (not public) cases; ForceBench refuses multi-particle worlds; normalising
+    variance reproduces all 11 vendor `_WORLD_VARS`.
+  - Earlier: 60 ForceBench attempts settled through `dm.settle` (Phase 5) with no errors.
+- **Result**: ✅ PASS. Full suite 453 passed, 14 xfailed, 4 skipped.
+- **Accepted limits of the pass rule (decision 2026-10-03: accept and report).** The rule
+  stays nMSE < 0.1 (as in the paper). On these worlds a pass does not prove the right law,
+  so "right law" is reported next to "pass" (the `/real` page does this):
+  - yukawa (λ = 2) and fractional (1/r²) cannot be told apart on any design tried;
+  - extra_dimensions: 1/r passes (the crossover only shows within r ≈ 0.5, excluded to avoid
+    near-singular passes; the vendor's defaults have the same blind spot);
   - oscillator: a fitted 1/r passes 10/10 in the Phase 5 settle check.
 - **Vendor bug found**: `coulomb_easy` (nbody) is *repulsive* with a = |p1|/r², and p2 has no
   effect; its docstring and mission describe an attractive F = k·p1·p2/r². The oracle scores
   against the simulator as it behaves; vendor code is not edited.
-- **Result**: ❌ not passing. Blocked on the sandbox fix above; Phase 2 checks not yet committed.
+- **Not done**: `explain_score` (live only, needs `ENABLE_LIVE=1`) is untested.
 
 ## Phase 4: ARA import and first real-data replay market (2026-10-03)
 - **Built**:
@@ -392,6 +393,8 @@
 
 # Current state and what is outstanding (2026-10-03, evening)
 
+Demo data: `/real` falls back to committed snapshots in `attempts/fixtures/demo/` (ARA
+attempts and replay, ForceBench grid), so it works offline on a fresh clone.
 Frontend: the results app now has a "Real attempts" page (`/real`, PR #16) that runs a live
 ForceBench attempt through `dm.settle` and shows the ARA replay and the settled ForceBench grid.
 `poc/` (bounty benchmark, PR by Stefan) is a separate prototype with its own agent loop.
@@ -400,7 +403,7 @@ ForceBench attempt through `dm.settle` and shows the ARA replay and the settled 
 |---|---|---|
 | 0 Hygiene and vendor | ✅ done | — |
 | 1 Engine generalisation | ✅ done, hardened by review agents | Merge `review/remaining-readiness` (fixes several engine xfails) |
-| 2 Oracle | ❌ built, not passing | Sandbox fix (cheating), salt from a secret, Phase 2 tests, multi-particle scoring, discrimination decisions |
+| 2 Oracle | ✅ done | Sandboxed scoring, salt from `DM_ORACLE_SECRET`, 39 tests; pass-rule blind spots accepted and reported; `explain_score` untested (live only) |
 | 3 DiscoverPhysics venue | ⛔ not started | `MeteredExecutor`, `run_attempt` (native loop, `market_aware`), stated-p call, LLM usage capture, `dm/testing/fake_llm.py`; readiness tests already exist in `tests/readiness/dp_venue_*` |
 | 4 ARA import + replay | ✅ done | Caveat: one attempt per (model, world), so H2 is near-deterministic; coulomb_easy nMSE in ARA uses Var ≈ 4.24, not 11.465 |
 | STOP 1 Cost preflight | ⏳ waiting | Needs Phase 3; then the user names the cheapest model and approves a budget |
