@@ -375,10 +375,6 @@ class TestCalibrationFromEvents:
         assert keys and max(keys.values()) == 1
         assert all(e.get("attempt_id") is None for e in ev if e["type"] == "verdict_issued")
 
-    @pytest.mark.xfail(strict=True, reason="GAP: confidence_stated falls back to the "
-                       "agent's belief mean when the record has no stated_p_success, and "
-                       "nothing on the event says so; H4 would score market beliefs as if "
-                       "the solver had stated them")
     def test_confidence_event_marks_fallback(self):
         recs = [AttemptRecord(**{**r.to_dict(), "stated_p_success": None})
                 for r in _records()]
@@ -465,9 +461,6 @@ class TestEngineGuards:
         with pytest.raises((ValueError, AssertionError)):
             _run(ReplayPool(bad, recorded_cost()), prize=500)
 
-    @pytest.mark.xfail(strict=True, reason="BUG: a bid collected in step 1 that becomes "
-                       "unaffordable after an earlier bid in the same tick is dropped with no "
-                       "event (market.py:403-405)")
     def test_every_collected_bid_leaves_an_event(self):
         # One solver, two worlds, enough for one 41-credit attempt but not two.
         dropped = []
@@ -524,9 +517,6 @@ class TestStore:
         for ln in lines:
             json.loads(ln)
 
-    @pytest.mark.xfail(strict=True, reason="BUG: a crash mid-append leaves a partial last "
-                       "line and AttemptStore.load() then raises JSONDecodeError for the "
-                       "whole store (dm/store.py:41)")
     def test_partial_trailing_line_tolerated(self, tmp_path):
         p = tmp_path / "t.jsonl"
         AttemptStore(p).append([self._rec(1)])
