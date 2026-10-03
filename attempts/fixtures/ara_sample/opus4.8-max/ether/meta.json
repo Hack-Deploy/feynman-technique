@@ -1,0 +1,26 @@
+{
+ "agent": "opus48",
+ "world": "ether",
+ "archived_at": "2026-07-15T18:01:58",
+ "harness": "claude-code",
+ "harness_model": "opus",
+ "rounds": 6,
+ "total_cost_usd": 24.4485,
+ "total_duration_s": 2852.5,
+ "bridge_errors": 0,
+ "tokens": {
+  "input_tokens": 5042,
+  "cache_creation_input_tokens": 1369806,
+  "cache_read_input_tokens": 11074345,
+  "output_tokens": 204551
+ },
+ "model": "cc-session",
+ "engine": "nbody",
+ "noise_std": 0.345806,
+ "noise_seed": 0,
+ "mean_pos_error": 15.913842977329358,
+ "max_pos_error": 938.9634701627199,
+ "explanation_score": 1.0,
+ "judge_model": "claude-opus-4-8",
+ "agent_explanation": "The universe runs on a mass-sourced field with a 2D \"log-gravity\" law instead of Newton's inverse-square law. A mass M produces a potential proportional to M times ln(r), so the central acceleration i"
+}

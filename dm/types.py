@@ -6,12 +6,70 @@ import hashlib
 import json
 import math
 from dataclasses import asdict, dataclass, field, fields
+from numbers import Real
 from typing import Any
+
+import numpy as np
+
+
+# Canonical fields collected for per-attempt LLM usage.
+LLM_USAGE_KEYS = ("calls", "input_tokens", "output_tokens", "usd", "estimated")
+
+
+def _json_default(o: Any) -> Any:
+    # numpy scalars/arrays (oracle test cases are built with numpy RNGs)
+    if hasattr(o, "tolist"):
+        return o.tolist()
+    raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
 
 
 def canonical_json(obj: Any) -> str:
-    """Deterministic JSON: sorted keys, no whitespace, no NaN/Infinity."""
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    """Deterministic JSON: sorted keys, no whitespace, no NaN/Infinity.
+
+    numpy scalars and arrays are converted with ``tolist()`` so they hash like the
+    equivalent Python values (float32 widens to the float64 of the same value)."""
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), allow_nan=False,
+                      default=_json_default)
+
+
+def _to_builtin(obj: Any) -> Any:
+    """Convert numpy values and tuples to JSON-compatible builtin values."""
+    if isinstance(obj, np.generic):
+        return _to_builtin(obj.item())
+    if isinstance(obj, np.ndarray):
+        return _to_builtin(obj.tolist())
+    if isinstance(obj, tuple):
+        return [_to_builtin(item) for item in obj]
+    if isinstance(obj, list):
+        return [_to_builtin(item) for item in obj]
+    if isinstance(obj, dict):
+        if any(not isinstance(key, str) for key in obj):
+            raise ValueError("dictionary keys must be strings")
+        return {key: _to_builtin(value) for key, value in obj.items()}
+    return obj
+
+
+def _validate_attempt_values(
+    stated_p_success: float | None, rounds: int, experiments: int, lab_cost: float
+) -> None:
+    if stated_p_success is not None:
+        if (
+            isinstance(stated_p_success, bool)
+            or not isinstance(stated_p_success, Real)
+            or not math.isfinite(stated_p_success)
+            or not 0 <= stated_p_success <= 1
+        ):
+            raise ValueError("stated_p_success must be None or a finite number in [0, 1]")
+    for name, value in (("rounds", rounds), ("experiments", experiments)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{name} must be an integer >= 0")
+    if (
+        isinstance(lab_cost, bool)
+        or not isinstance(lab_cost, Real)
+        or not math.isfinite(lab_cost)
+        or lab_cost < 0
+    ):
+        raise ValueError("lab_cost must be finite and >= 0")
 
 
 class InsufficientCredits(RuntimeError):
@@ -20,6 +78,19 @@ class InsufficientCredits(RuntimeError):
     The vendor agent loop catches exceptions from ``executor.run`` and shows them to
     the solver as an error message, so the solver sees this and must submit.
     """
+
+    def __init__(self, needed: float, balance: float, count: int, price: float):
+        self.needed = needed
+        self.balance = balance
+        self.count = count
+        self.price = price
+        super().__init__(
+            f"insufficient credits: {count} experiment(s) x {price} = {needed} credits needed, "
+            f"balance {balance}. Submit your <final_law> or run fewer experiments."
+        )
+
+    def __reduce__(self):
+        return (type(self), (self.needed, self.balance, self.count, self.price))
 
 
 @dataclass(frozen=True)
@@ -40,6 +111,11 @@ class Preregistration:
     metric: str = "normalised_mse"
     threshold: float = 0.1
     public_tests: bool = False  # True if the world's default (public) cases had to be used
+    # >=128-bit secret nonce chosen by the oracle; without it a commitment over cases
+    # derived from a small seed can be brute-forced. Hidden until reveal, like test_seed.
+    salt: str = ""
+
+    HIDDEN = ("test_cases", "test_seed", "salt")
 
     def __post_init__(self) -> None:
         # Freeze the hidden cases (a deep copy) and the commitment at construction, so
@@ -59,14 +135,22 @@ class Preregistration:
         return self._commitment
 
     def public(self) -> dict[str, Any]:
-        """Everything except the hidden test cases, plus the commitment."""
-        d = {k: v for k, v in self.to_dict().items() if k != "test_cases"}
+        """Everything except the hidden fields, plus the commitment."""
+        d = {k: v for k, v in self.to_dict().items() if k not in self.HIDDEN}
         d["commitment"] = self.commitment()
         return d
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Preregistration:
         return cls(**d)
+
+    @classmethod
+    def verify(cls, revealed: dict[str, Any], commitment: str) -> Preregistration:
+        """Rebuild a revealed preregistration and check it against the posted commitment."""
+        p = cls.from_dict(revealed)
+        if p.commitment() != commitment:
+            raise ValueError("revealed preregistration does not match its commitment")
+        return p
 
 
 @dataclass(frozen=True)
@@ -92,18 +176,15 @@ class AttemptRecord:
     extra: dict = field(default_factory=dict)  # provenance, source-specific fields
 
     def __post_init__(self) -> None:
-        for name in ("rounds", "experiments", "seed"):
-            v = getattr(self, name)
-            if not isinstance(v, int) or isinstance(v, bool):
-                raise TypeError(f"{self.attempt_id}: {name} must be int, got {v!r}")
-        if self.rounds < 0 or self.experiments < 0:
-            raise ValueError(f"{self.attempt_id}: negative rounds/experiments")
-        if not (isinstance(self.lab_cost, (int, float)) and math.isfinite(self.lab_cost)
-                and self.lab_cost >= 0):
-            raise ValueError(f"{self.attempt_id}: lab_cost must be finite and >= 0")
-        p = self.stated_p_success
-        if p is not None and not 0.0 <= p <= 1.0:
-            raise ValueError(f"{self.attempt_id}: stated_p_success outside [0, 1]")
+        _validate_attempt_values(
+            self.stated_p_success, self.rounds, self.experiments, self.lab_cost
+        )
+        for name in ("llm_usage", "verdict", "extra"):
+            value = json.loads(canonical_json(_to_builtin(getattr(self, name))))
+            object.__setattr__(self, name, value)
+        v = self.seed
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise TypeError(f"{self.attempt_id}: seed must be int, got {v!r}")
         if "passed" in self.verdict and not isinstance(self.verdict["passed"], bool):
             raise TypeError(f"{self.attempt_id}: verdict.passed must be bool")
 
@@ -120,12 +201,31 @@ class AttemptRecord:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> AttemptRecord:
-        """Unknown keys (from newer writers) are kept under ``extra["_unknown"]`` so a
-        load → append round trip never drops data."""
         known = {f.name for f in fields(cls)}
-        kw = {k: v for k, v in d.items() if k in known}
-        unknown = {k: v for k, v in d.items() if k not in known}
+        unknown = sorted(set(d) - known)
         if unknown:
-            kw["extra"] = {**kw.get("extra", {}),
-                           "_unknown": {**kw.get("extra", {}).get("_unknown", {}), **unknown}}
-        return cls(**kw)
+            raise ValueError(f"unknown AttemptRecord keys: {', '.join(unknown)}")
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+
+@dataclass(frozen=True)
+class SubmittedAttempt:
+    """What a venue hands to ``dm.settle``: everything except the verdict."""
+
+    source: str
+    protocol: str
+    venue: str
+    world: str
+    solver: str
+    seed: int
+    stated_p_success: float | None
+    rounds: int
+    experiments: int
+    lab_cost: float
+    llm_usage: dict = field(default_factory=dict)
+    submitted_law: str | None = None
+    explanation: str | None = None
+    training: list = field(default_factory=list)  # experiments the solver paid for
+    transcript_path: str | None = None
+    created_at: str = ""
+    extra: dict = field(default_factory=dict)

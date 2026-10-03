@@ -11,7 +11,7 @@ import warnings
 from pathlib import Path
 from typing import Callable, Iterable
 
-from dm.types import AttemptRecord
+from dm.types import AttemptRecord, canonical_json
 
 ROOT = Path(__file__).resolve().parent.parent
 ATTEMPTS_DIR = ROOT / "attempts"
@@ -28,7 +28,7 @@ class AttemptStore:
         with self.path.open("a") as f:
             for r in records:
                 # One write per line (atomic with O_APPEND on local filesystems); no NaN.
-                f.write(json.dumps(r.to_dict(), sort_keys=True, allow_nan=False) + "\n")
+                f.write(canonical_json(r.to_dict()) + "\n")
                 n += 1
         return n
 

@@ -379,13 +379,18 @@ class TestStrictBugRegressions:
         assert len(store.load()) == 1
 
     def test_store_preserves_unknown_fields_on_round_trip(self, tmp_path):
-        """Preserve unrecognized record fields when a loaded record is appended."""
+        """Never silently drop unknown fields: preserve them or refuse to load."""
         path = tmp_path / "attempts.jsonl"
         record = rec(0).to_dict()
         record["question_id"] = "discoverphysics/gravity"
         path.write_text(json.dumps(record) + "\n")
         store = AttemptStore(path)
-        store.append(store.load())
+        try:
+            loaded = store.load()
+        except ValueError as exc:
+            assert "question_id" in str(exc)
+            return
+        store.append(loaded)
         data = json.loads(path.read_text().splitlines()[-1])
         assert (
             data.get("question_id") == "discoverphysics/gravity"
