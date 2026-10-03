@@ -61,7 +61,9 @@ def _record(world, model, seed, nmse, passed):
 
 
 def test_build_real_data_when_files_are_missing(monkeypatch, tmp_path):
-    for name in ("ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID", "SIM_SUMMARY"):
+    for name in (
+        "ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID", "FORCEBENCH_SNAPSHOT", "SIM_SUMMARY"
+    ):
         monkeypatch.setattr(real_data, name, tmp_path / f"missing-{name}.json")
 
     data = real_data.build_real_data()
@@ -71,6 +73,7 @@ def test_build_real_data_when_files_are_missing(monkeypatch, tmp_path):
     assert data["forcebench"]["available"] is False
     assert data["forcebench"]["worlds"] == list(forcebench.WORLDS)
     assert data["forcebench"]["solvers"] == ["bayes_lite", "random_menu"]
+    assert data["forcebench"]["source"] is None
 
 
 def test_forcebench_grid_aggregation(monkeypatch, tmp_path):
@@ -112,6 +115,7 @@ def test_forcebench_grid_aggregation(monkeypatch, tmp_path):
     grid_path = tmp_path / "forcebench_settle.json"
     grid_path.write_text(json.dumps({"results": rows}))
     monkeypatch.setattr(real_data, "FORCEBENCH_GRID", grid_path)
+    monkeypatch.setattr(real_data, "FORCEBENCH_SNAPSHOT", tmp_path / "missing-snapshot.json")
 
     data = real_data.forcebench_data()
     cells = {(row["solver"], row["world"]): row for row in data["table"]}
@@ -131,6 +135,46 @@ def test_forcebench_grid_aggregation(monkeypatch, tmp_path):
     assert yukawa["baseline_passed"] == 0
     assert yukawa["mean_experiments"] == 2
     assert yukawa["nmse"] == [0.03]
+    assert data["source"] == "output"
+    assert [(row["world"], row["solver"], row["seed"]) for row in data["attempts"]] == [
+        ("gravity", "bayes_lite", 0),
+        ("gravity", "bayes_lite", 1),
+        ("yukawa", "random_menu", 2),
+    ]
+    assert data["attempts"][0]["top_model"] is None
+    assert data["attempts"][0]["top_params"] is None
+    assert data["attempts"][0]["stopped_reason"] is None
+    assert data["attempts"][0]["baseline_nmse"] is None
+
+
+def test_forcebench_snapshot_fallback_and_menu(monkeypatch, tmp_path):
+    snapshot_path = tmp_path / "snapshot.json"
+    snapshot_path.write_text(json.dumps({
+        "head": "abc123",
+        "test_seed": 0,
+        "results": [{
+            "solver": "bayes_lite", "world": "gravity", "seed": 0,
+            "passed": True, "identified": True, "nmse": 0.01,
+            "baseline_passed": False, "experiments": 2, "stated_p": 0.6,
+        }],
+    }))
+    monkeypatch.setattr(real_data, "FORCEBENCH_GRID", tmp_path / "missing-output.json")
+    monkeypatch.setattr(real_data, "FORCEBENCH_SNAPSHOT", snapshot_path)
+
+    data = real_data.forcebench_data()
+
+    assert data["source"] == "snapshot"
+    assert data["available"] is True
+    assert data["head"] == "abc123"
+    assert len(data["menu"]) == 13
+    assert sum(item["seed"] for item in data["menu"]) == 1
+    assert data["venue"] == {
+        "budget": forcebench.BUDGET,
+        "noise_std": forcebench.NOISE_STD,
+        "measurement_times": list(forcebench.MEASUREMENT_TIMES),
+        "seed_action": forcebench.SEED_ACTION,
+        "threshold": 0.1,
+    }
 
 
 def test_ara_attempts_summary_and_sim_clearing(monkeypatch, tmp_path):
@@ -200,16 +244,32 @@ def test_forcebench_attempt_rejects_invalid_inputs_before_simulation(
         real_data.run_forcebench_attempt(world, solver, seed)
 
 
-def test_real_pages_and_api_data(app_server, monkeypatch):
+def test_three_pages_removed_routes_static_and_api_data(app_server, monkeypatch):
     monkeypatch.setattr(
         real_data,
         "build_real_data",
         lambda: {"ara": {"available": False}, "forcebench": {"available": False}},
     )
 
-    status, _, body = _request(f"{app_server}/real")
+    for path in ("/", "/simulation", "/live"):
+        status, headers, _ = _request(f"{app_server}{path}")
+        assert status == 200
+        assert "text/html" in headers.get("Content-Type", "").lower()
+
+    for path in (
+        "/report", "/real", "/index.html", "/api/data", "/api/bounty",
+        "/api/bounty/info", "/api/run", "/api/test",
+    ):
+        assert _request(f"{app_server}{path}")[0] == 404
+    for path in ("/api/bounty", "/api/run", "/api/test"):
+        assert _request(f"{app_server}{path}", method="POST", body=b"{}")[0] == 404
+
+    status, headers, _ = _request(f"{app_server}/web/style.css")
     assert status == 200
-    assert b"Real attempts" in body
+    assert "text/css" in headers.get("Content-Type", "").lower()
+    assert _request(f"{app_server}/web/%2e%2e/app.py")[0] == 404
+    assert _request(f"{app_server}/web/data/%2e%2e/style.css")[0] == 404
+    assert _request(f"{app_server}/web/data/missing.json")[0] == 404
 
     status, headers, body = _request(f"{app_server}/api/real")
     assert status == 200
@@ -312,14 +372,6 @@ def test_real_replay_and_grid_dispatch(app_server, monkeypatch):
     assert command_calls == [
         (app.COMMANDS["/api/real/grid"], 1800),
     ]
-
-
-def test_simulated_homepage_links_to_real_attempts(app_server):
-    status, _, body = _request(f"{app_server}/")
-
-    assert status == 200
-    assert b"Simulated (published pass rates)" in body
-    assert b'href="/real"' in body
 
 
 @pytest.mark.slow

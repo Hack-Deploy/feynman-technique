@@ -368,7 +368,6 @@
     (mostly Yukawa λ ≈ 1.3–1.6) and pass 5/5. This is the yukawa–fractional degeneracy listed in
     the Phase 2 open issues.
 
-<<<<<<< HEAD
 ## Phase 8 (partial): "Real attempts" page in the results app (2026-10-03)
 
 - `real.html` at `/real`, fed by `real_data.py` via `GET /api/real`. The original page is now
@@ -387,7 +386,6 @@
 - "Right law" uses `identify_model` from `tests/forcebench_local.py` (local reporting only).
 - Check: `tests/test_real_app.py` 11 passed with `--runslow`; full suite 387 passed, 4 skipped,
   14 xfailed.
-=======
 
 ---
 
@@ -423,4 +421,11 @@ XPASS-fail and should be removed).
 
 **Loose ends**: `forcebench_demo.py` (repo root) runs one ForceBench attempt end to end.
 `hypothesis` is not installed, so 2 property tests skip.
->>>>>>> 3554238 (STATUS: Phase 2 state (oracle cheatable via stack/simulator), per-phase outstanding work)
+
+## App cleanup: three pages
+
+- Serve Vision, ForceBench simulation, and the live market at `/`, `/simulation`, and `/live`;
+  remove the legacy bounty UI/routes while retaining the report CLI and real-attempt APIs.
+- Add ForceBench attempt details, menu/venue/library metadata and snapshot fallback; add live
+  market info, runs, scripted demos, live spend guards, and round updates.
+- Checks: targeted suite 43 passed, 1 skipped; full suite 413 passed, 5 skipped, 14 xfailed.
