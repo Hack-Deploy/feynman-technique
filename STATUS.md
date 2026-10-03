@@ -191,7 +191,7 @@
     generated (not public) cases; ForceBench refuses multi-particle worlds; normalising
     variance reproduces all 11 vendor `_WORLD_VARS`.
   - Earlier: 60 ForceBench attempts settled through `dm.settle` (Phase 5) with no errors.
-- **Result**: ✅ PASS. Full suite 453 passed, 14 xfailed, 4 skipped.
+- **Result**: ✅ PASS. Full suite 453 passed (490 after Phase 3), 14 xfailed, 4 skipped.
 - **Accepted limits of the pass rule (decision 2026-10-03: accept and report).** The rule
   stays nMSE < 0.1 (as in the paper). On these worlds a pass does not prove the right law,
   so "right law" is reported next to "pass" (the `/real` page does this):
@@ -203,6 +203,44 @@
   effect; its docstring and mission describe an attractive F = k·p1·p2/r². The oracle scores
   against the simulator as it behaves; vendor code is not edited.
 - **Not done**: `explain_score` (live only, needs `ENABLE_LIVE=1`) is untested.
+
+## Phase 3: DiscoverPhysics venue (2026-10-03)
+- **Built**:
+  - `dm/venues/discoverphysics.py`: `run_attempt(solver_model, world, seed, wallet, price,
+    market_aware=True, llm=None, *, prize, max_rounds=16, noise_std=0.075, ask_p, cap)`
+    runs the vendor `DiscoveryAgent` unchanged (vendor system prompt, mission, 16 rounds,
+    mid-round MSE fit with a per-attempt trajectory CSV in a temp dir) and returns a
+    `SubmittedAttempt` for `dm.settle`. All 11 public worlds.
+  - `MeteredExecutor`: refuses a batch that is not a list of objects (uncharged); charges
+    `len × price` before the simulator runs; `InsufficientCredits` never runs and reaches the
+    solver as an experiment error, so it can still submit; if the simulator rejects a paid
+    batch (missing key), the charge is refunded (`Wallet.refund`, event
+    `experiment_refunded`, lab → agent). Charge events carry the agent's round number.
+  - `market_aware` appends the market terms (price, balance, prize) to the mission; the
+    system prompt is identical either way.
+  - Stated p: after a law is submitted, one more call in the same conversation asks for
+    the probability that the law passes (`<p_success>`); unparseable or out of [0, 1] → None.
+    Not asked when no law was submitted.
+  - `dm/llm.py`: `UsageMeter` (per-attempt calls, tokens, USD; plain-string replies are
+    estimated at 4 chars/token and marked `estimated`), `anthropic_llm` (real token counts,
+    no server-side fallback so the attempt stays attributed to one model), price table
+    (Anthropic first-party, checked 2026-10-03), `SpendCap` (refuses any call whose worst
+    case, estimated input + `max_tokens` output, would take the total over `DM_MAX_USD`;
+    refuses unpriced models), `live_llm` (needs `ENABLE_LIVE=1` and `DM_MAX_USD`).
+  - The meter replaces `scienceagent.llm_client.complete` for the attempt under a lock and
+    always restores it (one attempt at a time per process).
+  - `dm/testing/fake_llm.py`: scripted LLM (one experiment, then the 1/r law, then p = 0.6).
+- **Check** (`tests/test_dm_dp_venue.py`, 37 tests, about 25 s, no API calls): metering
+  (charge before run, exact fractional balance 0.3 = 3 × 0.1, non-list uncharged, failed
+  batch refunded, noise controls forwarded); fake attempt end to end (2 rounds, 1
+  experiment, 0.5 credits, p = 0.6, 3 LLM calls) settles as pass on gravity and fail on
+  yukawa; no submission → no law, no p call, settles as fail; insufficient credits shown and
+  attempt still submits; market note changes only the mission; deterministic per seed;
+  vendor client restored even on provider error; live guard refuses without both variables
+  and the cap refuses before calling; vendor tree clean.
+- **Result**: ✅ PASS. Full suite 490 passed, 4 skipped, 14 xfailed.
+- **Not done**: the cost preflight (projected spend per model × world × seed, printed before
+  a live command) is STOP 1 work; no live call has been made.
 
 ## Phase 4: ARA import and first real-data replay market (2026-10-03)
 - **Built**:
@@ -368,7 +406,6 @@
     (mostly Yukawa λ ≈ 1.3–1.6) and pass 5/5. This is the yukawa–fractional degeneracy listed in
     the Phase 2 open issues.
 
-<<<<<<< HEAD
 ## Phase 8 (partial): "Real attempts" page in the results app (2026-10-03)
 
 - `real.html` at `/real`, fed by `real_data.py` via `GET /api/real`. The original page is now
@@ -387,7 +424,6 @@
 - "Right law" uses `identify_model` from `tests/forcebench_local.py` (local reporting only).
 - Check: `tests/test_real_app.py` 11 passed with `--runslow`; full suite 387 passed, 4 skipped,
   14 xfailed.
-=======
 
 ---
 
@@ -404,9 +440,9 @@ ForceBench attempt through `dm.settle` and shows the ARA replay and the settled 
 | 0 Hygiene and vendor | ✅ done | — |
 | 1 Engine generalisation | ✅ done, hardened by review agents | Merge `review/remaining-readiness` (fixes several engine xfails) |
 | 2 Oracle | ✅ done | Sandboxed scoring, salt from `DM_ORACLE_SECRET`, 39 tests; pass-rule blind spots accepted and reported; `explain_score` untested (live only) |
-| 3 DiscoverPhysics venue | ⛔ not started | `MeteredExecutor`, `run_attempt` (native loop, `market_aware`), stated-p call, LLM usage capture, `dm/testing/fake_llm.py`; readiness tests already exist in `tests/readiness/dp_venue_*` |
+| 3 DiscoverPhysics venue | ✅ done offline | No live call yet; `explain_score` at settle untested (live only) |
 | 4 ARA import + replay | ✅ done | Caveat: one attempt per (model, world), so H2 is near-deterministic; coulomb_easy nMSE in ARA uses Var ≈ 4.24, not 11.465 |
-| STOP 1 Cost preflight | ⏳ waiting | Needs Phase 3; then the user names the cheapest model and approves a budget |
+| STOP 1 Cost preflight | ⏳ next | Preflight command (projected spend from the fake run's token counts × prices); then the user names the cheapest model and approves a budget |
 | 5 ForceBench + offline solvers | ✅ done offline and through `dm.settle` | `llm_menu` (live only); pass rates overstate identification on yukawa/fractional/oscillator/extra_dimensions (see Phase 5 findings) |
 | 6 Live grid | ⛔ blocked | STOP 1 budget |
 | 7 Markets on real attempts | 🟡 partly | ARA replay sweep exists (`dm/replay.py`). Missing: ForceBench and live pools, H1–H4 from the log, H3 on ForceBench, `dm/calibration.py` (Brier + reliability), `dm/live_market.py` |
@@ -423,4 +459,3 @@ XPASS-fail and should be removed).
 
 **Loose ends**: `forcebench_demo.py` (repo root) runs one ForceBench attempt end to end.
 `hypothesis` is not installed, so 2 property tests skip.
->>>>>>> 3554238 (STATUS: Phase 2 state (oracle cheatable via stack/simulator), per-phase outstanding work)
