@@ -81,14 +81,14 @@ class TestCommitment:
         ("question_id", "dp:gravity:8"), ("venue", "forcebench"), ("world", "yukawa"),
         ("test_seed", 8), ("norm_variance", 1.7020000000000002),
         ("oracle_version", "0.1.1"), ("metric", "mse"), ("threshold", 0.1000001),
-        ("public_tests", True),
+        ("public_tests", True), ("salt", "00" * 16),
     ])
     def test_every_field_changes_commitment(self, field, value):
         assert _prereg(**{field: value}).commitment() != _prereg().commitment()
 
     def test_all_fields_are_covered_by_the_parametrisation(self):
         tested = {"question_id", "venue", "world", "test_seed", "norm_variance",
-                  "oracle_version", "metric", "threshold", "public_tests", "test_cases"}
+                  "oracle_version", "metric", "threshold", "public_tests", "test_cases", "salt"}
         assert {f.name for f in dataclasses.fields(Preregistration)} == tested
 
     @pytest.mark.parametrize("mutate", [
@@ -149,35 +149,48 @@ class TestCommitment:
         assert _prereg(test_cases=cases, norm_variance=np.float64(1.702)).commitment() \
             == _prereg().commitment()
 
-    @pytest.mark.xfail(strict=True, raises=TypeError,
-                       reason="gap: canonical_json rejects numpy int64/float32/ndarray; "
-                              "make_prereg will build cases with numpy RNG")
-    @pytest.mark.parametrize("value", [np.int64(7), np.float32(0.5), np.array([1.0, 2.0])])
-    def test_numpy_scalars_and_arrays_are_normalised(self, value):
+    @pytest.mark.parametrize("value,plain", [(np.int64(7), 7), (np.float32(0.5), 0.5),
+                                             (np.array([1.0, 2.0]), [1.0, 2.0])])
+    def test_numpy_scalars_and_arrays_are_normalised(self, value, plain):
+        a, b = _cases(), _cases()
+        a[0]["p1"], b[0]["p1"] = value, plain
+        assert _prereg(test_cases=a).commitment() == _prereg(test_cases=b).commitment()
+
+    def test_numpy_nan_still_rejected(self):
         cases = _cases()
-        cases[0]["p1"] = value
-        _prereg(test_cases=cases).commitment()
+        cases[0]["pos2"] = np.array([np.nan, 0.0])
+        with pytest.raises(ValueError):
+            _prereg(test_cases=cases).commitment()
 
     def test_public_view_has_no_test_cases(self):
         p = _prereg()
         pub = p.public()
         assert "test_cases" not in pub and pub["commitment"] == p.commitment()
+        assert "test_seed" not in pub and "salt" not in pub
         assert repr(SENTINEL) not in canonical_json(pub)
 
-    @pytest.mark.xfail(strict=True,
-                       reason="gap: public() publishes test_seed and the commitment has no "
-                              "salt, so hidden cases derived from the seed are recoverable")
+    def test_verify_accepts_reveal_and_rejects_tampering(self):
+        p = _prereg(salt="ab" * 16)
+        assert Preregistration.verify(json.loads(canonical_json(p.to_dict())),
+                                      p.commitment()) == p
+        bad = {**p.to_dict(), "threshold": 0.2}
+        with pytest.raises(ValueError):
+            Preregistration.verify(bad, p.commitment())
+
     def test_hidden_cases_not_recoverable_from_public_view(self):
         # Model of PLAN's make_prereg(venue, world, test_seed): cases are a pure
         # function of the seed. Anyone holding public() + the code can rebuild them.
-        def make(seed: int) -> Preregistration:
+        import secrets
+        salt = secrets.token_hex(16)  # oracle-private
+
+        def make(seed: int, salt: str = "") -> Preregistration:
             rng = np.random.default_rng(seed)
             cases = [{"p1": float(rng.choice([3, 4, 5])), "p2": float(rng.choice([3, 5])),
                       "pos2": [float(rng.uniform(2.5, 5.0)), 0.0], "velocity2": [0.0, 0.3],
                       "measurement_times": [1.0, 5.0]}]
-            return _prereg(test_seed=seed, test_cases=cases)
+            return _prereg(test_seed=seed, test_cases=cases, salt=salt)
 
-        posted = make(4242)
+        posted = make(4242, salt)
         pub = posted.public()
         recovered = None
         for seed in range(10_000):  # even without test_seed, small seeds brute-force
