@@ -135,10 +135,15 @@ def compute_clearing_prizes(
     prize_levels: list[float], seeds: list[int],
     track: str = "A", probability_source: str | None = None,
     price: float | None = None,
+    run_id_template: str | None = None,
 ) -> dict[str, float | None]:
     """Find clearing prize: lowest prize at which a world is solved in ≥3 of 5 seeds.
 
     Returns dict: world -> clearing_prize (or None if never clears).
+
+    run_id_template: optional template used instead of the built-in
+    track_a_/track_c_ run_id schemes; formatted with {seed}, {prize},
+    {price}, {probability_source} and {track}.
     """
     by_run = group_events_by_run(all_events)
     clearing: dict[str, float | None] = {}
@@ -148,7 +153,11 @@ def compute_clearing_prizes(
         for prize in sorted(prize_levels):
             solved_count = 0
             for seed in seeds:
-                if track == "A":
+                if run_id_template is not None:
+                    run_id = run_id_template.format(
+                        seed=seed, prize=int(prize), price=price,
+                        probability_source=probability_source, track=track)
+                elif track == "A":
                     run_id = f"track_a_{probability_source}_prize{int(prize)}_seed{seed}"
                 else:
                     run_id = f"track_c_price{price}_prize{int(prize)}_seed{seed}"
@@ -400,14 +409,23 @@ def _build_verdicts(h1_results, h2_results, h3_results,
 
     # H1 verdict (per probability source)
     for source in PROB_SOURCES:
-        verdicts[f"h1_{source}"] = _h1_verdict(
-            source, h1_results.get(source, {}), strength_order
+        data = h1_results.get(source, {})
+        has_runs = any(v.get("profits") for v in data.values())
+        verdicts[f"h1_{source}"] = (
+            _h1_verdict(source, data, strength_order) if has_runs else
+            "UNAVAILABLE: no track_a runs"
         )
 
     # H2 verdict
     for source in PROB_SOURCES:
         key = f"h2_{source}"
         clearing = h2_results.get(source, {})
+        has_runs = any(
+            v.get("profits")
+            for v in h1_results.get(source, {}).values())
+        if not has_runs:
+            verdicts[key] = "UNAVAILABLE: no track_a runs"
+            continue
         lines = [f"H2 verdict ({source} odds):"]
         for world, cp in clearing.items():
             lines.append(f"  {world}: clearing_prize={cp}")
@@ -418,6 +436,12 @@ def _build_verdicts(h1_results, h2_results, h3_results,
         verdicts[key] = "\n".join(lines)
 
     # H3 verdict
+    has_track_c = any(
+        v.get("profits")
+        for per_prize in h3_results.values() for v in per_prize.values())
+    if not has_track_c:
+        verdicts["h3"] = "UNAVAILABLE: no track_c runs"
+        return verdicts
     lines = ["H3 verdict (Track C):"]
     # Compare mda (8 exp) vs llm_opus_unthrottled (41 exp) at same accuracy
     for price in h3_results:

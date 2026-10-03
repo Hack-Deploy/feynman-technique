@@ -295,23 +295,19 @@ class TestAnalysisOnReplayRuns:
         assert clearing["coulomb_easy"] is None  # slow's only attempt fails
         assert clearing["gravity"] is not None
 
-    @pytest.mark.xfail(strict=True, reason="GAP: compute_clearing_prizes only knows "
-                       "track_a_/track_c_ run_id templates; any other track silently "
-                       "returns None ('never') for every world")
     def test_analysis_clearing_prizes_match_log_for_replay(self):
         events = [e for p, z, s, ev, _ in sweep() if p == 1.0 for e in ev]
         mine = {w: clearing_from_log(events, w, PRIZES, SEEDS, 1.0) for w in WORLDS}
-        got = compute_clearing_prizes(events, WORLDS, PRIZES, list(SEEDS),
-                                      track="replay", price=1.0)
+        got = compute_clearing_prizes(
+            events, WORLDS, PRIZES, list(SEEDS), track="replay", price=1.0,
+            run_id_template="replay_fixture_price{price}_prize{prize}_seed{seed}")
         assert got == mine
 
-    @pytest.mark.xfail(strict=True, reason="BUG: build_full_summary on replay-only "
-                       "events emits a Track C H3 verdict ('NOT SUPPORTED ... mda=0.0') "
-                       "computed from no data")
     def test_summary_does_not_invent_verdicts_for_missing_tracks(self):
         ev, led = _run(ReplayPool(_records(), experiments_cost(0.5)), prize=60)
         s = build_full_summary(ev, led)
         assert "NOT SUPPORTED" not in s["verdicts"]["h3"]
+        assert s["verdicts"]["h3"].startswith("UNAVAILABLE")
 
     def test_summary_counts_both_charge_types_as_lab_revenue(self):
         recs = _records()
