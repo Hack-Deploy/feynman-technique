@@ -360,6 +360,7 @@ def test_demo_grid_refuses_live_mode_without_each_guard(monkeypatch, tmp_path, e
     assert not cache.exists()
 
 
+@pytest.mark.allow_live_env
 def test_demo_grid_preflight_loads_cap_from_poc_env(monkeypatch, tmp_path, capsys):
     env_path = tmp_path / "poc.env"
     env_path.write_text("DM_MAX_USD=5\n")

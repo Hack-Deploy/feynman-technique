@@ -131,5 +131,5 @@ conclusions) are shown to later runs; no other memory. All settings in `poc/conf
 details in `poc/README.md`. Vendor code is not edited; the vendor agent loop is re-implemented in
 `poc/agent.py` because it cannot be extended from outside.
 
-**Before running:** install `uv` and run `tests/test_poc.py` (not yet run); pick models, seeds and
-API budget for the live run (STOP 1).
+**Before a paid run:** the offline `tests/test_poc.py` suite runs and passes. Pick models and
+seeds, run the spend preflight, and get an approved API budget (STOP 1).
