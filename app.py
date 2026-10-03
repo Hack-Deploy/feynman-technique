@@ -2,7 +2,7 @@
 """Discovery Market – local results app.
 
 One page that runs the simulation and the tests and shows the results.
-Standard library only; listens on localhost.
+Standard library only; listens on localhost (and on HOST, if set).
 
 Run: uv run python app.py   (then open http://localhost:8000)
 """
@@ -96,7 +96,9 @@ class Handler(BaseHTTPRequestHandler):
         self._send(json.dumps(obj).encode(), "application/json", status)
 
     def _local_request(self) -> bool:
-        allowed_hosts = {"localhost", "127.0.0.1"}
+        # Host/Origin allowlist (DNS-rebinding guard): the loopback names, plus the
+        # extra address the operator chose with HOST (e.g. a Tailscale IP).
+        allowed_hosts = {"localhost", "127.0.0.1", "::1", HOST}
         host = self.headers.get("Host")
         if not host:
             return False
@@ -208,11 +210,12 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write(f"  {self.command} {self.path}\n")
 
 
-def _bind(port: int, tries: int = 20) -> ThreadingHTTPServer:
-    """Bind to ``port``, or the next free port if it is taken (e.g. by another app)."""
+def _bind(port: int, tries: int = 20) -> tuple[ThreadingHTTPServer, int]:
+    """Bind to ``port``, or the next free port if it is taken (e.g. by another app).
+    Returns the server and the port it bound."""
     for p in range(port, port + tries):
         try:
-            return ThreadingHTTPServer(("127.0.0.1", p), Handler)
+            return ThreadingHTTPServer(("127.0.0.1", p), Handler), p
         except OSError as e:
             if e.errno != errno.EADDRINUSE:
                 raise
@@ -248,8 +251,7 @@ def _also_host(host: str, port: int) -> str | None:
 
 
 def main() -> None:
-    server = _bind(PORT)
-    port = server.server_address[1]
+    server, port = _bind(PORT)
     _also_ipv6(port)
     remote = _also_host(HOST, port)
     url = f"http://127.0.0.1:{port}"
