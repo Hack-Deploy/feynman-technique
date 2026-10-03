@@ -12,6 +12,7 @@ Run: uv run python report.py
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from pathlib import Path
 
@@ -110,6 +111,13 @@ def build_data(events: list, ledger: list, summary: dict) -> dict:
         "clearing": {s: summary["h2_clearing_prizes"][s] for s in PROB_SOURCES},
         "profits": h1,
         "verdicts": summary["verdicts"],
+        "provenance": {
+            "kind": "simulated",
+            "label": (
+                "Simulated market: pass probabilities are stand-ins derived from "
+                "published benchmark scores, not measured outcomes."
+            ),
+        },
     }
 
 
@@ -117,9 +125,12 @@ def main() -> None:
     events, ledger, summary = load_outputs()
     data = build_data(events, ledger, summary)
     template = (Path(__file__).resolve().parent / "report_template.html").read_text()
-    html = template.replace("/*__DATA__*/null", json.dumps(data, separators=(",", ":")))
+    data_json = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
+    html = template.replace("/*__DATA__*/null", data_json)
     out = OUTPUT_DIR / "report.html"
-    out.write_text(html)
+    tmp = out.with_name(out.name + f".tmp{os.getpid()}")
+    tmp.write_text(html)
+    os.replace(tmp, out)
     print(f"Wrote {out} ({out.stat().st_size // 1024} KB). Open it in a browser.")
 
 

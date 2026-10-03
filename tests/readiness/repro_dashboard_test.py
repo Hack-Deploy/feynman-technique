@@ -119,10 +119,6 @@ def test_report_html_deterministic(sim_copy):
     assert rendered[0] == rendered[1]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: concurrent output writes can corrupt JSON",
-)
 def test_concurrent_runs_do_not_corrupt_outputs(tmp_path):
     copied_repo = _copy_simulation(tmp_path / "concurrent-sim-copy")
     processes = []
@@ -193,10 +189,6 @@ def test_app_command_failure_reported(app_server):
     assert "ran" in result["output"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: /api/data does not report malformed outputs as JSON",
-)
 def test_api_data_with_corrupt_output_returns_json_error(
     app_server, monkeypatch, tmp_path
 ):
@@ -215,10 +207,6 @@ def test_api_data_with_corrupt_output_returns_json_error(
     json.loads(body)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: cross-origin POST requests are accepted",
-)
 def test_app_rejects_cross_origin_post(app_server):
     status, _, _ = _request(
         f"{app_server}/api/run",
@@ -229,19 +217,11 @@ def test_app_rejects_cross_origin_post(app_server):
     assert status == 403
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: query strings break route matching",
-)
 def test_app_root_with_query_string(app_server):
     status, _, _ = _request(f"{app_server}/?x=1")
     assert status == 200
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: embedded JSON does not escape closing script tags",
-)
 def test_report_embed_escapes_script_close(monkeypatch, tmp_path):
     monkeypatch.setattr(report, "load_outputs", lambda: ([], [], {}))
     monkeypatch.setattr(
@@ -314,10 +294,6 @@ def test_report_balance_series_keeps_unknown_solvers():
     assert "fable" in report.balance_series(events)["track_a_replay_seed0"]["points"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="READINESS: dashboard data has no provenance label",
-)
 def test_report_data_carries_provenance(sim_copy, monkeypatch):
     subprocess.run(
         [sys.executable, "run.py"],
@@ -333,10 +309,6 @@ def test_report_data_carries_provenance(sim_copy, monkeypatch):
     assert "provenance" in data
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: clearing caption contradicts the 3-of-5 rule",
-)
 def test_dashboard_clearing_caption_matches_analysis():
     template = (REPO_ROOT / "report_template.html").read_text()
     assert "in at least one seed" not in template
@@ -375,10 +347,6 @@ def test_pitch_pages_present():
     assert slides_pdf.read_bytes().startswith(b"%PDF")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: concurrent commands are not rejected with 409",
-)
 def test_app_second_command_while_busy_gets_409(app_server, monkeypatch):
     monkeypatch.setitem(
         app.COMMANDS,
@@ -407,10 +375,6 @@ def test_app_second_command_while_busy_gets_409(app_server, monkeypatch):
     assert first_response[0][0] == 200
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: foreign Host headers are accepted",
-)
 def test_app_rejects_foreign_host_header(app_server):
     status, _, body = _request(
         f"{app_server}/api/data", headers={"Host": "evil.example"}

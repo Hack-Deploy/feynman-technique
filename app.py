@@ -14,7 +14,9 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
+import urllib.parse
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -29,11 +31,21 @@ COMMANDS = {
 }
 STATIC = {"/index.html": "index.html"}
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
+_BUSY = threading.Lock()
 
 
 def run_command(cmd: list[str]) -> dict:
     start = time.time()
-    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(
+            cmd, cwd=ROOT, capture_output=True, text=True, timeout=600
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "seconds": round(time.time() - start, 1),
+            "output": "Timed out after 600 s.",
+        }
     return {
         "ok": proc.returncode == 0,
         "seconds": round(time.time() - start, 1),
@@ -53,21 +65,71 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, obj: dict, status: int = 200) -> None:
         self._send(json.dumps(obj).encode(), "application/json", status)
 
+    def _local_request(self) -> bool:
+        allowed_hosts = {"localhost", "127.0.0.1"}
+        host = self.headers.get("Host")
+        if not host:
+            return False
+        try:
+            hostname = urllib.parse.urlsplit(f"//{host}").hostname
+        except ValueError:
+            return False
+        if hostname not in allowed_hosts:
+            return False
+
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            try:
+                origin_host = urllib.parse.urlsplit(origin).hostname
+            except ValueError:
+                return False
+            if origin_host not in allowed_hosts:
+                return False
+        return True
+
     def do_GET(self) -> None:
-        if self.path in ("/", "/report"):
+        path = urllib.parse.urlsplit(self.path).path
+        if not self._local_request():
+            self._json({"error": "forbidden"}, 403)
+            return
+        if path in ("/", "/report"):
             html = (ROOT / "report_template.html").read_text()
             self._send(html.encode(), "text/html; charset=utf-8")
-        elif self.path == "/api/data":
-            events, ledger, summary = report.load_outputs()
-            self._json(report.build_data(events, ledger, summary))
-        elif self.path in STATIC:
-            self._send((ROOT / STATIC[self.path]).read_bytes(), "text/html; charset=utf-8")
+        elif path == "/api/data":
+            try:
+                events, ledger, summary = report.load_outputs()
+                data = report.build_data(events, ledger, summary)
+            except Exception as exc:
+                self._json({"error": f"could not read outputs: {exc}"}, 503)
+                return
+            self._json(data)
+        elif path in STATIC:
+            self._send((ROOT / STATIC[path]).read_bytes(), "text/html; charset=utf-8")
         else:
             self._json({"error": "not found"}, 404)
 
     def do_POST(self) -> None:
-        if self.path in COMMANDS:
-            self._json(run_command(COMMANDS[self.path]))
+        path = urllib.parse.urlsplit(self.path).path
+        if not self._local_request():
+            self._json({"error": "forbidden"}, 403)
+            return
+        if path in COMMANDS:
+            if not _BUSY.acquire(blocking=False):
+                self._json(
+                    {
+                        "ok": False,
+                        "seconds": 0,
+                        "output": (
+                            "Another command is already running; try again when it finishes."
+                        ),
+                    },
+                    409,
+                )
+                return
+            try:
+                self._json(run_command(COMMANDS[path]))
+            finally:
+                _BUSY.release()
         else:
             self._json({"error": "not found"}, 404)
 

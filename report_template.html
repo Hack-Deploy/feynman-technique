@@ -55,7 +55,9 @@ td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
 pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(--mono); white-space: pre-wrap; margin: 0; }
 .empty { color: var(--ink-2); font-style: italic; padding: 14px 0; }
-@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { position: static; } }
+.prov { margin: 14px 0 0; font: 600 12px var(--cond); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.prov::before { content: "● "; color: var(--red); }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { position: static; } #clearing, #balances { overflow-x: auto; } #clearing svg, #balances svg { min-width: 720px; } }
 </style>
 </head>
 <body>
@@ -80,9 +82,10 @@ pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(-
   <div class="ctl"><label>Prize per world</label><div class="seg" id="segPrize"></div></div>
   <div class="ctl"><label>Seed</label><div class="seg" id="segSeed"></div></div>
 </div>
+<p class="prov" id="prov"></p>
 
 <h2>Prize needed to solve each world</h2>
-<p class="sub">Smallest prize at which any agent solved the world, in at least one seed. Red rows: worlds with hidden structure.</p>
+<p class="sub">Lowest prize at which the world was solved in at least 3 of 5 seeds. Red rows: worlds with hidden structure.</p>
 <div id="clearing"></div>
 
 <h2>Agent balances over time</h2>
@@ -224,6 +227,8 @@ function drawLedger() {
 }
 
 function render() {
+  $("prov").textContent = DATA.provenance ? DATA.provenance.label : "";
+  $("prov").dataset.kind = DATA.provenance ? DATA.provenance.kind : "";
   seg($("segSource"), DATA.sources, "source");
   seg($("segPrize"), DATA.prizes, "prize");
   seg($("segSeed"), DATA.seeds, "seed");
