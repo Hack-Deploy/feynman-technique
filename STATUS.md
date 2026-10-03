@@ -224,3 +224,70 @@
   - gemini3.1-pro used 17 rounds on hubble and oscillator (cap is 16).
   - ARA verdict vs numeric-only: 19 records pass numerically but fail ARA's explanation
     threshold (none the other way); listed in `output/ara_import_report.json`.
+
+## Phase 5: ForceBench venue and offline solvers (branch `phase5/forcebench`)
+- **Built**:
+  - `dm/wallet.py`: `Wallet(owner, balance)`, credits held as integer milli-credits (so 3 × 0.1
+    can spend a 0.3 balance exactly). `charge()` runs before the simulator. It raises
+    `InsufficientCredits` after logging an `insufficient_credits` event, and leaves balances unchanged.
+  - `dm/venues/forcebench.py`: the 13-launch menu (MDA arXiv 2608.09696 **v3** App. C Table 5;
+    seed launch D0 = action 3, free). One launch per round, priced per launch, budget 8,
+    σ = 0.03 (MDA Table 7), vendor nbody executors unchanged. `run_attempt(...) ->
+    SubmittedAttempt` writes a deterministic transcript to `attempts/transcripts/forcebench/`.
+    `SubmittedAttempt` is a local stand-in until Phase 2 adds it to `dm/types.py` (the module
+    imports the real one when present).
+  - `dm/solvers/_inference.py` (shared), `bayes_lite.py`, `random_menu.py`: library of 5 families
+    (power k/r^p, log k/r, Yukawa k·K1(r/λ)/λ, time-modulated k·cos(ωt+φ)/r, crossover
+    k1/r + k2/r²) × 3 charge roles (p1/p2, p1, p1·p2) = 15 models, sign of k free.
+    Bounded least squares (grid then `least_squares`, with a batched forward-difference Jacobian).
+    Known-σ BIC weights, used as an approximation of MDA's SMC evidence with the e^(−2.5·C_m)
+    prior (no Occam prior here). Design: `bayes_lite` = argmax BIC-weighted between-model
+    variance of predicted positions / price (MDA Eq. 5); `random_menu` = seeded uniform.
+    Both stop when no unused launch's VoI exceeds 12·σ² (the models disagree by less than
+    the noise on every remaining launch). Submission is the top model as a KDK-leapfrog
+    `discovered_law` (dt 0.01, softening 0.05); it reproduces the fitted predictions to 1e-9.
+    **`stated_p_success` = BIC weight of the submitted model**, recorded before submission.
+  - `tests/forcebench_local.py`: a local scorer (vendor `Evaluator`, a fresh unmetered executor,
+    vendor default cases, nMSE = mean_pos_error / `_WORLD_VARS`; nan/inf counts as a fail), a
+    1/r-with-fitted-k baseline (vendor `fit_parameters` on the attempt's paid training data), and
+    the 6 × 5 × 2 grid (`uv run python -m tests.forcebench_local`). This is NOT the oracle. The
+    final check through `dm.settle` waits for Phase 2.
+- **Check**: menu = Table 5; wallet exact-fraction and 1000 × 0.1 conservation; insufficient
+  wallet → partial attempt still submitted; charges = experiments × price; conservation in
+  every attempt; byte-identical transcripts for the same (world, seed); laws equal the fitted
+  integrator for all 15 models (< 0.5 s per call at t = 10); local scoring leaves the wallet
+  untouched; AST test that `dm/venues`, `dm/solvers` never import `dm.oracle`. 119 passed,
+  1 slow skipped (19 s). Full grid (vendor default cases, not hidden cases):
+
+  | world | MDA | MDA menu-LLM | bayes_lite pass | id. | exp. | p̄ | random_menu pass | id. | exp. | p̄ | 1/r+fit pass (bayes / random data) |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | gravity | 100 | 22 | 100 | 5/5 | 2.0 | 0.53 | 100 | 5/5 | 3.4 | 0.60 | 100 / 100 |
+  | yukawa | 100 | 33 | 100 | 4/5 | 2.0 | 0.44 | 100 | 3/5 | 6.0 | 0.58 | 100 / 100 |
+  | coulomb_easy | 56 | 22 | 100 | 2/5* | 2.0 | 0.49 | 100 | 2/5* | 4.2 | 0.49 | 0 / 60 |
+  | oscillator | 100 | 33 | 100 | 5/5 | 1.0 | 1.00 | 100 | 5/5 | 2.8 | 0.99 | 100 / 100 |
+  | fractional | 100 | 56 | 100 | 0/5 | 1.4 | 0.24 | 100 | 0/5 | 4.0 | 0.25 | 100 / 100 |
+  | extra_dimensions | 100 | 22 | 100 | n/a | 2.2 | 0.94 | 100 | n/a | 5.2 | 0.76 | 0 / 80 |
+
+  (pass = % of 5 seeds with nMSE < 0.1; id. = top family+role matches the truth;
+  *the other coulomb seeds chose crossover/p1 with |k1| < 0.03, k2 ≈ −1, the right law inside
+  a nesting family. That tie with power/p1 is why coulomb's p̄ ≈ 0.5.) Wall time per attempt: bayes_lite mean 11.5 s (5–22 s), random_menu mean
+  29.4 s (7–62 s); a local score takes 0.3–1.4 s.
+- **Result**: ✅ PASS for the offline checks. The `dm.settle` (hidden-case) check is pending Phase 2.
+- **Findings**:
+  - The pass threshold is weak on these cases. A plain 1/r law with fitted k passes yukawa
+    (nMSE 0.003–0.056), fractional (0.010–0.069) and oscillator (0.003–0.012) in every seed, and
+    extra_dimensions in 4/5 seeds when it is fitted on random_menu's data. So the pass rates on
+    those worlds say little about whether a solver found the law. Use the id. column. The
+    baseline fails coulomb and extra_dimensions on bayes_lite's data: those attempts are only
+    2–3 launches, centred on r0 = 1.5 and p1 = p2 = 2.
+  - The vendor `coulomb_easy` world is **repulsive**, with a = |p1|/r² and no effect from p2 (the
+    probe's force charge is fixed at 1). This contradicts its docstring and mission text.
+    Not fixed; we score against the simulator.
+  - Vendor softening: force magnitude uses r_eff = √(r² + 0.05²), direction uses unsoftened r;
+    the solvers match.
+  - The library cannot represent extra_dimensions (KK image sum) exactly: crossover
+    approximates it. fractional (exactly 0.16/r², i.e. power p = 2) is never identified.
+    bayes_lite picks Yukawa (λ ≈ 1.3–1.6) in 5/5 seeds, with low stated p (0.12–0.44). It stops
+    after 1–2 launches because no menu launch separates these models by more than the noise.
+    random_menu's picks are spread across families (p̄ 0.25).
+||||||| cdff8ad
