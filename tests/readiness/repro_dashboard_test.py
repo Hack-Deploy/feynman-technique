@@ -420,10 +420,6 @@ def test_app_rejects_foreign_host_header(app_server):
     assert json.loads(body) == {"error": "forbidden"}
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="READINESS: replay ledger omits attempt provenance",
-)
 def test_replay_ledger_records_attempt_source():
     from tests.test_phase1_engine import _replay_run
 

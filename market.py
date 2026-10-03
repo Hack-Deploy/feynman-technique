@@ -444,6 +444,8 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
             }
             if source_attempt_id is not None:
                 context["replayed_attempt_id"] = source_attempt_id
+                context["attempt_source"] = cost_detail.get("attempt_source")
+                context["protocol"] = cost_detail.get("protocol")
             row = LedgerRow(
                 attempt_id=attempt_id,
                 source="market_sim",
