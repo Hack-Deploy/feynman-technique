@@ -65,8 +65,15 @@ def balance_series(events: list[dict]) -> dict[str, dict]:
     series: dict[str, dict] = {}
     for run_id, evs in by_run.items():
         evs.sort(key=lambda e: (e["tick"], e["seq"]))
-        bal = {a: 0.0 for a in AGENTS}
-        pts: dict[str, list] = {a: [] for a in AGENTS}
+        other_agents = {
+            (e.get(side) or "").removeprefix("agent:")
+            for e in evs
+            for side in ("from", "to")
+            if (e.get(side) or "").startswith("agent:")
+        } - set(AGENTS)
+        agents = AGENTS + sorted(other_agents)
+        bal = {a: 0.0 for a in agents}
+        pts: dict[str, list] = {a: [] for a in agents}
         ticks: list[list[int]] = []
         step = 0
         for e in evs:
@@ -85,7 +92,7 @@ def balance_series(events: list[dict]) -> dict[str, dict]:
                 step += 1
             if not ticks or ticks[-1][1] != e["tick"]:
                 ticks.append([step, e["tick"]])
-            for a in AGENTS:
+            for a in agents:
                 pts[a].append([step, round(bal[a], 2)])
         series[run_id] = {"points": pts, "ticks": ticks, "steps": step}
     return series

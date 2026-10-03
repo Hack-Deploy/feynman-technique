@@ -278,7 +278,6 @@ class TestStrictBugRegressions:
             return
         assert _min_agent_balance(events) >= 0
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E6: rounds charges omit count")
     def test_replay_charge_event_always_has_integer_count(self):
         """Emit the experiment count even with the default charge event."""
         record = rec(0)

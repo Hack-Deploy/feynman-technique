@@ -5,15 +5,16 @@ is not built yet. These tests pin down the vendor behaviour the venue will rely 
 using throwaway spike helpers defined here (``_SpikeWallet``, ``_SpikeMeter``,
 ``_ScriptedLLM``). They never edit vendor files and never call a real LLM.
 
-Tests marked ``xfail(strict=True)`` encode the behaviour Phase 3 needs but the
-current scaffolding does not provide; they flip to XPASS (and fail) once fixed.
+The tests distinguish the float-hazard spike from the integer-backed production wallet.
 """
 
 from __future__ import annotations
 
 import contextlib
+import copy
 import json
 import math
+import pickle
 import subprocess
 import sys
 from dataclasses import FrozenInstanceError
@@ -190,13 +191,30 @@ class TestAttemptRecordHoldsRunAttemptOutput:
         with pytest.raises(FrozenInstanceError):
             rec.rounds = 3  # type: ignore[misc]
 
-    @pytest.mark.xfail(strict=True, reason="BUG: frozen record holds mutable dicts; "
-                       "verdict can be edited in place after settlement")
     def test_verdict_is_immutable(self):
         rec = _full_record(verdict={"passed": False, "normalised_mse": 3.0})
-        with contextlib.suppress(TypeError):
+        with pytest.raises(TypeError, match="AttemptRecord fields are read-only"):
             rec.verdict["passed"] = True
         assert rec.passed is False
+
+    def test_nested_fields_are_frozen_and_round_trip(self):
+        data = _full_record().to_dict()
+        data["extra"] = {"nested": {"items": [{"tags": ["a", "b"]}]}}
+        rec = AttemptRecord(**data)
+
+        with pytest.raises(TypeError, match="AttemptRecord fields are read-only"):
+            rec.extra["nested"]["items"][0]["tags"].append("c")
+        assert canonical_json(rec.to_dict()) == canonical_json(data)
+        assert AttemptRecord.from_dict(json.loads(canonical_json(rec.to_dict()))) == rec
+        plain = rec.to_dict()
+        assert type(plain) is dict
+        assert type(plain["extra"]) is dict
+        assert type(plain["extra"]["nested"]["items"]) is list
+        assert type(plain["extra"]["nested"]["items"][0]["tags"]) is list
+        plain["extra"]["nested"]["items"][0]["tags"].append("c")
+        assert rec.extra["nested"]["items"][0]["tags"] == ["a", "b"]
+        assert pickle.loads(pickle.dumps(rec)) == rec
+        assert copy.deepcopy(rec) == rec
 
     def test_numpy_verdict_serialises(self, tmp_path):
         rec = _full_record(verdict={"normalised_mse": np.float64(0.01),
@@ -264,11 +282,17 @@ class TestMeteringSpike:
         _SpikeMeter(_world()["executor"], wallet, 0.5).run([EXP, EXP])
         assert wallet.balance == 0.0
 
-    @pytest.mark.xfail(strict=True, reason="HAZARD: float credits; 3 × 0.1 = "
-                       "0.30000000000000004 > 0.3, so an exactly affordable batch is refused")
     def test_fractional_price_exact_balance(self):
-        wallet = _SpikeWallet(0.3)
-        _SpikeMeter(_world()["executor"], wallet, 0.1).run([EXP] * 3)
+        """The spike shows the float hazard; the real wallet is integer-backed."""
+        from dm.venues.discoverphysics import MeteredExecutor
+        from dm.wallet import Wallet
+
+        wallet = Wallet("s", 0.3)
+        MeteredExecutor(_world()["executor"], wallet, 0.1, "gravity").run([EXP] * 3)
+        assert wallet.balance == 0.0
+        assert wallet.lab_revenue == 0.3
+        assert wallet.events[-1]["type"] == "experiment_charged"
+        assert wallet.events[-1]["count"] == 3
 
     def test_fractional_price_conservation_drift(self):
         """1000 charges of 0.1: lab ends at 99.9999999999986, not 100. The sum is still

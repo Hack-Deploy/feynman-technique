@@ -11,6 +11,8 @@ are not part of this protocol and are left out. Vendor code is not edited.
 from __future__ import annotations
 
 import json
+import sys
+from copy import deepcopy
 from typing import Callable, Optional
 
 from scienceagent import llm_client
@@ -48,7 +50,9 @@ class MeteredExecutor:
             raise ValueError("<run_experiment> must contain a JSON list of experiments")
         priced = [experiment_price(inp, self.cfg, self.hyp) for inp in exp_input]
         total = round(sum(p for p, _ in priced), 6)
-        if not self.account.can_afford(total):
+        # This round's fee is charged when the round ends, so reserve it now; otherwise
+        # a batch that just fits the budget pushes total spend over it.
+        if not self.account.can_afford(round(total + self.cfg.round_fee, 6)):
             self.account.refuse(total, self.round_num, len(exp_input))
             raise OverBudget(total, self.account.remaining)
         results = self.inner.run(exp_input)
@@ -61,12 +65,14 @@ class MeteredExecutor:
 
 class MarketAgent(DiscoveryAgent):
     def __init__(self, *, cfg: Config, hyp: Hypothesis, account: Account,
-                 ledger_entries: list[dict], complete: Optional[Complete] = None, **kwargs):
+                 ledger_entries: list[dict], complete: Optional[Complete] = None,
+                 on_round: Callable[[dict], None] | None = None, **kwargs):
         # Set before super().__init__, which builds the system prompt.
         self.cfg = cfg
         self.hyp = hyp
         self.account = account
         self.ledger_entries = ledger_entries
+        self.on_round = on_round
         self._complete = complete or llm_client.complete
         executor = MeteredExecutor(kwargs.pop("executor"), cfg, hyp, account)
         super().__init__(executor=executor, max_rounds=cfg.max_rounds, min_rounds=1,
@@ -121,6 +127,11 @@ class MarketAgent(DiscoveryAgent):
         entry.update(experiments_cost=self.executor.round_cost, round_fee=fee,
                      spent_so_far=self.account.spent)
         self.conversation_log.append(entry)
+        if self.on_round is not None:
+            try:
+                self.on_round(deepcopy(entry))
+            except Exception as exc:
+                print(f"on_round callback failed: {type(exc).__name__}", file=sys.stderr)
 
     def _status(self, round_num: int) -> str:
         return protocol.status_line(round_num, self.cfg, self.cfg.round_fee,

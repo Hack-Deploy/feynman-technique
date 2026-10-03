@@ -15,10 +15,12 @@ import multiprocessing
 import subprocess
 import time
 from dataclasses import replace
+from pathlib import Path
 
 from dm.settle import prereg_for, settle
 from dm.venues.forcebench import WORLDS, run_attempt
 from dm.wallet import Wallet
+from real_data import _model_label
 from tests.forcebench_local import (
     BASELINE_INV_R_LAW,
     ROOT,
@@ -52,6 +54,11 @@ def _cell(cell: tuple[str, str, int]) -> dict:
         replace(attempt, solver="baseline_inv_r_fit", submitted_law=BASELINE_INV_R_LAW),
     ).verdict
     identified, _ = identify_model(world, _top_model(attempt))
+    transcript_path = Path(attempt.transcript_path)
+    if not transcript_path.is_absolute():
+        transcript_path = ROOT / transcript_path
+    submission = json.loads(transcript_path.read_text()).get("submission") or {}
+    top_model = submission.get("top_model")
     return {
         "solver": solver_name,
         "world": world,
@@ -59,6 +66,11 @@ def _cell(cell: tuple[str, str, int]) -> dict:
         "experiments": attempt.experiments,
         "stated_p": attempt.stated_p_success,
         "identified": identified,
+        "top_model": _model_label(top_model),
+        "top_params": (
+            [float(value) for value in (top_model.get("params") or [])] if top_model else None
+        ),
+        "stopped_reason": attempt.extra.get("stopped_reason"),
         "nmse": _nmse(record.verdict),
         "passed": bool(record.verdict["passed"]),
         "reason": record.verdict.get("reason"),

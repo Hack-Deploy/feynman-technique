@@ -1,0 +1,2254 @@
+{
+  "calibration": {
+    "brier": null,
+    "by_solver": {
+      "ara:fable": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:gemini3.1-pro": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:glm5.2": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:gpt5.5": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:gpt5.6-sol": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:grok4.5": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:kimi-k2.7": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      },
+      "ara:opus4.8-max": {
+        "brier": null,
+        "calibration_in_the_large": null,
+        "mean_stated_p": null,
+        "n": 0,
+        "n_excluded_no_stated_p": 11,
+        "pass_rate": null,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 0,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": null,
+            "pass_rate": null
+          }
+        ]
+      }
+    },
+    "calibration_in_the_large": null,
+    "mean_stated_p": null,
+    "n": 0,
+    "n_excluded_no_stated_p": 88,
+    "pass_rate": null,
+    "reliability": [
+      {
+        "count": 0,
+        "hi": 0.1,
+        "lo": 0.0,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.2,
+        "lo": 0.1,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.3,
+        "lo": 0.2,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.4,
+        "lo": 0.3,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.5,
+        "lo": 0.4,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.6,
+        "lo": 0.5,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.7,
+        "lo": 0.6,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.8,
+        "lo": 0.7,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 0.9,
+        "lo": 0.8,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 0,
+        "hi": 1.0,
+        "lo": 0.9,
+        "mean_p": null,
+        "pass_rate": null
+      }
+    ]
+  },
+  "caveat": "One attempt per (solver, world): within a run each solver can try each world at most once, and a world's outcome for a given solver is identical in every seed (only bid order changes). The '>= 3 of 5 seeds' clearing rule is therefore close to deterministic.",
+  "checks": {
+    "credit_sum_per_run_max_abs": 0.0,
+    "max_attempts_per_solver_world_per_run": 1,
+    "max_draws_per_record_per_run": 1,
+    "n_events": 5539,
+    "n_ledger_rows": 462,
+    "n_runs": 25
+  },
+  "clearing_prizes": {
+    "circle": 20,
+    "coulomb_easy": 20,
+    "dark_matter": 20,
+    "ether": 20,
+    "extra_dimensions": 5,
+    "fractional": 20,
+    "gravity": 20,
+    "hubble": 20,
+    "oscillator": 20,
+    "three_species": 20,
+    "yukawa": 20
+  },
+  "config": {
+    "belief_weight": 2.0,
+    "beliefs": "leave-one-out pass rate per solver, 0.5 fallback",
+    "clearing_rule": "lowest prize solved in >= 3 of 5 seeds, else 'never'",
+    "cost": "rounds x 1 credit (round_charged)",
+    "prizes": [
+      5,
+      20,
+      50,
+      100,
+      200
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "starting_credits": 100.0,
+    "ticks": 200
+  },
+  "hypotheses": {
+    "H1": {
+      "evidence": {
+        "gap": 0.3636363636363637,
+        "pass_rates": {
+          "ara:fable": 0.8181818181818182,
+          "ara:gemini3.1-pro": 0.18181818181818182,
+          "ara:glm5.2": 0.45454545454545453,
+          "ara:gpt5.5": 0.45454545454545453,
+          "ara:gpt5.6-sol": 0.9090909090909091,
+          "ara:grok4.5": 0.8181818181818182,
+          "ara:kimi-k2.7": 0.36363636363636365,
+          "ara:opus4.8-max": 0.45454545454545453
+        },
+        "per_prize": {
+          "5": {
+            "bids": {
+              "ara:fable": 0.0,
+              "ara:gemini3.1-pro": 0.0,
+              "ara:glm5.2": 0.0,
+              "ara:gpt5.5": 0.0,
+              "ara:gpt5.6-sol": 0.0,
+              "ara:grok4.5": 2.0,
+              "ara:kimi-k2.7": 0.0,
+              "ara:opus4.8-max": 0.0
+            },
+            "profit": {
+              "ara:fable": 0.0,
+              "ara:gemini3.1-pro": 0.0,
+              "ara:glm5.2": 0.0,
+              "ara:gpt5.5": 0.0,
+              "ara:gpt5.6-sol": 0.0,
+              "ara:grok4.5": -2.0,
+              "ara:kimi-k2.7": 0.0,
+              "ara:opus4.8-max": 0.0
+            },
+            "status": "NOT_SUPPORTED"
+          },
+          "20": {
+            "bids": {
+              "ara:fable": 5.0,
+              "ara:gemini3.1-pro": 0.6,
+              "ara:glm5.2": 0.4,
+              "ara:gpt5.5": 1.2,
+              "ara:gpt5.6-sol": 3.8,
+              "ara:grok4.5": 4.0,
+              "ara:kimi-k2.7": 0.8,
+              "ara:opus4.8-max": 1.6
+            },
+            "profit": {
+              "ara:fable": 22.4,
+              "ara:gemini3.1-pro": -1.8,
+              "ara:glm5.2": -2.4,
+              "ara:gpt5.5": -7.2,
+              "ara:gpt5.6-sol": 23.4,
+              "ara:grok4.5": 37.2,
+              "ara:kimi-k2.7": 12.0,
+              "ara:opus4.8-max": -7.2
+            },
+            "status": "NOT_SUPPORTED"
+          },
+          "50": {
+            "bids": {
+              "ara:fable": 3.6,
+              "ara:gemini3.1-pro": 0.8,
+              "ara:glm5.2": 2.8,
+              "ara:gpt5.5": 4.0,
+              "ara:gpt5.6-sol": 4.2,
+              "ara:grok4.5": 2.8,
+              "ara:kimi-k2.7": 1.8,
+              "ara:opus4.8-max": 2.6
+            },
+            "profit": {
+              "ara:fable": 93.6,
+              "ara:gemini3.1-pro": -3.2,
+              "ara:glm5.2": 17.0,
+              "ara:gpt5.5": 18.2,
+              "ara:gpt5.6-sol": 122.0,
+              "ara:grok4.5": 74.8,
+              "ara:kimi-k2.7": 0.4,
+              "ara:opus4.8-max": 0.8
+            },
+            "status": "NOT_SUPPORTED"
+          },
+          "100": {
+            "bids": {
+              "ara:fable": 3.4,
+              "ara:gemini3.1-pro": 2.4,
+              "ara:glm5.2": 4.0,
+              "ara:gpt5.5": 3.6,
+              "ara:gpt5.6-sol": 3.2,
+              "ara:grok4.5": 3.0,
+              "ara:kimi-k2.7": 2.4,
+              "ara:opus4.8-max": 3.2
+            },
+            "profit": {
+              "ara:fable": 207.2,
+              "ara:gemini3.1-pro": 21.6,
+              "ara:glm5.2": 52.6,
+              "ara:gpt5.5": 89.6,
+              "ara:gpt5.6-sol": 225.4,
+              "ara:grok4.5": 204.4,
+              "ara:kimi-k2.7": 17.2,
+              "ara:opus4.8-max": 45.8
+            },
+            "status": "NOT_SUPPORTED"
+          },
+          "200": {
+            "bids": {
+              "ara:fable": 3.4,
+              "ara:gemini3.1-pro": 2.4,
+              "ara:glm5.2": 4.0,
+              "ara:gpt5.5": 3.6,
+              "ara:gpt5.6-sol": 3.2,
+              "ara:grok4.5": 3.0,
+              "ara:kimi-k2.7": 2.4,
+              "ara:opus4.8-max": 3.2
+            },
+            "profit": {
+              "ara:fable": 447.2,
+              "ara:gemini3.1-pro": 61.6,
+              "ara:glm5.2": 152.6,
+              "ara:gpt5.5": 209.6,
+              "ara:gpt5.6-sol": 485.4,
+              "ara:grok4.5": 424.4,
+              "ara:kimi-k2.7": 57.2,
+              "ara:opus4.8-max": 125.8
+            },
+            "status": "NOT_SUPPORTED"
+          }
+        },
+        "strength": "each solver's pass rate over its records in this pool",
+        "strong": [
+          "ara:gpt5.6-sol",
+          "ara:fable",
+          "ara:grok4.5"
+        ],
+        "weak": [
+          "ara:glm5.2",
+          "ara:gpt5.5",
+          "ara:opus4.8-max",
+          "ara:kimi-k2.7",
+          "ara:gemini3.1-pro"
+        ]
+      },
+      "question": "Do stronger agents end in profit while weaker agents stop bidding?",
+      "reason": "NOT_SUPPORTED: per-prize outcomes are shown in evidence.",
+      "verdict": "NOT_SUPPORTED"
+    },
+    "H2": {
+      "evidence": {
+        "clearing_prizes": {
+          "circle": 20,
+          "coulomb_easy": 20,
+          "dark_matter": 20,
+          "ether": 20,
+          "extra_dimensions": 5,
+          "fractional": 20,
+          "gravity": 20,
+          "hubble": 20,
+          "oscillator": 20,
+          "three_species": 20,
+          "yukawa": 20
+        },
+        "never": [],
+        "one_attempt_per_cell": true,
+        "seed_dependent_cells": {}
+      },
+      "question": "What prize clears each world?",
+      "reason": "Clearing prizes use the >= 3 of 5 seeds rule; it is near-deterministic (outcomes identical across seeds, only bid order varies).",
+      "verdict": "MEASURED"
+    },
+    "H3": {
+      "evidence": {
+        "charge_event": "round_charged"
+      },
+      "question": "At equal accuracy, does needing fewer experiments earn more?",
+      "reason": "pool charges rounds, not experiments; ARA experiment counts are not exact (PLAN C7)",
+      "verdict": "UNAVAILABLE"
+    },
+    "H4": {
+      "evidence": {
+        "n_attempts_p_from_belief": 462,
+        "n_excluded": 0
+      },
+      "question": "Are the AI scientists' stated chances calibrated?",
+      "reason": "no stated probabilities in this pool (ARA records carry none); models state their chances on /live",
+      "verdict": "UNAVAILABLE"
+    }
+  },
+  "initial_beliefs": {
+    "ara:fable": {
+      "circle": 0.8,
+      "coulomb_easy": 0.9,
+      "dark_matter": 0.8,
+      "ether": 0.8,
+      "extra_dimensions": 0.8,
+      "fractional": 0.8,
+      "gravity": 0.8,
+      "hubble": 0.8,
+      "oscillator": 0.8,
+      "three_species": 0.9,
+      "yukawa": 0.8
+    },
+    "ara:gemini3.1-pro": {
+      "circle": 0.2,
+      "coulomb_easy": 0.2,
+      "dark_matter": 0.2,
+      "ether": 0.2,
+      "extra_dimensions": 0.2,
+      "fractional": 0.2,
+      "gravity": 0.1,
+      "hubble": 0.2,
+      "oscillator": 0.2,
+      "three_species": 0.2,
+      "yukawa": 0.1
+    },
+    "ara:glm5.2": {
+      "circle": 0.4,
+      "coulomb_easy": 0.5,
+      "dark_matter": 0.5,
+      "ether": 0.5,
+      "extra_dimensions": 0.5,
+      "fractional": 0.4,
+      "gravity": 0.4,
+      "hubble": 0.4,
+      "oscillator": 0.5,
+      "three_species": 0.5,
+      "yukawa": 0.4
+    },
+    "ara:gpt5.5": {
+      "circle": 0.4,
+      "coulomb_easy": 0.5,
+      "dark_matter": 0.5,
+      "ether": 0.5,
+      "extra_dimensions": 0.4,
+      "fractional": 0.4,
+      "gravity": 0.4,
+      "hubble": 0.5,
+      "oscillator": 0.5,
+      "three_species": 0.5,
+      "yukawa": 0.4
+    },
+    "ara:gpt5.6-sol": {
+      "circle": 0.9,
+      "coulomb_easy": 0.9,
+      "dark_matter": 0.9,
+      "ether": 1.0,
+      "extra_dimensions": 0.9,
+      "fractional": 0.9,
+      "gravity": 0.9,
+      "hubble": 0.9,
+      "oscillator": 0.9,
+      "three_species": 0.9,
+      "yukawa": 0.9
+    },
+    "ara:grok4.5": {
+      "circle": 0.8,
+      "coulomb_easy": 0.9,
+      "dark_matter": 0.8,
+      "ether": 0.9,
+      "extra_dimensions": 0.8,
+      "fractional": 0.8,
+      "gravity": 0.8,
+      "hubble": 0.8,
+      "oscillator": 0.8,
+      "three_species": 0.8,
+      "yukawa": 0.8
+    },
+    "ara:kimi-k2.7": {
+      "circle": 0.4,
+      "coulomb_easy": 0.4,
+      "dark_matter": 0.4,
+      "ether": 0.4,
+      "extra_dimensions": 0.3,
+      "fractional": 0.3,
+      "gravity": 0.3,
+      "hubble": 0.4,
+      "oscillator": 0.4,
+      "three_species": 0.4,
+      "yukawa": 0.3
+    },
+    "ara:opus4.8-max": {
+      "circle": 0.4,
+      "coulomb_easy": 0.5,
+      "dark_matter": 0.5,
+      "ether": 0.5,
+      "extra_dimensions": 0.4,
+      "fractional": 0.4,
+      "gravity": 0.4,
+      "hubble": 0.5,
+      "oscillator": 0.5,
+      "three_species": 0.5,
+      "yukawa": 0.4
+    }
+  },
+  "lab_revenue": {
+    "5": {
+      "max": 7.0,
+      "mean": 7.0,
+      "min": 7.0,
+      "n": 5,
+      "sd": 0.0
+    },
+    "20": {
+      "max": 169.0,
+      "mean": 143.6,
+      "min": 118.0,
+      "n": 5,
+      "sd": 16.329115101560156
+    },
+    "50": {
+      "max": 271.0,
+      "mean": 226.4,
+      "min": 198.0,
+      "n": 5,
+      "sd": 24.565015774470815
+    },
+    "100": {
+      "max": 258.0,
+      "mean": 236.2,
+      "min": 205.0,
+      "n": 5,
+      "sd": 17.54308980767071
+    },
+    "200": {
+      "max": 258.0,
+      "mean": 236.2,
+      "min": 205.0,
+      "n": 5,
+      "sd": 17.54308980767071
+    }
+  },
+  "n_records": 88,
+  "pool": "ara",
+  "profit_and_bids": {
+    "5": {
+      "ara:fable": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      },
+      "ara:gemini3.1-pro": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      },
+      "ara:glm5.2": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      },
+      "ara:gpt5.5": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      },
+      "ara:gpt5.6-sol": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      },
+      "ara:grok4.5": {
+        "bids": {
+          "max": 2.0,
+          "mean": 2.0,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": -2.0,
+          "mean": -2.0,
+          "min": -2.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 1.0
+      },
+      "ara:kimi-k2.7": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      },
+      "ara:opus4.8-max": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      }
+    },
+    "20": {
+      "ara:fable": {
+        "bids": {
+          "max": 7.0,
+          "mean": 5.0,
+          "min": 3.0,
+          "n": 5,
+          "sd": 1.4142135623730951
+        },
+        "profit": {
+          "max": 37.0,
+          "mean": 22.4,
+          "min": 0.0,
+          "n": 5,
+          "sd": 12.90891165048394
+        },
+        "wins": 3.6
+      },
+      "ara:gemini3.1-pro": {
+        "bids": {
+          "max": 1.0,
+          "mean": 0.6,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.48989794855663565
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": -1.8,
+          "min": -3.0,
+          "n": 5,
+          "sd": 1.4696938456699067
+        },
+        "wins": 0.0
+      },
+      "ara:glm5.2": {
+        "bids": {
+          "max": 1.0,
+          "mean": 0.4,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.48989794855663565
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": -2.4,
+          "min": -6.0,
+          "n": 5,
+          "sd": 2.9393876913398134
+        },
+        "wins": 0.0
+      },
+      "ara:gpt5.5": {
+        "bids": {
+          "max": 2.0,
+          "mean": 1.2,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.7483314773547883
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": -7.2,
+          "min": -12.0,
+          "n": 5,
+          "sd": 4.48998886412873
+        },
+        "wins": 0.0
+      },
+      "ara:gpt5.6-sol": {
+        "bids": {
+          "max": 6.0,
+          "mean": 3.8,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.7204650534085253
+        },
+        "profit": {
+          "max": 38.0,
+          "mean": 23.4,
+          "min": 9.0,
+          "n": 5,
+          "sd": 9.728309205612248
+        },
+        "wins": 3.4
+      },
+      "ara:grok4.5": {
+        "bids": {
+          "max": 5.0,
+          "mean": 4.0,
+          "min": 2.0,
+          "n": 5,
+          "sd": 1.2649110640673518
+        },
+        "profit": {
+          "max": 54.0,
+          "mean": 37.2,
+          "min": 7.0,
+          "n": 5,
+          "sd": 19.79292802998081
+        },
+        "wins": 3.0
+      },
+      "ara:kimi-k2.7": {
+        "bids": {
+          "max": 1.0,
+          "mean": 0.8,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.4
+        },
+        "profit": {
+          "max": 15.0,
+          "mean": 12.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 6.0
+        },
+        "wins": 0.8
+      },
+      "ara:opus4.8-max": {
+        "bids": {
+          "max": 2.0,
+          "mean": 1.6,
+          "min": 1.0,
+          "n": 5,
+          "sd": 0.4898979485566356
+        },
+        "profit": {
+          "max": 6.0,
+          "mean": -7.2,
+          "min": -14.0,
+          "n": 5,
+          "sd": 7.332121111929343
+        },
+        "wins": 0.2
+      }
+    },
+    "50": {
+      "ara:fable": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.6,
+          "min": 3.0,
+          "n": 5,
+          "sd": 0.4898979485566356
+        },
+        "profit": {
+          "max": 158.0,
+          "mean": 93.6,
+          "min": 25.0,
+          "n": 5,
+          "sd": 44.29266304931326
+        },
+        "wins": 2.6
+      },
+      "ara:gemini3.1-pro": {
+        "bids": {
+          "max": 2.0,
+          "mean": 0.8,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.7483314773547883
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": -3.2,
+          "min": -7.0,
+          "n": 5,
+          "sd": 2.925747767665559
+        },
+        "wins": 0.0
+      },
+      "ara:glm5.2": {
+        "bids": {
+          "max": 4.0,
+          "mean": 2.8,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.7483314773547882
+        },
+        "profit": {
+          "max": 76.0,
+          "mean": 17.0,
+          "min": -31.0,
+          "n": 5,
+          "sd": 44.07720499305735
+        },
+        "wins": 1.0
+      },
+      "ara:gpt5.5": {
+        "bids": {
+          "max": 6.0,
+          "mean": 4.0,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.6733200530681511
+        },
+        "profit": {
+          "max": 60.0,
+          "mean": 18.2,
+          "min": -6.0,
+          "n": 5,
+          "sd": 26.07220742476555
+        },
+        "wins": 1.2
+      },
+      "ara:gpt5.6-sol": {
+        "bids": {
+          "max": 8.0,
+          "mean": 4.2,
+          "min": 2.0,
+          "n": 5,
+          "sd": 2.227105745132009
+        },
+        "profit": {
+          "max": 268.0,
+          "mean": 122.0,
+          "min": 24.0,
+          "n": 5,
+          "sd": 82.52757115049491
+        },
+        "wins": 3.4
+      },
+      "ara:grok4.5": {
+        "bids": {
+          "max": 4.0,
+          "mean": 2.8,
+          "min": 1.0,
+          "n": 5,
+          "sd": 0.9797958971132712
+        },
+        "profit": {
+          "max": 127.0,
+          "mean": 74.8,
+          "min": 33.0,
+          "n": 5,
+          "sd": 33.81360672865289
+        },
+        "wins": 1.8
+      },
+      "ara:kimi-k2.7": {
+        "bids": {
+          "max": 3.0,
+          "mean": 1.8,
+          "min": 1.0,
+          "n": 5,
+          "sd": 0.9797958971132713
+        },
+        "profit": {
+          "max": 42.0,
+          "mean": 0.4,
+          "min": -39.0,
+          "n": 5,
+          "sd": 28.089855820206694
+        },
+        "wins": 0.4
+      },
+      "ara:opus4.8-max": {
+        "bids": {
+          "max": 4.0,
+          "mean": 2.6,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.8
+        },
+        "profit": {
+          "max": 70.0,
+          "mean": 0.8,
+          "min": -30.0,
+          "n": 5,
+          "sd": 37.92308004368844
+        },
+        "wins": 0.6
+      }
+    },
+    "100": {
+      "ara:fable": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.4,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.8
+        },
+        "profit": {
+          "max": 355.0,
+          "mean": 207.2,
+          "min": 85.0,
+          "n": 5,
+          "sd": 93.04708485492708
+        },
+        "wins": 2.4
+      },
+      "ara:gemini3.1-pro": {
+        "bids": {
+          "max": 4.0,
+          "mean": 2.4,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.019803902718557
+        },
+        "profit": {
+          "max": 89.0,
+          "mean": 21.6,
+          "min": -30.0,
+          "n": 5,
+          "sd": 49.240633627117354
+        },
+        "wins": 0.4
+      },
+      "ara:glm5.2": {
+        "bids": {
+          "max": 7.0,
+          "mean": 4.0,
+          "min": 1.0,
+          "n": 5,
+          "sd": 2.1908902300206643
+        },
+        "profit": {
+          "max": 129.0,
+          "mean": 52.6,
+          "min": -15.0,
+          "n": 5,
+          "sd": 49.094195176212025
+        },
+        "wins": 1.0
+      },
+      "ara:gpt5.5": {
+        "bids": {
+          "max": 5.0,
+          "mean": 3.6,
+          "min": 2.0,
+          "n": 5,
+          "sd": 1.019803902718557
+        },
+        "profit": {
+          "max": 165.0,
+          "mean": 89.6,
+          "min": -27.0,
+          "n": 5,
+          "sd": 69.78137287270866
+        },
+        "wins": 1.2
+      },
+      "ara:gpt5.6-sol": {
+        "bids": {
+          "max": 6.0,
+          "mean": 3.2,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.7204650534085253
+        },
+        "profit": {
+          "max": 438.0,
+          "mean": 225.4,
+          "min": 74.0,
+          "n": 5,
+          "sd": 146.95931409747394
+        },
+        "wins": 2.6
+      },
+      "ara:grok4.5": {
+        "bids": {
+          "max": 5.0,
+          "mean": 3.0,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.2649110640673518
+        },
+        "profit": {
+          "max": 376.0,
+          "mean": 204.4,
+          "min": -4.0,
+          "n": 5,
+          "sd": 126.27842254320412
+        },
+        "wins": 2.2
+      },
+      "ara:kimi-k2.7": {
+        "bids": {
+          "max": 5.0,
+          "mean": 2.4,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.3564659966250538
+        },
+        "profit": {
+          "max": 83.0,
+          "mean": 17.2,
+          "min": -24.0,
+          "n": 5,
+          "sd": 41.97808952298806
+        },
+        "wins": 0.4
+      },
+      "ara:opus4.8-max": {
+        "bids": {
+          "max": 5.0,
+          "mean": 3.2,
+          "min": 2.0,
+          "n": 5,
+          "sd": 1.16619037896906
+        },
+        "profit": {
+          "max": 78.0,
+          "mean": 45.8,
+          "min": -23.0,
+          "n": 5,
+          "sd": 36.635501907302974
+        },
+        "wins": 0.8
+      }
+    },
+    "200": {
+      "ara:fable": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.4,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.8
+        },
+        "profit": {
+          "max": 755.0,
+          "mean": 447.2,
+          "min": 185.0,
+          "n": 5,
+          "sd": 194.94040114865876
+        },
+        "wins": 2.4
+      },
+      "ara:gemini3.1-pro": {
+        "bids": {
+          "max": 4.0,
+          "mean": 2.4,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.019803902718557
+        },
+        "profit": {
+          "max": 189.0,
+          "mean": 61.6,
+          "min": -30.0,
+          "n": 5,
+          "sd": 97.86030860364176
+        },
+        "wins": 0.4
+      },
+      "ara:glm5.2": {
+        "bids": {
+          "max": 7.0,
+          "mean": 4.0,
+          "min": 1.0,
+          "n": 5,
+          "sd": 2.1908902300206643
+        },
+        "profit": {
+          "max": 329.0,
+          "mean": 152.6,
+          "min": -15.0,
+          "n": 5,
+          "sd": 110.31881072600449
+        },
+        "wins": 1.0
+      },
+      "ara:gpt5.5": {
+        "bids": {
+          "max": 5.0,
+          "mean": 3.6,
+          "min": 2.0,
+          "n": 5,
+          "sd": 1.019803902718557
+        },
+        "profit": {
+          "max": 365.0,
+          "mean": 209.6,
+          "min": -27.0,
+          "n": 5,
+          "sd": 144.3794999298723
+        },
+        "wins": 1.2
+      },
+      "ara:gpt5.6-sol": {
+        "bids": {
+          "max": 6.0,
+          "mean": 3.2,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.7204650534085253
+        },
+        "profit": {
+          "max": 938.0,
+          "mean": 485.4,
+          "min": 174.0,
+          "n": 5,
+          "sd": 309.3687767050838
+        },
+        "wins": 2.6
+      },
+      "ara:grok4.5": {
+        "bids": {
+          "max": 5.0,
+          "mean": 3.0,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.2649110640673518
+        },
+        "profit": {
+          "max": 776.0,
+          "mean": 424.4,
+          "min": -4.0,
+          "n": 5,
+          "sd": 258.9406109516234
+        },
+        "wins": 2.2
+      },
+      "ara:kimi-k2.7": {
+        "bids": {
+          "max": 5.0,
+          "mean": 2.4,
+          "min": 1.0,
+          "n": 5,
+          "sd": 1.3564659966250538
+        },
+        "profit": {
+          "max": 183.0,
+          "mean": 57.2,
+          "min": -24.0,
+          "n": 5,
+          "sd": 90.03421571824792
+        },
+        "wins": 0.4
+      },
+      "ara:opus4.8-max": {
+        "bids": {
+          "max": 5.0,
+          "mean": 3.2,
+          "min": 2.0,
+          "n": 5,
+          "sd": 1.16619037896906
+        },
+        "profit": {
+          "max": 178.0,
+          "mean": 125.8,
+          "min": -23.0,
+          "n": 5,
+          "sd": 75.45965809623047
+        },
+        "wins": 0.8
+      }
+    }
+  },
+  "record_outcomes": {
+    "ara:fable/circle": {
+      "passed": true,
+      "rounds": 10
+    },
+    "ara:fable/coulomb_easy": {
+      "passed": false,
+      "rounds": 8
+    },
+    "ara:fable/dark_matter": {
+      "passed": true,
+      "rounds": 15
+    },
+    "ara:fable/ether": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:fable/extra_dimensions": {
+      "passed": true,
+      "rounds": 10
+    },
+    "ara:fable/fractional": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:fable/gravity": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:fable/hubble": {
+      "passed": true,
+      "rounds": 10
+    },
+    "ara:fable/oscillator": {
+      "passed": true,
+      "rounds": 15
+    },
+    "ara:fable/three_species": {
+      "passed": false,
+      "rounds": 10
+    },
+    "ara:fable/yukawa": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:gemini3.1-pro/circle": {
+      "passed": false,
+      "rounds": 3
+    },
+    "ara:gemini3.1-pro/coulomb_easy": {
+      "passed": false,
+      "rounds": 3
+    },
+    "ara:gemini3.1-pro/dark_matter": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:gemini3.1-pro/ether": {
+      "passed": false,
+      "rounds": 4
+    },
+    "ara:gemini3.1-pro/extra_dimensions": {
+      "passed": false,
+      "rounds": 5
+    },
+    "ara:gemini3.1-pro/fractional": {
+      "passed": false,
+      "rounds": 5
+    },
+    "ara:gemini3.1-pro/gravity": {
+      "passed": true,
+      "rounds": 4
+    },
+    "ara:gemini3.1-pro/hubble": {
+      "passed": false,
+      "rounds": 17
+    },
+    "ara:gemini3.1-pro/oscillator": {
+      "passed": false,
+      "rounds": 17
+    },
+    "ara:gemini3.1-pro/three_species": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:gemini3.1-pro/yukawa": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:glm5.2/circle": {
+      "passed": true,
+      "rounds": 13
+    },
+    "ara:glm5.2/coulomb_easy": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:glm5.2/dark_matter": {
+      "passed": false,
+      "rounds": 16
+    },
+    "ara:glm5.2/ether": {
+      "passed": false,
+      "rounds": 10
+    },
+    "ara:glm5.2/extra_dimensions": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:glm5.2/fractional": {
+      "passed": true,
+      "rounds": 12
+    },
+    "ara:glm5.2/gravity": {
+      "passed": true,
+      "rounds": 15
+    },
+    "ara:glm5.2/hubble": {
+      "passed": true,
+      "rounds": 11
+    },
+    "ara:glm5.2/oscillator": {
+      "passed": false,
+      "rounds": 9
+    },
+    "ara:glm5.2/three_species": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:glm5.2/yukawa": {
+      "passed": true,
+      "rounds": 10
+    },
+    "ara:gpt5.5/circle": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:gpt5.5/coulomb_easy": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:gpt5.5/dark_matter": {
+      "passed": false,
+      "rounds": 10
+    },
+    "ara:gpt5.5/ether": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:gpt5.5/extra_dimensions": {
+      "passed": true,
+      "rounds": 11
+    },
+    "ara:gpt5.5/fractional": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:gpt5.5/gravity": {
+      "passed": true,
+      "rounds": 14
+    },
+    "ara:gpt5.5/hubble": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:gpt5.5/oscillator": {
+      "passed": false,
+      "rounds": 10
+    },
+    "ara:gpt5.5/three_species": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:gpt5.5/yukawa": {
+      "passed": true,
+      "rounds": 12
+    },
+    "ara:gpt5.6-sol/circle": {
+      "passed": true,
+      "rounds": 14
+    },
+    "ara:gpt5.6-sol/coulomb_easy": {
+      "passed": true,
+      "rounds": 11
+    },
+    "ara:gpt5.6-sol/dark_matter": {
+      "passed": true,
+      "rounds": 14
+    },
+    "ara:gpt5.6-sol/ether": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:gpt5.6-sol/extra_dimensions": {
+      "passed": true,
+      "rounds": 12
+    },
+    "ara:gpt5.6-sol/fractional": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:gpt5.6-sol/gravity": {
+      "passed": true,
+      "rounds": 5
+    },
+    "ara:gpt5.6-sol/hubble": {
+      "passed": true,
+      "rounds": 9
+    },
+    "ara:gpt5.6-sol/oscillator": {
+      "passed": true,
+      "rounds": 15
+    },
+    "ara:gpt5.6-sol/three_species": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:gpt5.6-sol/yukawa": {
+      "passed": true,
+      "rounds": 12
+    },
+    "ara:grok4.5/circle": {
+      "passed": true,
+      "rounds": 5
+    },
+    "ara:grok4.5/coulomb_easy": {
+      "passed": false,
+      "rounds": 4
+    },
+    "ara:grok4.5/dark_matter": {
+      "passed": true,
+      "rounds": 4
+    },
+    "ara:grok4.5/ether": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:grok4.5/extra_dimensions": {
+      "passed": true,
+      "rounds": 3
+    },
+    "ara:grok4.5/fractional": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:grok4.5/gravity": {
+      "passed": true,
+      "rounds": 4
+    },
+    "ara:grok4.5/hubble": {
+      "passed": true,
+      "rounds": 4
+    },
+    "ara:grok4.5/oscillator": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:grok4.5/three_species": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:grok4.5/yukawa": {
+      "passed": true,
+      "rounds": 6
+    },
+    "ara:kimi-k2.7/circle": {
+      "passed": false,
+      "rounds": 13
+    },
+    "ara:kimi-k2.7/coulomb_easy": {
+      "passed": false,
+      "rounds": 9
+    },
+    "ara:kimi-k2.7/dark_matter": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:kimi-k2.7/ether": {
+      "passed": false,
+      "rounds": 9
+    },
+    "ara:kimi-k2.7/extra_dimensions": {
+      "passed": true,
+      "rounds": 5
+    },
+    "ara:kimi-k2.7/fractional": {
+      "passed": true,
+      "rounds": 15
+    },
+    "ara:kimi-k2.7/gravity": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:kimi-k2.7/hubble": {
+      "passed": false,
+      "rounds": 8
+    },
+    "ara:kimi-k2.7/oscillator": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:kimi-k2.7/three_species": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:kimi-k2.7/yukawa": {
+      "passed": true,
+      "rounds": 8
+    },
+    "ara:opus4.8-max/circle": {
+      "passed": true,
+      "rounds": 10
+    },
+    "ara:opus4.8-max/coulomb_easy": {
+      "passed": false,
+      "rounds": 8
+    },
+    "ara:opus4.8-max/dark_matter": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:opus4.8-max/ether": {
+      "passed": false,
+      "rounds": 6
+    },
+    "ara:opus4.8-max/extra_dimensions": {
+      "passed": true,
+      "rounds": 14
+    },
+    "ara:opus4.8-max/fractional": {
+      "passed": true,
+      "rounds": 10
+    },
+    "ara:opus4.8-max/gravity": {
+      "passed": true,
+      "rounds": 7
+    },
+    "ara:opus4.8-max/hubble": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:opus4.8-max/oscillator": {
+      "passed": false,
+      "rounds": 13
+    },
+    "ara:opus4.8-max/three_species": {
+      "passed": false,
+      "rounds": 15
+    },
+    "ara:opus4.8-max/yukawa": {
+      "passed": true,
+      "rounds": 6
+    }
+  },
+  "seed_dependent_cells": {},
+  "solved_seed_counts": {
+    "circle": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "coulomb_easy": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "dark_matter": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "ether": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "extra_dimensions": {
+      "5": 5,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "fractional": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "gravity": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "hubble": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "oscillator": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "three_species": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    },
+    "yukawa": {
+      "5": 0,
+      "20": 5,
+      "50": 5,
+      "100": 5,
+      "200": 5
+    }
+  },
+  "solvers": [
+    "ara:fable",
+    "ara:gemini3.1-pro",
+    "ara:glm5.2",
+    "ara:gpt5.5",
+    "ara:gpt5.6-sol",
+    "ara:grok4.5",
+    "ara:kimi-k2.7",
+    "ara:opus4.8-max"
+  ],
+  "source_file": "attempts/fixtures/demo/ara.jsonl",
+  "verdict_rule": "numeric",
+  "worlds": [
+    "circle",
+    "coulomb_easy",
+    "dark_matter",
+    "ether",
+    "extra_dimensions",
+    "fractional",
+    "gravity",
+    "hubble",
+    "oscillator",
+    "three_species",
+    "yukawa"
+  ]
+}

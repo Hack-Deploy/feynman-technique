@@ -77,9 +77,16 @@ def _min_radius(executor, case: dict) -> float:
     return float(np.min(np.linalg.norm(rel, axis=1)))
 
 
-def two_particle_cases(world: str, test_seed: int, executor=None) -> list[dict]:
+def _entropy(test_seed: int, domain: int, salt: str) -> list[int]:
+    """RNG seed material. With a salt (secret-derived hex), the cases cannot be
+    regenerated from the public code and a guessed test seed."""
+    words = [int(salt[i:i + 8], 16) for i in range(0, len(salt), 8)] if salt else []
+    return [test_seed, domain, *words]
+
+
+def two_particle_cases(world: str, test_seed: int, executor=None, salt: str = "") -> list[dict]:
     executor = executor or build_world(world)["executor"]
-    rng = np.random.default_rng([test_seed, 7919])  # 7919: domain-separates from noise seeds
+    rng = np.random.default_rng(_entropy(test_seed, 7919, salt))  # 7919: domain separation
     for _ in range(MAX_REDRAWS):
         r0 = float(rng.uniform(*R0_RANGE))
         theta = float(rng.uniform(0.0, 2 * np.pi))
@@ -105,8 +112,8 @@ def _jitter_xy(rng, xy, sd):
             for x, y in xy]
 
 
-def multi_particle_cases(world: str, test_seed: int) -> list[dict]:
-    rng = np.random.default_rng([test_seed, 104729])
+def multi_particle_cases(world: str, test_seed: int, salt: str = "") -> list[dict]:
+    rng = np.random.default_rng(_entropy(test_seed, 104729, salt))
     cases = default_cases(world)
     for c in cases:
         if world == "circle":
@@ -131,15 +138,15 @@ def _valid(world: str, cases: list[dict], executor) -> bool:
         return False
 
 
-def hidden_cases(world: str, test_seed: int) -> tuple[list[dict], float, bool]:
+def hidden_cases(world: str, test_seed: int, salt: str = "") -> tuple[list[dict], float, bool]:
     """(test_cases, norm_variance, public_tests) for one world and test seed."""
     if world not in PUBLIC_WORLDS:
         raise ValueError(f"unknown or non-public world {world!r}")
     executor = build_world(world)["executor"]
     if world in TWO_PARTICLE_WORLDS:
-        cases, public = two_particle_cases(world, test_seed, executor), False
+        cases, public = two_particle_cases(world, test_seed, executor, salt), False
     else:
-        cases, public = multi_particle_cases(world, test_seed), False
+        cases, public = multi_particle_cases(world, test_seed, salt), False
         if not _valid(world, cases, executor):
             cases, public = default_cases(world), True
     return cases, norm_variance(world, cases, executor), public

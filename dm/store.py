@@ -7,6 +7,7 @@ Records are never rewritten. A corrected record is appended with the same
 from __future__ import annotations
 
 import json
+import os
 import warnings
 from pathlib import Path
 from typing import Callable, Iterable
@@ -29,6 +30,8 @@ class AttemptStore:
             for r in records:
                 # One write per line (atomic with O_APPEND on local filesystems); no NaN.
                 f.write(canonical_json(r.to_dict()) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
                 n += 1
         return n
 

@@ -1,0 +1,973 @@
+{
+  "calibration": {
+    "brier": 0.24769480822524761,
+    "by_solver": {
+      "bayes_lite": {
+        "brier": 0.27123348283630394,
+        "calibration_in_the_large": -0.3603222511105313,
+        "mean_stated_p": 0.6063444155561354,
+        "n": 30,
+        "n_excluded_no_stated_p": 0,
+        "pass_rate": 0.9666666666666667,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 3,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": 0.12528356713016756,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 2,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": 0.2667096594696802,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 2,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": 0.3354590359823575,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 3,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": 0.45814758499124775,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 9,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": 0.5452228303704402,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 1,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": 0.6154750425454601,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 0,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 1,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": 0.8278644995533782,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 9,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": 0.9872618448869935,
+            "pass_rate": 0.8888888888888888
+          }
+        ]
+      },
+      "random_menu": {
+        "brier": 0.22415613361419123,
+        "calibration_in_the_large": -0.38860231218448205,
+        "mean_stated_p": 0.611397687815518,
+        "n": 30,
+        "n_excluded_no_stated_p": 0,
+        "pass_rate": 1.0,
+        "reliability": [
+          {
+            "count": 0,
+            "hi": 0.1,
+            "lo": 0.0,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 1,
+            "hi": 0.2,
+            "lo": 0.1,
+            "mean_p": 0.1450600273056999,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 3,
+            "hi": 0.3,
+            "lo": 0.2,
+            "mean_p": 0.2449376611374137,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 5,
+            "hi": 0.4,
+            "lo": 0.3,
+            "mean_p": 0.3690850867256693,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 0,
+            "hi": 0.5,
+            "lo": 0.4,
+            "mean_p": null,
+            "pass_rate": null
+          },
+          {
+            "count": 8,
+            "hi": 0.6,
+            "lo": 0.5,
+            "mean_p": 0.528555516661093,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 3,
+            "hi": 0.7,
+            "lo": 0.6,
+            "mean_p": 0.6436973651537624,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 1,
+            "hi": 0.8,
+            "lo": 0.7,
+            "mean_p": 0.7071318424163895,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 1,
+            "hi": 0.9,
+            "lo": 0.8,
+            "mean_p": 0.8171392923038446,
+            "pass_rate": 1.0
+          },
+          {
+            "count": 8,
+            "hi": 1.0,
+            "lo": 0.9,
+            "mean_p": 0.991603103331123,
+            "pass_rate": 1.0
+          }
+        ]
+      }
+    },
+    "calibration_in_the_large": -0.3744622816475066,
+    "mean_stated_p": 0.6088710516858267,
+    "n": 60,
+    "n_excluded_no_stated_p": 0,
+    "pass_rate": 0.9833333333333333,
+    "reliability": [
+      {
+        "count": 0,
+        "hi": 0.1,
+        "lo": 0.0,
+        "mean_p": null,
+        "pass_rate": null
+      },
+      {
+        "count": 4,
+        "hi": 0.2,
+        "lo": 0.1,
+        "mean_p": 0.13022768217405065,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 5,
+        "hi": 0.3,
+        "lo": 0.2,
+        "mean_p": 0.2536464604703203,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 7,
+        "hi": 0.4,
+        "lo": 0.3,
+        "mean_p": 0.35947764365615165,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 3,
+        "hi": 0.5,
+        "lo": 0.4,
+        "mean_p": 0.45814758499124775,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 17,
+        "hi": 0.6,
+        "lo": 0.5,
+        "mean_p": 0.537379388624865,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 4,
+        "hi": 0.7,
+        "lo": 0.6,
+        "mean_p": 0.6366417845016868,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 1,
+        "hi": 0.8,
+        "lo": 0.7,
+        "mean_p": 0.7071318424163895,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 2,
+        "hi": 0.9,
+        "lo": 0.8,
+        "mean_p": 0.8225018959286114,
+        "pass_rate": 1.0
+      },
+      {
+        "count": 17,
+        "hi": 1.0,
+        "lo": 0.9,
+        "mean_p": 0.989304790037172,
+        "pass_rate": 0.9411764705882353
+      }
+    ]
+  },
+  "caveat": "5 settled attempts per (solver, world), drawn without replacement within a run; first launch free, each paid launch 1 credit (experiment_charged)",
+  "checks": {
+    "credit_sum_per_run_max_abs": 0.0,
+    "max_attempts_per_solver_world_per_run": 2,
+    "max_draws_per_record_per_run": 1,
+    "n_events": 1612,
+    "n_ledger_rows": 142,
+    "n_runs": 25
+  },
+  "clearing_prizes": {
+    "coulomb_easy": 5,
+    "extra_dimensions": 5,
+    "fractional": 2,
+    "gravity": 5,
+    "oscillator": 2,
+    "yukawa": 5
+  },
+  "config": {
+    "belief_weight": 2.0,
+    "beliefs": "leave-one-out pass rate per solver, 0.5 fallback",
+    "clearing_rule": "lowest prize solved in >= 3 of 5 seeds, else 'never'",
+    "cost": "5 settled attempts per (solver, world), drawn without replacement within a run; first launch free, each paid launch 1 credit (experiment_charged)",
+    "prizes": [
+      2,
+      5,
+      10,
+      20,
+      50
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "starting_credits": 100.0,
+    "ticks": 200
+  },
+  "hypotheses": {
+    "H1": {
+      "evidence": {
+        "gap": 0.033333333333333326,
+        "pass_rates": {
+          "bayes_lite": 0.9666666666666667,
+          "random_menu": 1.0
+        },
+        "strength": "each solver's pass rate over its records in this pool",
+        "strong": [
+          "random_menu"
+        ],
+        "weak": [
+          "bayes_lite"
+        ]
+      },
+      "question": "Do stronger agents end in profit while weaker agents stop bidding?",
+      "reason": "solvers are about equally strong in this pool: pass rates {'bayes_lite': 0.9666666666666667, 'random_menu': 1.0}",
+      "verdict": "UNAVAILABLE"
+    },
+    "H2": {
+      "evidence": {
+        "clearing_prizes": {
+          "coulomb_easy": 5,
+          "extra_dimensions": 5,
+          "fractional": 2,
+          "gravity": 5,
+          "oscillator": 2,
+          "yukawa": 5
+        },
+        "never": [],
+        "one_attempt_per_cell": false,
+        "seed_dependent_cells": {}
+      },
+      "question": "What prize clears each world?",
+      "reason": "Clearing prizes use the >= 3 of 5 seeds rule; outcomes may vary across seeds.",
+      "verdict": "MEASURED"
+    },
+    "H3": {
+      "evidence": {
+        "pairs": [
+          {
+            "fewer_experiments": "bayes_lite",
+            "more_experiments": "random_menu",
+            "per_prize": {
+              "5": {
+                "fewer_experiments_higher": true,
+                "fewer_experiments_profit": 11.2,
+                "more_experiments_profit": 1.6
+              },
+              "10": {
+                "fewer_experiments_higher": true,
+                "fewer_experiments_profit": 21.4,
+                "more_experiments_profit": 17.6
+              },
+              "20": {
+                "fewer_experiments_higher": false,
+                "fewer_experiments_profit": 49.4,
+                "more_experiments_profit": 49.6
+              },
+              "50": {
+                "fewer_experiments_higher": false,
+                "fewer_experiments_profit": 133.4,
+                "more_experiments_profit": 145.6
+              }
+            }
+          }
+        ],
+        "per_agent": {
+          "bayes_lite": {
+            "attempt_started_events": 84,
+            "attempts": 24,
+            "experiments_per_attempt": 1.7083333333333333,
+            "pass_rate": 0.9583333333333334
+          },
+          "random_menu": {
+            "attempt_started_events": 58,
+            "attempts": 18,
+            "experiments_per_attempt": 4.333333333333333,
+            "pass_rate": 1.0
+          }
+        }
+      },
+      "question": "At equal accuracy, does needing fewer experiments earn more?",
+      "reason": "PARTIAL: compared profits are shown for eligible pairs.",
+      "verdict": "PARTIAL"
+    },
+    "H4": {
+      "evidence": {
+        "n_attempts_p_from_belief": 0,
+        "n_excluded": 0,
+        "per_agent": {
+          "bayes_lite": {
+            "brier": 0.26626574706830053,
+            "calibration_in_the_large": -0.32116714957907977,
+            "mean_stated_p": 0.6371661837542536,
+            "n": 24,
+            "n_excluded": 0,
+            "n_excluded_no_stated_p": 0,
+            "pass_rate": 0.9583333333333334,
+            "reliability": [
+              {
+                "count": 0,
+                "hi": 0.1,
+                "lo": 0.0,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 3,
+                "hi": 0.2,
+                "lo": 0.1,
+                "mean_p": 0.12528356713016756,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 0,
+                "hi": 0.3,
+                "lo": 0.2,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 2,
+                "hi": 0.4,
+                "lo": 0.3,
+                "mean_p": 0.3354590359823575,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 3,
+                "hi": 0.5,
+                "lo": 0.4,
+                "mean_p": 0.45814758499124775,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 6,
+                "hi": 0.6,
+                "lo": 0.5,
+                "mean_p": 0.5262592963728008,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 0,
+                "hi": 0.7,
+                "lo": 0.6,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 0,
+                "hi": 0.8,
+                "lo": 0.7,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 1,
+                "hi": 0.9,
+                "lo": 0.8,
+                "mean_p": 0.8278644995533782,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 9,
+                "hi": 1.0,
+                "lo": 0.9,
+                "mean_p": 0.9872618448869935,
+                "pass_rate": 0.8888888888888888
+              }
+            ]
+          },
+          "random_menu": {
+            "brier": 0.24750316808104397,
+            "calibration_in_the_large": -0.4014078395393357,
+            "mean_stated_p": 0.5985921604606643,
+            "n": 18,
+            "n_excluded": 0,
+            "n_excluded_no_stated_p": 0,
+            "pass_rate": 1.0,
+            "reliability": [
+              {
+                "count": 0,
+                "hi": 0.1,
+                "lo": 0.0,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 1,
+                "hi": 0.2,
+                "lo": 0.1,
+                "mean_p": 0.1450600273056999,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 3,
+                "hi": 0.3,
+                "lo": 0.2,
+                "mean_p": 0.2449376611374137,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 2,
+                "hi": 0.4,
+                "lo": 0.3,
+                "mean_p": 0.3557075926699813,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 0,
+                "hi": 0.5,
+                "lo": 0.4,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 4,
+                "hi": 0.6,
+                "lo": 0.5,
+                "mean_p": 0.5267626961010481,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 2,
+                "hi": 0.7,
+                "lo": 0.6,
+                "mean_p": 0.6511400282307563,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 0,
+                "hi": 0.8,
+                "lo": 0.7,
+                "mean_p": null,
+                "pass_rate": null
+              },
+              {
+                "count": 1,
+                "hi": 0.9,
+                "lo": 0.8,
+                "mean_p": 0.8171392923038446,
+                "pass_rate": 1.0
+              },
+              {
+                "count": 5,
+                "hi": 1.0,
+                "lo": 0.9,
+                "mean_p": 0.991380111812901,
+                "pass_rate": 1.0
+              }
+            ]
+          }
+        },
+        "pooled": {
+          "brier": 0.2582246417880477,
+          "calibration_in_the_large": -0.3555560167049038,
+          "mean_stated_p": 0.6206344594855724,
+          "n": 42,
+          "n_excluded": 0,
+          "n_excluded_no_stated_p": 0,
+          "pass_rate": 0.9761904761904762,
+          "reliability": [
+            {
+              "count": 0,
+              "hi": 0.1,
+              "lo": 0.0,
+              "mean_p": null,
+              "pass_rate": null
+            },
+            {
+              "count": 4,
+              "hi": 0.2,
+              "lo": 0.1,
+              "mean_p": 0.13022768217405065,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 3,
+              "hi": 0.3,
+              "lo": 0.2,
+              "mean_p": 0.2449376611374137,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 4,
+              "hi": 0.4,
+              "lo": 0.3,
+              "mean_p": 0.3455833143261694,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 3,
+              "hi": 0.5,
+              "lo": 0.4,
+              "mean_p": 0.45814758499124775,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 10,
+              "hi": 0.6,
+              "lo": 0.5,
+              "mean_p": 0.5264606562640997,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 2,
+              "hi": 0.7,
+              "lo": 0.6,
+              "mean_p": 0.6511400282307563,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 0,
+              "hi": 0.8,
+              "lo": 0.7,
+              "mean_p": null,
+              "pass_rate": null
+            },
+            {
+              "count": 2,
+              "hi": 0.9,
+              "lo": 0.8,
+              "mean_p": 0.8225018959286114,
+              "pass_rate": 1.0
+            },
+            {
+              "count": 14,
+              "hi": 1.0,
+              "lo": 0.9,
+              "mean_p": 0.988732654503389,
+              "pass_rate": 0.9285714285714286
+            }
+          ]
+        }
+      },
+      "question": "Are the AI scientists' stated chances calibrated?",
+      "reason": "NOT_SUPPORTED: pooled calibration-in-the-large is -0.356 (threshold \u00b10.10).",
+      "verdict": "NOT_SUPPORTED"
+    }
+  },
+  "initial_beliefs": {
+    "bayes_lite": {
+      "coulomb_easy": 0.96,
+      "extra_dimensions": 1.0,
+      "fractional": 0.96,
+      "gravity": 0.96,
+      "oscillator": 0.96,
+      "yukawa": 0.96
+    },
+    "random_menu": {
+      "coulomb_easy": 1.0,
+      "extra_dimensions": 1.0,
+      "fractional": 1.0,
+      "gravity": 1.0,
+      "oscillator": 1.0,
+      "yukawa": 1.0
+    }
+  },
+  "lab_revenue": {
+    "2": {
+      "max": 3.0,
+      "mean": 2.4,
+      "min": 2.0,
+      "n": 5,
+      "sd": 0.4898979485566356
+    },
+    "5": {
+      "max": 23.0,
+      "mean": 17.2,
+      "min": 12.0,
+      "n": 5,
+      "sd": 4.1182520563948
+    },
+    "10": {
+      "max": 26.0,
+      "mean": 21.0,
+      "min": 15.0,
+      "n": 5,
+      "sd": 3.63318042491699
+    },
+    "20": {
+      "max": 26.0,
+      "mean": 21.0,
+      "min": 15.0,
+      "n": 5,
+      "sd": 3.63318042491699
+    },
+    "50": {
+      "max": 26.0,
+      "mean": 21.0,
+      "min": 15.0,
+      "n": 5,
+      "sd": 3.63318042491699
+    }
+  },
+  "n_records": 60,
+  "pool": "forcebench",
+  "profit_and_bids": {
+    "2": {
+      "bayes_lite": {
+        "bids": {
+          "max": 2.0,
+          "mean": 2.0,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 2.0,
+          "mean": 1.6,
+          "min": 1.0,
+          "n": 5,
+          "sd": 0.4898979485566356
+        },
+        "wins": 2.0
+      },
+      "random_menu": {
+        "bids": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "profit": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "n": 5,
+          "sd": 0.0
+        },
+        "wins": 0.0
+      }
+    },
+    "5": {
+      "bayes_lite": {
+        "bids": {
+          "max": 6.0,
+          "mean": 4.6,
+          "min": 4.0,
+          "n": 5,
+          "sd": 0.7999999999999999
+        },
+        "profit": {
+          "max": 14.0,
+          "mean": 11.2,
+          "min": 7.0,
+          "n": 5,
+          "sd": 2.481934729198171
+        },
+        "wins": 4.0
+      },
+      "random_menu": {
+        "bids": {
+          "max": 3.0,
+          "mean": 2.0,
+          "min": 1.0,
+          "n": 5,
+          "sd": 0.6324555320336759
+        },
+        "profit": {
+          "max": 5.0,
+          "mean": 1.6,
+          "min": -1.0,
+          "n": 5,
+          "sd": 2.154065922853802
+        },
+        "wins": 2.0
+      }
+    },
+    "10": {
+      "bayes_lite": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.4,
+          "min": 3.0,
+          "n": 5,
+          "sd": 0.4898979485566356
+        },
+        "profit": {
+          "max": 34.0,
+          "mean": 21.4,
+          "min": 13.0,
+          "n": 5,
+          "sd": 7.863841300534999
+        },
+        "wins": 2.8
+      },
+      "random_menu": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.2,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.7483314773547882
+        },
+        "profit": {
+          "max": 24.0,
+          "mean": 17.6,
+          "min": 6.0,
+          "n": 5,
+          "sd": 6.343500610861483
+        },
+        "wins": 3.2
+      }
+    },
+    "20": {
+      "bayes_lite": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.4,
+          "min": 3.0,
+          "n": 5,
+          "sd": 0.4898979485566356
+        },
+        "profit": {
+          "max": 74.0,
+          "mean": 49.4,
+          "min": 33.0,
+          "n": 5,
+          "sd": 15.344054223053307
+        },
+        "wins": 2.8
+      },
+      "random_menu": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.2,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.7483314773547882
+        },
+        "profit": {
+          "max": 64.0,
+          "mean": 49.6,
+          "min": 26.0,
+          "n": 5,
+          "sd": 13.484806264830059
+        },
+        "wins": 3.2
+      }
+    },
+    "50": {
+      "bayes_lite": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.4,
+          "min": 3.0,
+          "n": 5,
+          "sd": 0.4898979485566356
+        },
+        "profit": {
+          "max": 194.0,
+          "mean": 133.4,
+          "min": 93.0,
+          "n": 5,
+          "sd": 37.792062658711814
+        },
+        "wins": 2.8
+      },
+      "random_menu": {
+        "bids": {
+          "max": 4.0,
+          "mean": 3.2,
+          "min": 2.0,
+          "n": 5,
+          "sd": 0.7483314773547882
+        },
+        "profit": {
+          "max": 184.0,
+          "mean": 145.6,
+          "min": 86.0,
+          "n": 5,
+          "sd": 35.758076010881794
+        },
+        "wins": 3.2
+      }
+    }
+  },
+  "record_outcomes": {
+    "bayes_lite/coulomb_easy": {
+      "passed": true,
+      "rounds": 2
+    },
+    "bayes_lite/extra_dimensions": {
+      "passed": true,
+      "rounds": 2
+    },
+    "bayes_lite/fractional": {
+      "passed": true,
+      "rounds": 2
+    },
+    "bayes_lite/gravity": {
+      "passed": true,
+      "rounds": 2
+    },
+    "bayes_lite/oscillator": {
+      "passed": true,
+      "rounds": 1
+    },
+    "bayes_lite/yukawa": {
+      "passed": true,
+      "rounds": 2
+    },
+    "random_menu/coulomb_easy": {
+      "passed": true,
+      "rounds": 6
+    },
+    "random_menu/extra_dimensions": {
+      "passed": true,
+      "rounds": 8
+    },
+    "random_menu/fractional": {
+      "passed": true,
+      "rounds": 8
+    },
+    "random_menu/gravity": {
+      "passed": true,
+      "rounds": 2
+    },
+    "random_menu/oscillator": {
+      "passed": true,
+      "rounds": 2
+    },
+    "random_menu/yukawa": {
+      "passed": true,
+      "rounds": 8
+    }
+  },
+  "seed_dependent_cells": {},
+  "solved_seed_counts": {
+    "coulomb_easy": {
+      "2": 0,
+      "5": 5,
+      "10": 5,
+      "20": 5,
+      "50": 5
+    },
+    "extra_dimensions": {
+      "2": 0,
+      "5": 5,
+      "10": 5,
+      "20": 5,
+      "50": 5
+    },
+    "fractional": {
+      "2": 5,
+      "5": 5,
+      "10": 5,
+      "20": 5,
+      "50": 5
+    },
+    "gravity": {
+      "2": 0,
+      "5": 5,
+      "10": 5,
+      "20": 5,
+      "50": 5
+    },
+    "oscillator": {
+      "2": 5,
+      "5": 5,
+      "10": 5,
+      "20": 5,
+      "50": 5
+    },
+    "yukawa": {
+      "2": 0,
+      "5": 5,
+      "10": 5,
+      "20": 5,
+      "50": 5
+    }
+  },
+  "solvers": [
+    "bayes_lite",
+    "random_menu"
+  ],
+  "source_file": "attempts/fixtures/demo/forcebench_settle.json",
+  "verdict_rule": "numeric",
+  "worlds": [
+    "coulomb_easy",
+    "extra_dimensions",
+    "fractional",
+    "gravity",
+    "oscillator",
+    "yukawa"
+  ]
+}
