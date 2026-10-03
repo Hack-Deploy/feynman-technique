@@ -392,9 +392,9 @@
 
 # Current state and what is outstanding (2026-10-03, evening)
 
-Tests on `real-attempts`: 379 passed, 14 xfailed (documented bugs), 3 skipped (2 need
-`hypothesis`, 1 slow grid behind `--runslow`), 0 failed. Nothing in `dm/` is wired into the
-frontend (`app.py`, `report.py`) yet; that integration is in progress separately.
+Frontend: the results app now has a "Real attempts" page (`/real`, PR #16) that runs a live
+ForceBench attempt through `dm.settle` and shows the ARA replay and the settled ForceBench grid.
+`poc/` (bounty benchmark, PR by Stefan) is a separate prototype with its own agent loop.
 
 | Phase | State | Outstanding |
 |---|---|---|
@@ -407,7 +407,7 @@ frontend (`app.py`, `report.py`) yet; that integration is in progress separately
 | 5 ForceBench + offline solvers | ✅ done offline and through `dm.settle` | `llm_menu` (live only); pass rates overstate identification on yukawa/fractional/oscillator/extra_dimensions (see Phase 5 findings) |
 | 6 Live grid | ⛔ blocked | STOP 1 budget |
 | 7 Markets on real attempts | 🟡 partly | ARA replay sweep exists (`dm/replay.py`). Missing: ForceBench and live pools, H1–H4 from the log, H3 on ForceBench, `dm/calibration.py` (Brier + reliability), `dm/live_market.py` |
-| 8 Dashboard, report, demo | ⛔ not started | `dashboard.html`, `REPORT.md`, `DEMO.md`, README "three ways to run"; `REPORT_DRAFT.md` exists from Phase 4 |
+| 8 Dashboard, report, demo | 🟡 partly | `/real` page in the app (PR #16). Missing: calibration view, replay slider, failure-ledger view, `REPORT.md`, `DEMO.md`, README "three ways to run" |
 
 **Known bugs still marked xfail** (14): float credits in the DP venue spike (3 × 0.1 > 0.3),
 mutable verdict dicts inside frozen records, `analysis.compute_clearing_prizes` and
@@ -418,6 +418,6 @@ non-cdnjs hosts and drops unknown solver names. Several are fixed on the unmerge
 `review/remaining-readiness` branch; rerun the suite after merging it (stale xfails will
 XPASS-fail and should be removed).
 
-**Loose ends**: `forcebench_demo.py` (untracked, repo root) runs one ForceBench attempt end to
-end; commit it or move it under `dm/`. `hypothesis` is not installed, so 2 property tests skip.
+**Loose ends**: `forcebench_demo.py` (repo root) runs one ForceBench attempt end to end.
+`hypothesis` is not installed, so 2 property tests skip.
 >>>>>>> 3554238 (STATUS: Phase 2 state (oracle cheatable via stack/simulator), per-phase outstanding work)
