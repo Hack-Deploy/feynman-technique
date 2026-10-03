@@ -62,7 +62,7 @@ def _record(world, model, seed, nmse, passed):
 
 def test_build_real_data_when_files_are_missing(monkeypatch, tmp_path):
     for name in (
-        "ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID", "FORCEBENCH_SNAPSHOT", "SIM_SUMMARY"
+        "ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID", "SIM_SUMMARY"
     ):
         monkeypatch.setattr(real_data, name, tmp_path / f"missing-{name}.json")
 
@@ -115,7 +115,6 @@ def test_forcebench_grid_aggregation(monkeypatch, tmp_path):
     grid_path = tmp_path / "forcebench_settle.json"
     grid_path.write_text(json.dumps({"results": rows}))
     monkeypatch.setattr(real_data, "FORCEBENCH_GRID", grid_path)
-    monkeypatch.setattr(real_data, "FORCEBENCH_SNAPSHOT", tmp_path / "missing-snapshot.json")
 
     data = real_data.forcebench_data()
     cells = {(row["solver"], row["world"]): row for row in data["table"]}
@@ -158,8 +157,9 @@ def test_forcebench_snapshot_fallback_and_menu(monkeypatch, tmp_path):
             "baseline_passed": False, "experiments": 2, "stated_p": 0.6,
         }],
     }))
-    monkeypatch.setattr(real_data, "FORCEBENCH_GRID", tmp_path / "missing-output.json")
-    monkeypatch.setattr(real_data, "FORCEBENCH_SNAPSHOT", snapshot_path)
+    grid_path = tmp_path / "missing-output.json"
+    monkeypatch.setattr(real_data, "FORCEBENCH_GRID", grid_path)
+    monkeypatch.setattr(real_data, "SNAPSHOTS", {grid_path: snapshot_path})
 
     data = real_data.forcebench_data()
 

@@ -434,3 +434,8 @@ XPASS-fail and should be removed).
 
 - Generated and committed the 60-cell ForceBench grid snapshot at code HEAD `7cbf98b`.
 - Check with the snapshot present: full suite 413 passed, 5 skipped, 14 xfailed.
+
+## ForceBench snapshot consolidation
+
+- Consolidated the rich 60-row ForceBench snapshot into `attempts/fixtures/demo/forcebench_settle.json`; removed the duplicate `web/data` copy and restored `real_data._source()` fallback.
+- Verification: targeted snapshot/app/live tests 20 passed, 1 skipped; full suite 455 passed, 5 skipped, 14 xfailed.

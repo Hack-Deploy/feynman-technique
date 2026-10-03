@@ -23,6 +23,8 @@ def test_page_data_falls_back_to_snapshots(monkeypatch, tmp_path):
     assert ara["available"] and ara["snapshot"] and len(ara["attempts"]) == 88
     assert "ARA Labs" in ara["attribution"]
     assert fb["available"] and fb["snapshot"] and len(fb["table"]) == 12
+    assert len(fb["attempts"]) == 60
+    assert all(attempt["top_model"] is not None for attempt in fb["attempts"])
 
 
 def test_generated_outputs_take_precedence(monkeypatch, tmp_path):

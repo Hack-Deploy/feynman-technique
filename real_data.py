@@ -20,7 +20,6 @@ OUTPUT_DIR = ROOT / "output"
 ARA_STORE = ROOT / "attempts" / "ara.jsonl"
 ARA_SUMMARY = OUTPUT_DIR / "replay_ara" / "summary.json"
 FORCEBENCH_GRID = OUTPUT_DIR / "forcebench_settle.json"
-FORCEBENCH_SNAPSHOT = ROOT / "web" / "data" / "forcebench_settle.json"
 SIM_SUMMARY = OUTPUT_DIR / "summary.json"
 # Committed snapshots, used when the generated files above are missing (fresh clone,
 # offline demo). See attempts/fixtures/demo/README.md.
@@ -130,18 +129,9 @@ def forcebench_data() -> dict:
     )
     from dm.solvers._inference import MODEL_FAMILIES, ROLES
 
-    grid = _read_json(FORCEBENCH_GRID)
-    snapshot = False
-    source = "output"
-    if grid is None:
-        grid = _read_json(FORCEBENCH_SNAPSHOT)
-        if grid is not None:
-            snapshot = True
-            source = "snapshot"
-        else:
-            grid_path, snapshot = _source(FORCEBENCH_GRID)
-            grid = _read_json(grid_path)
-            source = "snapshot" if snapshot and grid is not None else None
+    grid_path, snapshot = _source(FORCEBENCH_GRID)
+    grid = _read_json(grid_path)
+    source = ("snapshot" if snapshot else "output") if grid is not None else None
     out = {"worlds": list(WORLDS), "solvers": list(SOLVERS), "seeds": [0, 1, 2, 3, 4],
            "wallet": LIVE_WALLET, "price": LIVE_PRICE, "available": grid is not None,
            "snapshot": bool(snapshot) if grid is not None else False,
