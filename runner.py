@@ -286,10 +286,16 @@ def save_results(
         for r in ledger:
             all_ledger.append(r.to_dict())
 
-    with open(out / "events.json", "w") as f:
+    events_path = out / "events.json"
+    events_tmp = events_path.with_name(events_path.name + f".tmp{os.getpid()}")
+    with open(events_tmp, "w") as f:
         json.dump(all_events, f, indent=1)
+    os.replace(events_tmp, events_path)
 
-    with open(out / "ledger.json", "w") as f:
+    ledger_path = out / "ledger.json"
+    ledger_tmp = ledger_path.with_name(ledger_path.name + f".tmp{os.getpid()}")
+    with open(ledger_tmp, "w") as f:
         json.dump(all_ledger, f, indent=1)
+    os.replace(ledger_tmp, ledger_path)
 
     print(f"Saved {len(all_events)} events and {len(all_ledger)} ledger rows to {out}")
