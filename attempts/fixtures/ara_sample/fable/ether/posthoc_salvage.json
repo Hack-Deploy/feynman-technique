@@ -1,0 +1,11 @@
+{
+ "salvage": "agent acceleration law verbatim (renamed); standard ODE shell supplied post-hoc (missing duration/integration convention)",
+ "mean_pos_error": 0.4779638440936308,
+ "norm_MSE": 0.02248289402575995,
+ "per_case": [
+  0.9559276676205848,
+  2.0566676934849456e-08
+ ],
+ "explanation_score": 0.9,
+ "verdict": "PASS"
+}
