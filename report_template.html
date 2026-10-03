@@ -40,6 +40,26 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 va
 .choices dt { font: 600 13px var(--cond); letter-spacing: 0.1em; text-transform: uppercase; padding-top: 3px; }
 .choices dd { margin: 0; color: var(--ink-2); }
 @media (max-width: 760px) { .choices { grid-template-columns: minmax(0, 1fr); gap: 2px; } .choices dd { margin-bottom: 10px; } .map td:first-child { width: auto; } }
+.bounty { display: none; border-top: 4px solid var(--black); margin-top: 32px; padding-top: 8px; }
+.app .bounty { display: block; }
+.bounty h2 { margin-top: 18px; }
+.bounty label { display: block; font: 600 12px var(--cond); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); margin: 14px 0 6px; }
+.bounty textarea, .bounty input { width: 100%; font: 16px/1.45 var(--sans); padding: 10px 12px; border: 1px solid var(--black); background: #fff; color: var(--ink); resize: vertical; }
+.bounty textarea:focus, .bounty input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.brow { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.brow > div { width: 140px; }
+.err { color: var(--red); font-size: 14px; margin: 8px 0 0; min-height: 1em; }
+.note { color: var(--ink-2); font-size: 14px; margin: 4px 0 0; }
+.verdictline { font: 700 24px/1.3 var(--sans); letter-spacing: -0.01em; margin: 28px 0 6px; }
+.verdictline.yes { color: #1E7A45; } .verdictline.no { color: var(--red); }
+.bgrid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; margin-top: 18px; }
+.bgrid h3 { font: 700 15px var(--sans); margin: 0 0 8px; }
+.bgrid ol, .bgrid ul { margin: 0 0 18px; padding-left: 20px; }
+.bgrid li { margin-bottom: 4px; }
+.tag { display: inline-block; font: 600 12px var(--cond); letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 7px; background: var(--soft); margin-right: 6px; }
+.bridge { margin: 36px 0 0; padding: 14px 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
+h2.proof { display: none; } .app h2.proof { display: block; }
+@media (max-width: 760px) { .bgrid { grid-template-columns: minmax(0, 1fr); } }
 .runbox { background: var(--soft); padding: 18px 20px; margin-top: 24px; display: none; }
 .app .runbox { display: block; }
 .runbox .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -103,6 +123,27 @@ pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(-
   </dl>
 </section>
 
+<section class="bounty">
+  <h2>Post a bounty</h2>
+  <p class="sub">Type a biology hypothesis, the result that would count as a clear answer, and a prize. An AI scientist (Claude) designs the experiment, prices it from a lab price list and states its odds. The bid rule runs in code, not in the AI.</p>
+  <form id="bForm" novalidate>
+    <label for="bHyp">Hypothesis</label>
+    <textarea id="bHyp" rows="2" placeholder="Compound DM-17 inhibits growth of E. coli K-12 at 10 µg/mL."></textarea>
+    <label for="bCrit">Success criterion, fixed in advance</label>
+    <textarea id="bCrit" rows="2" placeholder="OD600 at 12 h at least 50% below vehicle control (p &lt; 0.05), with both controls working."></textarea>
+    <div class="brow">
+      <div><label for="bPrize">Prize (£)</label><input id="bPrize" type="number" min="1" step="1" value="500"></div>
+      <button type="submit" class="act" id="bGo">Ask an AI scientist</button>
+      <button type="button" class="act ghost" id="bEx">Fill in the example</button>
+    </div>
+    <p class="err" id="bErr"></p>
+    <p class="note" id="bMode"></p>
+  </form>
+  <div id="bOut"></div>
+  <p class="bridge">In production, a cloud lab runs the protocol and the pre-registered criterion settles the prize. Lab results take weeks, so the section below tests the same market rule on 11 simulated physics worlds, where every true answer is known.</p>
+</section>
+
+<h2 class="proof">Proof on known answers</h2>
 <section class="runbox">
   <div class="row">
     <button class="act" id="btnRun">Run simulation</button>
@@ -270,6 +311,66 @@ function render() {
   $("vH2").textContent = DATA.verdicts[`h2_${state.source}`] || "";
 }
 
+
+function oddsBar(p, be) {
+  const W = 620, H = 64, L = 4, R = 4, X = v => L + Math.min(v, 1) * (W - L - R);
+  const lab = (x, y, t, c, w) => `<text x="${x}" y="${y}" font-size="13" font-weight="${w}" fill="${c}" text-anchor="${x > W * 0.7 ? "end" : "start"}">${t}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="Stated chance ${Math.round(p * 100)} percent against break-even ${Math.round(be * 100)} percent">
+    <rect x="${L}" y="20" width="${W - L - R}" height="14" fill="#F4F3EE"/>
+    <rect x="${L}" y="20" width="${X(p) - L}" height="14" fill="${p > be ? "#0B0B0B" : "#D9452B"}"/>
+    <line x1="${X(be)}" y1="16" x2="${X(be)}" y2="38" stroke="#D9452B" stroke-width="2" stroke-dasharray="3 3"/>
+    ${lab(X(p), 13, `AI's stated chance ${Math.round(p * 100)}%`, "#0B0B0B", 600)}
+    ${lab(X(be), 54, `break-even ${Math.round(be * 100)}%`, "#D9452B", 400)}</svg>`;
+}
+
+function showBounty(r) {
+  const d = r.design, k = r.decision, li = k.line_items;
+  const src = r.source === "live" ? `<span class="tag">Live · ${esc(r.model)}</span>` : `<span class="tag">Saved example</span>`;
+  $("bOut").innerHTML = `
+    <p class="verdictline ${k.bids ? "yes" : "no"}">${esc(k.reason)}</p>
+    <p class="note">${src}${esc(r.request.hypothesis)} · prize £${r.request.prize}</p>
+    ${oddsBar(k.p, k.break_even)}
+    <div class="bgrid">
+      <div>
+        <h3>Proposed protocol</h3><ol>${d.protocol_steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+        <h3>Controls</h3><ul>${d.controls.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+        <h3>Result that would refute the hypothesis</h3><p>${esc(d.result_that_would_refute)}</p>
+      </div>
+      <div>
+        <h3>Cost, from the lab price list</h3>
+        <table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">£</th></tr></thead><tbody>
+        ${li.map(x => `<tr><td>${esc(x.item)}</td><td class="r">${x.quantity}</td><td class="r">${x.cost.toFixed(2)}</td></tr>`).join("")}
+        <tr><td><b>Total</b></td><td></td><td class="r"><b>${k.cost.toFixed(2)}</b></td></tr></tbody></table>
+        <h3 style="margin-top:18px">Why ${Math.round(k.p * 100)}%</h3><p>${esc(d.why_this_probability)}</p>
+        <h3>Main risks</h3><ul>${d.main_risks.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+        <h3>Biosafety</h3><p>BSL-${d.biosafety_level}. ${esc(d.safety_notes)}</p>
+      </div>
+    </div>`;
+}
+
+async function initBounty() {
+  const info = await (await fetch("/api/bounty/info")).json();
+  $("bMode").textContent = info.live
+    ? `Live mode: each request calls ${info.model}.`
+    : "No ANTHROPIC_API_KEY found, so the button shows a saved example instead of a live design. Add the key to a .env file and restart the app for live mode.";
+  $("bEx").onclick = () => { $("bHyp").value = info.example.hypothesis; $("bCrit").value = info.example.criterion; $("bPrize").value = info.example.prize; $("bErr").textContent = ""; };
+  ["bHyp", "bCrit", "bPrize"].forEach(id => $(id).addEventListener("input", () => { $("bErr").textContent = ""; }));
+  $("bForm").onsubmit = async e => {
+    e.preventDefault();
+    const hyp = $("bHyp").value.trim(), crit = $("bCrit").value.trim(), prize = Number($("bPrize").value);
+    if (info.live && (!hyp || !crit)) { $("bErr").textContent = "Enter a hypothesis and a success criterion first."; return; }
+    if (info.live && !(prize > 0)) { $("bErr").textContent = "Enter a prize above zero."; return; }
+    const go = $("bGo"); go.disabled = true; go.textContent = info.live ? "Designing the experiment…" : "Loading the example…";
+    try {
+      const r = await (await fetch("/api/bounty", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(info.live ? { hypothesis: hyp, criterion: crit, prize } : info.example) })).json();
+      if (!r.ok) { $("bErr").textContent = r.error; return; }
+      showBounty(r);
+    } catch (err) { $("bErr").textContent = "No response from the app server."; }
+    finally { go.disabled = false; go.textContent = "Ask an AI scientist"; }
+  };
+}
+
 async function call(path, btn, label) {
   const btns = document.querySelectorAll(".act"); btns.forEach(b => b.disabled = true);
   const st = $("status"); st.className = "status"; st.textContent = `${label}…`;
@@ -290,6 +391,7 @@ async function call(path, btn, label) {
   if (!DATA) {
     document.body.classList.add("app");
     DATA = await (await fetch("/api/data")).json();
+    initBounty();
   } else {
     document.querySelector(".logo").href = "../index.html";
   }
