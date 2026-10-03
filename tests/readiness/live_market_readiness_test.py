@@ -410,7 +410,12 @@ class TestPreregLifecycle:
     @pytest.mark.parametrize("seed", SEEDS)
     def test_commit_reveal_and_secrecy(self, seed):
         pr = _preregs()
-        ev, _ = _run(ReplayPool(_records(), experiments_cost(1)), seed=seed, prize=60,
+        # Since review/oracle-fixes, run_market refuses replayed verdicts that were not
+        # scored against the posted preregistration, so bind each record to its world's.
+        bound = [AttemptRecord(**{**r.to_dict(), "verdict": {
+                     **r.verdict, "prereg_commitment": pr[r.world].commitment()}})
+                 for r in _records() if r.world in pr]
+        ev, _ = _run(ReplayPool(bound, experiments_cost(1)), seed=seed, prize=60,
                      preregs=pr)
         ev = sorted(ev, key=lambda e: e["seq"])
         for w in WORLDS:
