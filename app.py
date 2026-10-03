@@ -9,6 +9,7 @@ Run: uv run python app.py   (then open http://localhost:8000)
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import re
@@ -203,9 +204,22 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write(f"  {self.command} {self.path}\n")
 
 
+def _bind(port: int, tries: int = 20) -> ThreadingHTTPServer:
+    """Bind to ``port``, or the next free port if it is taken (e.g. by another app)."""
+    for p in range(port, port + tries):
+        try:
+            return ThreadingHTTPServer(("127.0.0.1", p), Handler)
+        except OSError as e:
+            if e.errno != errno.EADDRINUSE:
+                raise
+            print(f"Port {p} is in use, trying {p + 1}...")
+    raise SystemExit(f"No free port in {port}-{port + tries - 1}; set PORT to choose another.")
+
+
 def main() -> None:
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    url = f"http://localhost:{PORT}"
+    server = _bind(PORT)
+    port = server.server_address[1]
+    url = f"http://localhost:{port}"
     print(f"Discovery Market app running at {url}  (Ctrl+C to stop)")
     if "--no-browser" not in sys.argv:
         webbrowser.open(url)
