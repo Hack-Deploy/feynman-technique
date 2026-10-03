@@ -426,10 +426,6 @@ def test_replay_pool_rejects_duplicate_attempt_ids():
         ReplayPool([first, second], recorded_cost())
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: ReplayPool keys by (solver, world) and mixes venues",
-)
 def test_replay_pool_does_not_mix_venues():
     forcebench = _single_record(attempt_id="forcebench-0")
     discoverphysics = replace(
@@ -443,7 +439,6 @@ def test_replay_pool_does_not_mix_venues():
 
 
 @pytest.mark.parametrize("stated_p", [1.5, -0.1])
-@pytest.mark.xfail(strict=True, reason="BUG: AttemptRecord accepts invalid stated_p_success")
 def test_attempt_record_rejects_out_of_range_stated_probability(stated_p):
     with pytest.raises(ValueError):
         _single_record(stated_p=stated_p)
