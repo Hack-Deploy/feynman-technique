@@ -1,8 +1,7 @@
 """Adversarial readiness tests for the replay market, analysis and calibration
 (area: live-market). Everything is recomputed from the event log.
 
-Tests marked ``xfail(strict=True)`` document a bug or gap found on ``real-attempts``;
-they start failing (XPASS) once it is fixed, so the marker must then be removed.
+The tests document bugs and regression guarantees found on ``real-attempts``.
 """
 
 from __future__ import annotations
@@ -571,7 +570,8 @@ class TestAraShapedPool:
         for e in ev:
             if e["type"] == "round_charged":
                 rec = next(r for r in recs if r.attempt_id == e["attempt_id"])
-                assert e["amount"] == rec.rounds and "count" not in e
+                assert e["amount"] == rec.rounds
+                assert type(e["count"]) is int and e["count"] == rec.rounds
             if e["type"] == "verdict_issued":
                 rec = next(r for r in recs if r.attempt_id == e["attempt_id"])
                 assert e["detail"]["passed"] == rec.verdict["passed"]
