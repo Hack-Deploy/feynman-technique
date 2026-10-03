@@ -376,7 +376,7 @@ class TestStrictBugRegressions:
             if duplicate == "agents"
             else cfg(pool, worlds=("w", "w"))
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="duplicate"):
             run_market(run_cfg)
 
     @pytest.mark.xfail(strict=True, reason="BUG-E12: truncated final JSONL line aborts load")
