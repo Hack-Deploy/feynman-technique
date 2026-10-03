@@ -46,8 +46,15 @@
   svg text { font-family: var(--sans); }
 
   /* Cover */
-  .why { font-size: 32px; line-height: 1.4; color: var(--body); max-width: 1120px; padding: 16px 24px; border-left: 6px solid var(--loss); background: #FBEDE8; }
-  .why b { color: var(--loss); }
+  .story { display: grid; grid-template-columns: 1fr 56px 1fr 56px 1fr; align-items: stretch; }
+  .story .beat { display: flex; flex-direction: column; gap: 16px; padding: 36px 40px; border: 2px solid var(--ink); background: #FFFFFF; }
+  .story .beat.problem { border-color: var(--loss); background: #FBEDE8; }
+  .story .beat.fix { border-color: var(--accent); background: var(--accent-soft); }
+  .story .tag { font-family: var(--mono); font-size: 24px; letter-spacing: 2px; color: var(--accent); }
+  .story .problem .tag { color: var(--loss); }
+  .story .beat p:last-child { font-size: 36px; font-weight: 600; line-height: 1.3; }
+  .story .arrow { display: flex; align-items: center; justify-content: center; font-size: 44px; color: var(--muted); }
+  .story sup { font-size: 20px; color: var(--muted); }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
   .steps div { display: flex; align-items: center; gap: 24px; border: 2px solid var(--ink); padding: 32px 40px; font-size: 36px; font-weight: 600; }
   .steps svg { width: 64px; height: 64px; flex: none; }
@@ -112,11 +119,11 @@
   .novel { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
   .novel h3 { font-family: var(--mono); font-size: 24px; font-weight: 500; letter-spacing: 2px; color: var(--accent); padding-bottom: 12px; border-bottom: 3px solid var(--accent); }
   .novel .matters h3 { color: var(--loss); border-color: var(--loss); }
-  .novel ul { list-style: none; display: flex; flex-direction: column; gap: 24px; margin-top: 24px; }
-  .novel li { font-size: 28px; line-height: 1.35; color: var(--body); }
-  .novel li b { display: block; font-size: 32px; color: var(--ink); }
-  .novel sup { font-size: 18px; color: var(--muted); }
-  .landscape { font-size: 26px; line-height: 1.4; padding: 20px 28px; background: #F2F2EE; border-left: 6px solid var(--ink); }
+  .novel ul { list-style: none; display: flex; flex-direction: column; gap: 36px; margin-top: 40px; }
+  .novel li { font-size: 38px; font-weight: 600; line-height: 1.25; padding-left: 28px; border-left: 6px solid var(--accent); }
+  .novel .matters li { border-color: var(--loss); }
+  .novel sup { font-size: 22px; font-weight: 400; color: var(--muted); }
+  .landscape { font-size: 30px; line-height: 1.4; padding: 20px 28px; background: #F2F2EE; border-left: 6px solid var(--ink); }
   .sources { position: absolute; left: 128px; right: 220px; bottom: 52px; font-size: 18px; line-height: 1.4; color: var(--muted); }
 
   /* Controls */
@@ -193,16 +200,17 @@
 <section class="slide" style="justify-content: space-between">
   <div class="head" style="gap: 32px">
     <p class="eyebrow" style="color: var(--muted)">DISCOVERY MARKET</p>
-    <h1>Real science, real progress.</h1>
-    <p class="lead" style="max-width: 1120px">A market where AI scientists prove themselves in real labs and get paid only for a clear answer, true or false.</p>
-    <p class="why"><b>Why it matters:</b> AI agents overrate their own success, 65% of null results are never written up, and money for AI-run labs is ahead of proof.</p>
+    <h1 style="max-width: 1180px; font-size: 112px">Pay AI scientists only for answers.</h1>
   </div>
-  <div class="steps">
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Paid only for answers</div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/><circle cx="12" cy="17" r="1.2"/></svg>Confidence is scored</div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M8 10h8"/><path d="M8 14h8"/><path d="M8 18h5"/></svg>Every run is logged</div>
+  <div class="story">
+    <div class="beat problem"><p class="tag">THE PROBLEM</p><p>AI agents predict 77% success and deliver 22%.<sup>1</sup></p></div>
+    <div class="arrow">→</div>
+    <div class="beat fix"><p class="tag">OUR FIX</p><p>A market that pays AI scientists only for a clear answer, true or false.</p></div>
+    <div class="arrow">→</div>
+    <div class="beat"><p class="tag">THE PAYOFF</p><p>Funders pay only for answers. Overconfidence costs the bidder.</p></div>
   </div>
-  <svg class="illus" viewBox="0 0 440 470" style="right: 128px; top: 330px; width: 440px; height: 460px" aria-hidden="true">
+  <p class="note">1 Some agents tested in Kaddour et al., ICLR 2026.</p>
+  <svg class="illus" viewBox="0 0 440 470" style="right: 128px; top: 96px; width: 380px; height: 397px" aria-hidden="true">
     <ellipse cx="220" cy="452" rx="150" ry="12" fill="#E6E4DC"/>
     <!-- sparkles around the apple -->
     <g fill="#F2B84B"><path d="M402 52l5 12 12 5-12 5-5 12-5-12-12-5 12-5z"/><path d="M300 30l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/></g>
@@ -243,7 +251,7 @@
 </section>
 
 <!-- 2 · What's new and why it matters -->
-<section class="slide" style="gap: 32px; padding-bottom: 160px">
+<section class="slide" style="gap: 48px; padding-bottom: 160px">
   <div class="head">
     <p class="eyebrow">WHY DISCOVERY MARKET</p>
     <h2>What's new, and why it matters</h2>
@@ -252,22 +260,22 @@
     <div>
       <h3>WHAT'S NEW</h3>
       <ul>
-        <li><b>Pay for answers, not effort</b>True or false both pay. No clear answer, no payout.</li>
-        <li><b>AI scientists bet on their own confidence</b>They bid only when a clear answer covers the cost, and every prediction is scored against what happened.</li>
-        <li><b>Nothing goes in the file drawer</b>Every run is logged, including negative results.</li>
+        <li>Paid only for clear answers</li>
+        <li>AI scientists bid on their own confidence</li>
+        <li>Every prediction scored, every run logged</li>
       </ul>
     </div>
     <div class="matters">
       <h3>WHY IT MATTERS</h3>
       <ul>
-        <li><b>AI agents overrate themselves</b>Some agents that succeed 22% of the time predict 77% success.<sup>1</sup> Self-assessment is the bottleneck for markets of agents.<sup>2</sup></li>
-        <li><b>Null results disappear</b>65% of null results are never even written up.<sup>3</sup></li>
-        <li><b>Money is ahead of proof</b>Lila Sciences has raised $550M and Periodic Labs a $300M seed for AI-run labs.<sup>4</sup> Repeatable, valuable results are still the open test.<sup>5</sup></li>
+        <li>Agents predict 77% success, deliver 22%<sup>1</sup></li>
+        <li>65% of null results are never written up<sup>2</sup></li>
+        <li>$850M into AI-run labs before proven results<sup>3</sup></li>
       </ul>
     </div>
   </div>
-  <p class="landscape">Neighbours each cover one piece: AI scientists (Sakana, Google Co-Scientist, FutureHouse), cloud labs and lab marketplaces (Emerald Cloud Lab, Science Exchange), science prediction markets (DARPA SCORE). In our review we found none that pays AI scientists only for clear answers from real labs.</p>
-  <p class="sources">1 Kaddour et al., Agentic Uncertainty Reveals Agentic Overconfidence, ICLR 2026 · 2 Fradkin &amp; Krishnan, MarketBench, 2026 · 3 Franco, Malhotra &amp; Simonovits, Science 2014 · 4 Startup Fortune citing Reuters (Jun 2026); TechBuzz (Sep 2025) · 5 Startup Fortune (Jun 2026). Full list: novelty-review.md</p>
+  <p class="landscape">Others cover one piece: AI scientists, cloud labs, science prediction markets. We found none that pays only for clear answers from real labs.</p>
+  <p class="sources">1 Some agents tested in Kaddour et al., ICLR 2026 · 2 Franco et al., Science 2014 · 3 Lila Sciences $550M, Periodic Labs $300M seed (Startup Fortune 2026, TechBuzz 2025) · Details: novelty-review.md</p>
   <p class="page-num">2</p>
 </section>
 
