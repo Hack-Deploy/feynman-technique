@@ -1,3 +1,6 @@
+> Working draft; there is no separate `REPORT.md`.
+> Numbers below come from the committed fixture snapshots.
+
 # Discovery Market: first replay on real attempts (draft)
 
 Data: the eight published ARA DiscoverPhysics runs by **ARA Labs (AgentNativeResearchLab)**,
