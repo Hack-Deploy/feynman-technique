@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&family=Source+Serif+4:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #FBFBF9;
+    --ink: #111111;
+    --body: #333333;
+    --muted: #4A4A4A;
+    --line: #D9D9D4;
+    --accent: #1B3F8B;
+    --accent-soft: #EEF2F9;
+    --loss: #A23B1E;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans: 'Source Sans 3', Arial, sans-serif;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: #2A2A28; font-family: var(--sans); color: var(--ink); overflow: hidden; }
+
+  /* Fixed 1920×1080 stage, scaled to fit the window */
+  .stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+  .slide {
+    position: absolute; inset: 0; display: none; flex-direction: column; gap: 32px;
+    padding: 128px; background: var(--bg); overflow: hidden;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .slide.active { display: flex; }
+
+  .eyebrow { font-family: var(--mono); font-size: 24px; letter-spacing: 2px; color: var(--accent); }
+  h1 { font-family: var(--serif); font-size: 120px; font-weight: 600; line-height: 1.05; letter-spacing: -2px; }
+  h2 { font-family: var(--serif); font-size: 72px; font-weight: 600; line-height: 1.1; letter-spacing: -1px; }
+  h3 { font-size: 32px; font-weight: 600; }
+  .lead { font-size: 36px; line-height: 1.4; color: var(--body); }
+  .mono { font-family: var(--mono); }
+  .card { border: 2px solid var(--ink); background: #FFFFFF; padding: 36px 40px; }
+  .callout { font-size: 32px; line-height: 1.4; padding: 24px 32px; border-left: 6px solid var(--accent); background: var(--accent-soft); }
+  .page-num { position: absolute; right: 128px; bottom: 56px; font-family: var(--mono); font-size: 24px; color: var(--muted); }
+  .head { display: flex; flex-direction: column; gap: 12px; }
+  svg text { font-family: var(--sans); }
+
+  /* Cover */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .steps div { display: flex; align-items: center; gap: 24px; border: 2px solid var(--ink); padding: 32px 40px; font-size: 36px; font-weight: 600; }
+  .steps svg { width: 64px; height: 64px; flex: none; }
+
+  /* Step 1 */
+  .prize { display: flex; justify-content: space-between; align-items: baseline; gap: 32px; }
+  .prize .q { font-family: var(--serif); font-size: 48px; }
+  .prize .amt { font-family: var(--mono); font-size: 48px; }
+  .outcomes { display: grid; grid-template-columns: repeat(3, 1fr); border: 2px solid var(--ink); font-size: 32px; font-weight: 600; text-align: center; margin-top: 32px; }
+  .outcomes div { padding: 20px; }
+  .outcomes .paid { background: var(--accent); color: #FFFFFF; }
+  .outcomes .paid + .paid { border-left: 2px solid #FFFFFF; }
+  .outcomes .unpaid { background: #F2F2EE; color: var(--muted); border-left: 2px solid var(--ink); }
+
+  /* Step 3 */
+  .prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .prices div { display: flex; align-items: center; gap: 28px; border: 2px solid var(--line); background: #FFFFFF; padding: 36px 40px; }
+  .prices svg { width: 80px; height: 80px; flex: none; }
+  .prices b { display: block; font-size: 36px; font-weight: 600; }
+  .prices span { font-family: var(--mono); font-size: 32px; }
+  .total { display: flex; align-items: center; gap: 48px; margin-top: 16px; }
+  .total .sum { font-family: var(--mono); font-size: 56px; font-weight: 500; }
+  .safety { display: flex; align-items: center; gap: 12px; font-size: 36px; font-weight: 600; color: var(--accent); }
+  .safety svg { width: 48px; height: 48px; }
+
+  /* Step 4 */
+  .payouts { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .payouts div { display: flex; flex-direction: column; gap: 8px; padding: 48px; }
+  .payouts .win { border: 3px solid var(--accent); background: var(--accent-soft); }
+  .payouts .lose { border: 3px solid #8A8A85; background: #FFFFFF; }
+  .payouts b { font-size: 36px; font-weight: 600; }
+  .payouts .big { font-family: var(--mono); font-size: 120px; line-height: 1.1; }
+  .payouts .win .big { color: var(--accent); }
+  .payouts .lose .big { color: var(--loss); }
+  .payouts small { font-size: 28px; color: var(--muted); }
+
+  /* Step 5 */
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .charts figure { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .charts svg { width: 580px; height: 552px; }
+
+  /* Leaderboard */
+  .board { border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+  .board .row { display: grid; grid-template-columns: 300px 1fr 1fr 180px; align-items: center; padding: 28px 0; border-bottom: 1px solid var(--line); font-size: 36px; }
+  .board .row:last-child { border-bottom: none; }
+  .board .label { font-size: 28px; font-weight: 600; color: var(--muted); padding: 18px 0; border-bottom: 2px solid var(--ink); }
+  .board .neg { display: flex; justify-content: flex-end; height: 56px; border-right: 2px solid var(--ink); }
+  .board .pos { display: flex; height: 56px; }
+  .board .neg i { background: var(--loss); }
+  .board .pos i { background: var(--accent); }
+  .board .val { font-family: var(--mono); text-align: right; }
+  .note { position: absolute; left: 128px; bottom: 56px; font-size: 24px; color: var(--muted); }
+
+  /* Closing statement */
+  .slide.statement { background: var(--accent); color: #FBFBF9; justify-content: center; }
+  .statement .eyebrow { color: #C9D3E6; }
+  .statement h2 { font-size: 96px; }
+  .statement .lead { color: #E4E9F3; max-width: 1400px; }
+  .statement .page-num { color: #C9D3E6; }
+
+  /* Controls */
+  .controls { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font: 14px/1 var(--mono); color: #CFCFC8; background: rgba(0,0,0,.45); padding: 6px 8px; border-radius: 999px; z-index: 2; }
+  .controls button { background: none; border: none; color: inherit; font: inherit; font-size: 18px; padding: 4px 10px; cursor: pointer; border-radius: 999px; }
+  .controls button:hover { background: rgba(255,255,255,.12); }
+
+  /* Print / PDF: one slide per page */
+  @page { size: 1920px 1080px; margin: 0; }
+  @media print {
+    html, body { height: auto; overflow: visible; background: none; }
+    .stage { position: static; transform: none !important; width: 1920px; height: auto; }
+    .slide { position: relative; display: flex !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+    .controls { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+<!-- 1 · Cover -->
+<section class="slide" style="justify-content: space-between">
+  <div class="head" style="gap: 32px">
+    <p class="eyebrow" style="color: var(--muted)">DISCOVERY MARKET</p>
+    <h1>Real science, real progress.</h1>
+    <p class="lead" style="max-width: 1440px">We create the platform for AI scientists to prove themselves in real labs: propose a hypothesis, design the experiment, run it, and get paid only for a clear result.</p>
+  </div>
+  <div class="steps">
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>Hypothesis</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M8 10h8"/><path d="M8 14h8"/><path d="M8 18h5"/></svg>Experiment Design</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg>Lab Execution</div>
+  </div>
+</section>
+
+<!-- 2 · Step 1 -->
+<section class="slide">
+  <div class="head">
+    <p class="eyebrow">STEP 1 OF 5</p>
+    <h2>Post a hypothesis and a prize</h2>
+  </div>
+  <p class="lead">True or false both pay. No clear answer, no payout.</p>
+  <div class="card">
+    <div class="prize"><span class="q">“Gravity makes objects fall to the ground.”</span><span class="amt">£50</span></div>
+    <div class="outcomes">
+      <div class="paid">True → paid</div>
+      <div class="paid">False → paid</div>
+      <div class="unpaid">No answer → not paid</div>
+    </div>
+  </div>
+  <p class="callout">University researchers: your grant money is only spent when it buys an answer.</p>
+  <p class="page-num">2</p>
+</section>
+
+<!-- 3 · Step 2 -->
+<section class="slide" style="gap: 28px">
+  <div class="head">
+    <p class="eyebrow">STEP 2 OF 5</p>
+    <h2>Design the experiment, or walk away</h2>
+  </div>
+  <div class="card" style="padding: 28px 40px">
+    <p style="font-family: var(--serif); font-size: 44px">Climb a ladder, drop an apple, record where it lands.</p>
+  </div>
+  <svg viewBox="0 0 860 210" role="img" aria-label="The designer is about 95% sure of a clear answer; it only needs 8% to cover the cost" style="width: 1664px; height: 406px">
+    <path d="M676,150 L676.0,149.9 678.0,149.9 680.1,149.9 682.1,149.8 684.2,149.8 686.2,149.8 688.3,149.8 690.4,149.7 692.4,149.7 694.5,149.6 696.5,149.6 698.5,149.5 700.6,149.4 702.6,149.4 704.7,149.3 706.8,149.2 708.8,149.0 710.9,148.9 712.9,148.7 715.0,148.5 717.0,148.3 719.1,148.1 721.1,147.8 723.1,147.6 725.2,147.2 727.2,146.8 729.3,146.4 731.4,146.0 733.4,145.4 735.5,144.8 737.5,144.2 739.6,143.4 741.6,142.6 743.7,141.7 745.7,140.7 747.8,139.5 749.8,138.3 751.9,136.9 753.9,135.4 756.0,133.7 758.0,131.9 760.1,129.9 762.1,127.7 764.2,125.4 766.2,122.8 768.3,120.0 770.3,117.0 772.4,113.8 774.4,110.4 776.5,106.7 778.5,102.8 780.5,98.7 782.6,94.4 784.7,89.9 786.7,85.3 788.8,80.5 790.8,75.7 792.9,70.8 794.9,65.9 797.0,61.2 799.0,56.6 801.0,52.4 803.1,48.5 805.1,45.2 807.2,42.6 809.2,40.8 811.3,40.0 813.4,40.4 815.4,42.1 817.5,45.2 819.5,50.0 821.6,56.5 823.6,64.8 825.6,74.8 827.7,86.3 829.8,99.0 831.8,112.4 833.9,125.6 835.9,137.5 838.0,146.4 840,150 Z" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="2"/>
+    <line x1="20" y1="150" x2="840" y2="150" stroke="#111111"/>
+    <g font-size="14" fill="#4A4A4A" font-family="IBM Plex Mono, monospace" text-anchor="middle"><text x="20" y="174">0%</text><text x="430" y="174">50%</text><text x="840" y="174" text-anchor="end">100%</text></g>
+    <text x="430" y="200" font-size="15" text-anchor="middle" fill="#111111">Chance of a clear answer</text>
+    <line x1="85.6" y1="40" x2="85.6" y2="150" stroke="#A23B1E" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="96" y="60" font-size="16" fill="#A23B1E">needs 8% to break even</text>
+    <text x="660" y="60" font-size="16" text-anchor="end" font-weight="600" fill="#1B3F8B">designer's confidence: ~95%</text>
+  </svg>
+  <p class="lead" style="font-size: 32px">Confident enough to cover the cost → <b style="color: var(--accent)">bid</b>. Not confident enough → walk away.</p>
+  <p class="page-num">3</p>
+</section>
+
+<!-- 4 · Step 3 -->
+<section class="slide" style="gap: 48px">
+  <div class="head">
+    <p class="eyebrow">STEP 3 OF 5</p>
+    <h2>Run it in a lab</h2>
+  </div>
+  <p class="lead">Labs publish prices. The run is safety-checked and paid upfront.</p>
+  <div class="prices">
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v18"/><path d="M17 3v18"/><path d="M7 7h10"/><path d="M7 11h10"/><path d="M7 15h10"/><path d="M7 19h10"/></svg><p><b>Ladder</b><span>£0.50</span></p></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7.5c-1.5-1-5.2-1.3-6.2 2.2-1 3.6 1 9.3 3.4 9.8 1.2.3 1.8-.4 2.8-.4s1.6.7 2.8.4c2.4-.5 4.4-6.2 3.4-9.8-1-3.5-4.7-3.2-6.2-2.2z"/><path d="M12 7.5V5"/><path d="M12 5.5c.8-1.6 2.3-2.4 4-2.5"/></svg><p><b>Apple</b><span>£0.50</span></p></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="6" r="3"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/><path d="M12 13v8"/><path d="M9.5 13l2.5 4 2.5-4"/></svg><p><b>Technician, 15 min</b><span>£3.00</span></p></div>
+  </div>
+  <div class="total">
+    <span class="sum">Total £4.00</span>
+    <span class="safety"><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Safety check passed</span>
+  </div>
+  <p class="page-num">4</p>
+</section>
+
+<!-- 5 · Step 4 -->
+<section class="slide" style="gap: 40px">
+  <div class="head">
+    <p class="eyebrow">STEP 4 OF 5</p>
+    <h2>The result pays out</h2>
+  </div>
+  <div class="payouts">
+    <div class="win"><b>Apple hits the ground</b><span class="big">+£46</span><small>£50 prize − £4 cost</small></div>
+    <div class="lose"><b>Nobody recorded the drop</b><span class="big">−£4</span><small>No answer, no prize</small></div>
+  </div>
+  <p class="callout">Every run is logged, including negative results, so the next experiment learns from what didn't work.</p>
+  <p class="page-num">5</p>
+</section>
+
+<!-- 6 · Step 5 -->
+<section class="slide" style="gap: 24px">
+  <div class="head">
+    <p class="eyebrow">STEP 5 OF 5</p>
+    <h2>Everyone is scored on their predictions</h2>
+  </div>
+  <p class="lead" style="font-size: 32px">When you say 20%, does it happen 20% of the time? On the line: honest. Below it: overconfident.</p>
+  <div class="charts">
+    <figure>
+      <h3>Hypothesis: “it's true”</h3>
+      <svg viewBox="-20 20 410 390" role="img" aria-label="Institute A sits on the diagonal; Institute B says 90% but is right 45% of the time">
+        <line x1="50" y1="350" x2="370" y2="30" stroke="#8A8A85" stroke-dasharray="4 4"/>
+        <line x1="50" y1="350" x2="370" y2="350" stroke="#111111"/>
+        <line x1="50" y1="30" x2="50" y2="350" stroke="#111111"/>
+        <g font-size="16" fill="#4A4A4A" font-family="IBM Plex Mono, monospace">
+          <text x="50" y="372" text-anchor="middle">0%</text><text x="210" y="372" text-anchor="middle">50%</text><text x="370" y="372" text-anchor="end">100%</text>
+          <text x="42" y="355" text-anchor="end">0%</text><text x="42" y="195" text-anchor="end">50%</text><text x="42" y="40" text-anchor="end">100%</text>
+        </g>
+        <text x="210" y="400" font-size="18" text-anchor="middle" fill="#111111">Said</text>
+        <text x="-6" y="190" font-size="18" text-anchor="middle" fill="#111111" transform="rotate(-90 -6 190)">Happened</text>
+        <polyline fill="none" stroke="#1B3F8B" stroke-width="2.5" points="82,324.4 114,279.6 146,263.6 178,212.4 210,196.4 242,151.6 274,138.8 306,87.6 338,68.4"/>
+        <g fill="#1B3F8B"><circle cx="82" cy="324.4" r="5"/><circle cx="114" cy="279.6" r="5"/><circle cx="146" cy="263.6" r="5"/><circle cx="178" cy="212.4" r="5"/><circle cx="210" cy="196.4" r="5"/><circle cx="242" cy="151.6" r="5"/><circle cx="274" cy="138.8" r="5"/><circle cx="306" cy="87.6" r="5"/><circle cx="338" cy="68.4" r="5"/></g>
+        <polyline fill="none" stroke="#A23B1E" stroke-width="2.5" points="82,311.6 114,292.4 146,279.6 178,266.8 210,254 242,244.4 274,228.4 306,215.6 338,206"/>
+        <g fill="#A23B1E"><circle cx="82" cy="311.6" r="5"/><circle cx="114" cy="292.4" r="5"/><circle cx="146" cy="279.6" r="5"/><circle cx="178" cy="266.8" r="5"/><circle cx="210" cy="254" r="5"/><circle cx="242" cy="244.4" r="5"/><circle cx="274" cy="228.4" r="5"/><circle cx="306" cy="215.6" r="5"/><circle cx="338" cy="206" r="5"/></g>
+        <text x="296" y="58" font-size="18" font-weight="600" fill="#1B3F8B" text-anchor="end">Institute A</text>
+        <text x="370" y="254" font-size="18" font-weight="600" fill="#A23B1E" text-anchor="end">Institute B</text>
+      </svg>
+    </figure>
+    <figure>
+      <h3>Experiment Design: “we'll get a clear answer”</h3>
+      <svg viewBox="-20 20 410 390" role="img" aria-label="AI Lab A sits on the diagonal; Startup C says 90% but succeeds 30% of the time">
+        <line x1="50" y1="350" x2="370" y2="30" stroke="#8A8A85" stroke-dasharray="4 4"/>
+        <line x1="50" y1="350" x2="370" y2="350" stroke="#111111"/>
+        <line x1="50" y1="30" x2="50" y2="350" stroke="#111111"/>
+        <g font-size="16" fill="#4A4A4A" font-family="IBM Plex Mono, monospace">
+          <text x="50" y="372" text-anchor="middle">0%</text><text x="210" y="372" text-anchor="middle">50%</text><text x="370" y="372" text-anchor="end">100%</text>
+          <text x="42" y="355" text-anchor="end">0%</text><text x="42" y="195" text-anchor="end">50%</text><text x="42" y="40" text-anchor="end">100%</text>
+        </g>
+        <text x="210" y="400" font-size="18" text-anchor="middle" fill="#111111">Said</text>
+        <text x="-6" y="190" font-size="18" text-anchor="middle" fill="#111111" transform="rotate(-90 -6 190)">Happened</text>
+        <polyline fill="none" stroke="#1B3F8B" stroke-width="2.5" points="82,311.6 114,292.4 146,244.4 178,228.4 210,183.6 242,167.6 274,122.8 306,103.6 338,74.8"/>
+        <g fill="#1B3F8B"><circle cx="82" cy="311.6" r="5"/><circle cx="114" cy="292.4" r="5"/><circle cx="146" cy="244.4" r="5"/><circle cx="178" cy="228.4" r="5"/><circle cx="210" cy="183.6" r="5"/><circle cx="242" cy="167.6" r="5"/><circle cx="274" cy="122.8" r="5"/><circle cx="306" cy="103.6" r="5"/><circle cx="338" cy="74.8" r="5"/></g>
+        <polyline fill="none" stroke="#A23B1E" stroke-width="2.5" points="82,334 114,324.4 146,318 178,311.6 210,302 242,286 274,279.6 306,270 338,254"/>
+        <g fill="#A23B1E"><circle cx="82" cy="334" r="5"/><circle cx="114" cy="324.4" r="5"/><circle cx="146" cy="318" r="5"/><circle cx="178" cy="311.6" r="5"/><circle cx="210" cy="302" r="5"/><circle cx="242" cy="286" r="5"/><circle cx="274" cy="279.6" r="5"/><circle cx="306" cy="270" r="5"/><circle cx="338" cy="254" r="5"/></g>
+        <text x="296" y="64" font-size="18" font-weight="600" fill="#1B3F8B" text-anchor="end">AI Lab A</text>
+        <text x="350" y="244" font-size="18" font-weight="600" fill="#A23B1E" text-anchor="end">Startup C</text>
+      </svg>
+    </figure>
+  </div>
+  <p class="page-num">6</p>
+</section>
+
+<!-- 7 · Leaderboard -->
+<section class="slide" style="gap: 48px">
+  <div class="head">
+    <p class="eyebrow">STEP 5 OF 5 · RESULT</p>
+    <h2>The leaderboard tracks who earns</h2>
+  </div>
+  <div class="board">
+    <div class="label">Leaderboard · net earnings</div>
+    <div class="row"><b>AI Lab A</b><div class="neg"></div><div class="pos"><i style="width: 100%"></i></div><span class="val" style="color: var(--accent)">+£82</span></div>
+    <div class="row"><b>Startup A</b><div class="neg"></div><div class="pos"><i style="width: 87%"></i></div><span class="val" style="color: var(--accent)">+£71</span></div>
+    <div class="row"><b>Startup B</b><div class="neg"><i style="width: 44%"></i></div><div class="pos"></div><span class="val" style="color: var(--loss)">−£36</span></div>
+    <div class="row"><b>Startup C</b><div class="neg"><i style="width: 72%"></i></div><div class="pos"></div><span class="val" style="color: var(--loss)">−£59</span></div>
+  </div>
+  <p class="note">Illustrative numbers.</p>
+  <p class="page-num">7</p>
+</section>
+
+<!-- 8 · Built today -->
+<section class="slide statement" style="gap: 40px">
+  <p class="eyebrow">BUILT TODAY</p>
+  <h2>The full market runs on DiscoverPhysics.</h2>
+  <p class="lead">11 simulated physics worlds where the true answer is known, so every payout can be checked.</p>
+  <p class="page-num">8</p>
+</section>
+
+</div>
+
+<nav class="controls" aria-label="Slide controls">
+  <button id="prev" aria-label="Previous slide">←</button>
+  <span id="count">1 / 8</span>
+  <button id="next" aria-label="Next slide">→</button>
+</nav>
+
+<script>
+  const stage = document.getElementById('stage');
+  const slides = [...document.querySelectorAll('.slide')];
+  const count = document.getElementById('count');
+  let i = Math.min(Math.max(parseInt(location.hash.slice(1), 10) - 1 || 0, 0), slides.length - 1);
+
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+  function show(n) {
+    i = Math.min(Math.max(n, 0), slides.length - 1);
+    slides.forEach((el, k) => el.classList.toggle('active', k === i));
+    count.textContent = `${i + 1} / ${slides.length}`;
+    history.replaceState(null, '', `#${i + 1}`);
+  }
+
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.getElementById('next').onclick = () => show(i + 1);
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); show(i + 1); }
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+  addEventListener('resize', fit);
+  fit();
+  show(i);
+</script>
+</body>
+</html>
