@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -219,23 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-=======
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-build/
-dist/
 
-# uv / virtualenv
-.venv/
-
-# Tooling caches
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.coverage
-htmlcov/
+# --- Project-specific ---
 
 # Simulation outputs (regenerate with `uv run python run.py`)
 output/
@@ -247,6 +231,4 @@ output/
 .DS_Store
 
 # Secrets
-.env
 .env.*
->>>>>>> fe032a3 (Initial commit: Discovery Market simulation (P0–P4))
