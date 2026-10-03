@@ -203,6 +203,20 @@ def round_sig(x: float, n: int) -> float:
     return 0.0 if x == 0 else round(x, -int(math.floor(math.log10(abs(x)))) + (n - 1))
 
 
+def _json_safe(obj: Any) -> Any:
+    """Replace non-finite floats with "inf"/"-inf"/"nan" so records stay strict JSON.
+
+    Failed ARA runs can report an infinite position error; the string keeps that
+    information without breaking AttemptRecord's no-NaN/Infinity rule."""
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return "nan" if math.isnan(obj) else ("inf" if obj > 0 else "-inf")
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    return obj
+
+
 def nmse_agrees(shown: str, computed: float, max_sig: int = 3) -> bool:
     """Scoreboard value vs mean_pos_error/Var(world), compared at
     min(3, digits shown) significant figures."""
@@ -349,14 +363,14 @@ def build_record(model: str, world: str, row: dict[str, str],
         source="published_replay", protocol=PROTOCOL, venue=VENUE, world=world,
         solver=f"ara:{model}", seed=0, stated_p_success=None,
         rounds=rounds, experiments=experiments, lab_cost=float(rounds) * 1.0,
-        llm_usage=llm_usage,
+        llm_usage=_json_safe(llm_usage),
         submitted_law=result.get("law") if result else None,
         verdict={"normalised_mse": normalised_mse, "passed": passed,
                  "prereg_commitment": None, "public_tests": True,
                  "explanation_score": expl},
         transcript_path=f"attempts/cache/ara/{model}/{world}/episode.json" if episode else None,
         created_at=(meta or {}).get("archived_at", ""),
-        extra=extra,
+        extra=_json_safe(extra),
     )
     return rec, issues
 

@@ -111,7 +111,7 @@ def test_attempt_id_deterministic(imported):
 def test_salvaged_run_cross_checked_against_salvage(imported):
     r = _rec(imported, "fable", "ether")
     c = r.extra["nmse_check"]
-    assert c["meta_mean_pos_error"] == math.inf
+    assert c["meta_mean_pos_error"] == "inf"  # stored as a string: records are strict JSON
     assert c["mean_pos_error_from"] == "posthoc_salvage.json" and c["agrees"] is True
     assert r.passed and r.extra["ara_passed"]
 
