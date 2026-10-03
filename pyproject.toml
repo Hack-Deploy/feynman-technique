@@ -28,3 +28,4 @@ scienceagent = { path = "vendor/discovery-agents/ScienceAgent", editable = true 
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]

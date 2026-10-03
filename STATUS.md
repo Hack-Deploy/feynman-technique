@@ -85,3 +85,30 @@
   normalising variances are in the vendor repo (`run_benchmark._WORLD_VARS`); ForceBench is
   only in MDA arXiv v1–v3 (cited as v3); ARA used relative noise σ = 0.075·√Var(world) while
   the vendor default is absolute 0.075; ARA `episode.json` does record experiment counts.
+
+## Phase 1: engine generalisation (2026-10-03)
+- **Built**:
+  - `market.OutcomeSource` protocol: `available(agent, world)`, `draw(agent, world, rng) →
+    (passed, cost_detail, attempt_id | None)`. `market.BernoulliTable` is today's coin flip
+    (same rng calls in the same order: cost, then pass). `dm/outcomes.ReplayPool` replays
+    `AttemptRecord`s per (solver, world), without replacement within a run, with replacement
+    across runs; it is also the run's cost model (expected/max cost of what is left in the
+    pool), so an empty pool means the solver cannot bid. Cost functions: `rounds_cost`,
+    `experiments_cost`, `recorded_cost`.
+  - Real-attempt mode (`MarketRun.state_confidence=True`): each bid emits `attempt_started`,
+    `confidence_stated` (the record's stated p, else the agent's belief mean),
+    the charge with `count`, `attempt_submitted`, `verdict_issued`; `insufficient_credits` once
+    per (agent, world) when an agent wants to bid but cannot afford it. With
+    `MarketRun.preregs`, `prize_posted` carries the commitment, `prereg_committed` follows it,
+    and `prereg_revealed` (full preregistration) is emitted when the world closes or is refunded.
+  - `Event` gains optional `count`, `p`, `commitment`, `attempt_id`, `detail`, serialised only
+    when set. Ledger `outcome.metric` holds the measured normalised MSE for replays, else null.
+  - `dm/types.py` (`Preregistration`, `AttemptRecord` + an `extra` dict for provenance,
+    `InsufficientCredits`), `dm/store.py` (append-only JSONL; a later line with the same id
+    supersedes), fixture pool `attempts/fixtures/replay_pool.jsonl` (8 hand-made records).
+- **Check**: legacy runs through `BernoulliTable` reproduce the Phase 0 hashes of
+  `events.json`, `ledger.json`, `summary.json` exactly (test). ReplayPool on the fixture pool:
+  conservation over 5 seeds × 2 cost functions, determinism, no record drawn twice in a run,
+  records reused across runs, no bids on an empty pool, charges = experiments × price, verdicts
+  and stated p match the records, lifecycle order. 94 tests passed.
+- **Result**: ✅ PASS

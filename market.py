@@ -34,6 +34,12 @@ class Event:
     from_account: str | None = None
     to_account: str | None = None
     amount: float | None = None
+    # Real-attempt fields; serialised only when set, so legacy outputs keep their bytes.
+    count: int | None = None          # experiments charged
+    p: float | None = None            # stated probability of success
+    commitment: str | None = None     # preregistration sha256
+    attempt_id: str | None = None     # AttemptRecord being replayed / run
+    detail: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d = {
@@ -53,6 +59,16 @@ class Event:
             d["to"] = self.to_account
         if self.amount is not None:
             d["amount"] = float(self.amount)
+        if self.count is not None:
+            d["count"] = int(self.count)
+        if self.p is not None:
+            d["p"] = float(self.p)
+        if self.commitment is not None:
+            d["commitment"] = self.commitment
+        if self.attempt_id is not None:
+            d["attempt_id"] = self.attempt_id
+        if self.detail is not None:
+            d["detail"] = self.detail
         return d
 
 
@@ -168,6 +184,54 @@ class TrackCCostModel:
 
 
 # ---------------------------------------------------------------------------
+# Outcome sources
+# ---------------------------------------------------------------------------
+
+class OutcomeSource(Protocol):
+    """Decides what one attempt costs and whether it passes.
+
+    ``draw`` returns ``(passed, cost_detail, attempt_id)``. ``cost_detail`` must hold
+    ``credits`` (the amount charged to the lab) and may hold ``rounds``,
+    ``experiments``, ``count`` (experiments, put on the charge event),
+    ``stated_p``, ``normalised_mse`` and ``commitment``. ``attempt_id`` is the
+    AttemptRecord replayed, or None for a simulated draw.
+    """
+
+    def available(self, agent: str, world: str) -> bool:
+        """False if the agent cannot attempt this world (e.g. empty pool)."""
+        ...
+
+    def draw(self, agent: str, world: str,
+             rng: np.random.Generator) -> tuple[bool, dict, str | None]:
+        ...
+
+
+class BernoulliTable:
+    """Today's behaviour: cost from the cost model, pass with probability p.
+
+    Makes exactly the same rng calls, in the same order (cost, then pass), as the
+    engine did before outcome sources existed, so results are byte-identical.
+    """
+
+    def __init__(self, cost_model: CostModel,
+                 true_probs: dict[str, dict[str, float]]):
+        self.cost_model = cost_model
+        self.true_probs = true_probs
+
+    def reset(self) -> None:
+        pass
+
+    def available(self, agent: str, world: str) -> bool:
+        return True
+
+    def draw(self, agent: str, world: str,
+             rng: np.random.Generator) -> tuple[bool, dict, str | None]:
+        cost, detail = self.cost_model.draw_cost(agent, world, rng)
+        passed = bool(rng.random() < self.true_probs[agent].get(world, 0.0))
+        return passed, {**detail, "credits": cost}, None
+
+
+# ---------------------------------------------------------------------------
 # Agent belief model
 # ---------------------------------------------------------------------------
 
@@ -202,13 +266,19 @@ class MarketRun:
     agents: list[str]
     prizes: dict[str, float]   # world -> prize
     starting_credits: float
-    cost_model: CostModel      # pluggable
-    true_probs: dict[str, dict[str, float]]  # agent -> world -> p
+    cost_model: CostModel      # pluggable; drives the bid rule (max / expected cost)
+    true_probs: dict[str, dict[str, float]] | None  # agent -> world -> p (BernoulliTable)
     initial_beliefs: dict[str, dict[str, float]]  # agent -> world -> mean
     belief_weight: float  # pseudo-attempt weight for prior
-    track: str  # "A" or "C"
-    probability_source: str  # "raw", "calibrated", etc.
+    track: str  # "A", "C", or a replay label
+    probability_source: str  # "raw", "calibrated", "replay:ara", etc.
     code_version: str = "1.0.0"
+    # None → BernoulliTable(cost_model, true_probs), i.e. the legacy behaviour.
+    outcome_source: OutcomeSource | None = None
+    # Real-attempt mode: emit confidence_stated and attempt lifecycle events.
+    state_confidence: bool = False
+    # world -> Preregistration; commitment published at posting, revealed at close.
+    preregs: dict[str, Any] | None = None
 
 
 def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
@@ -217,6 +287,18 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     events: list[Event] = []
     ledger: list[LedgerRow] = []
     seq = 0
+
+    source: OutcomeSource = cfg.outcome_source or BernoulliTable(
+        cfg.cost_model, cfg.true_probs or {})
+    if hasattr(source, "reset"):
+        source.reset()
+    real = cfg.state_confidence
+    preregs = cfg.preregs or {}
+
+    def emit(**kw) -> None:
+        nonlocal seq
+        events.append(Event(run_id=cfg.run_id, seed=cfg.seed, seq=seq, **kw))
+        seq += 1
 
     # --- Accounts ---
     # Total researcher funding = sum of all prizes
@@ -235,6 +317,8 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     open_worlds = set(cfg.worlds)
     # Track which worlds closed during current tick (for bid cancellation)
     closed_this_tick: set[str] = set()
+    # (agent, world) pairs already told they cannot afford an attempt
+    broke_noted: set[tuple[str, str]] = set()
 
     # --- Beliefs ---
     beliefs: dict[str, dict[str, AgentBelief]] = {}
@@ -251,28 +335,29 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
 
     # --- Tick 0: fund accounts (so balances are recomputable from events) ---
     for acct in ["researcher"] + [f"agent:{a}" for a in cfg.agents]:
-        events.append(Event(
-            run_id=cfg.run_id, seed=cfg.seed, tick=0, seq=seq,
-            type="account_funded",
-            from_account="external", to_account=acct,
-            amount=accounts[acct]
-        ))
-        seq += 1
+        emit(tick=0, type="account_funded",
+             from_account="external", to_account=acct, amount=accounts[acct])
 
-    # --- Tick 0: post prizes ---
+    # --- Tick 0: post prizes (with the preregistration commitment, if any) ---
     for world in cfg.worlds:
         prize = cfg.prizes[world]
         accounts["researcher"] -= prize
         accounts["escrow"] += prize
-        events.append(Event(
-            run_id=cfg.run_id, seed=cfg.seed, tick=0, seq=seq,
-            type="prize_posted", world=world,
-            from_account="researcher", to_account="escrow",
-            amount=prize
-        ))
-        seq += 1
+        commitment = preregs[world].commitment() if world in preregs else None
+        emit(tick=0, type="prize_posted", world=world,
+             from_account="researcher", to_account="escrow", amount=prize,
+             commitment=commitment)
+        if commitment is not None:
+            emit(tick=0, type="prereg_committed", world=world,
+                 commitment=commitment)
 
     _check_conservation(accounts, initial_total, 0)
+
+    def reveal(world: str, tick: int) -> None:
+        if world in preregs:
+            emit(tick=tick, type="prereg_revealed", world=world,
+                 commitment=preregs[world].commitment(),
+                 detail=preregs[world].to_dict())
 
     # --- Ticks 1..ticks ---
     for tick in range(1, cfg.ticks + 1):
@@ -283,13 +368,20 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
         for world in [w for w in cfg.worlds if w in open_worlds]:
             prize = cfg.prizes[world]
             for agent in cfg.agents:
-                acct = f"agent:{agent}"
-                max_c = cfg.cost_model.max_cost(agent, world)
-                if accounts[acct] < max_c:
+                if not source.available(agent, world):
                     continue
+                acct = f"agent:{agent}"
                 belief_mean = beliefs[agent][world].mean
                 expected_cost = cfg.cost_model.expected_cost(agent, world)
-                if belief_mean * prize > expected_cost:
+                wants = belief_mean * prize > expected_cost
+                if accounts[acct] < cfg.cost_model.max_cost(agent, world):
+                    if real and wants and (agent, world) not in broke_noted:
+                        broke_noted.add((agent, world))
+                        emit(tick=tick, type="insufficient_credits",
+                             world=world, agent=agent,
+                             amount=cfg.cost_model.max_cost(agent, world))
+                    continue
+                if wants:
                     bids.append((agent, world))
 
         # 2. Shuffle bids
@@ -303,11 +395,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
 
             # 3. Check if world closed this tick
             if world in closed_this_tick or world not in open_worlds:
-                events.append(Event(
-                    run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                    type="bid_cancelled", world=world, agent=agent
-                ))
-                seq += 1
+                emit(tick=tick, type="bid_cancelled", world=world, agent=agent)
                 continue
 
             # Re-check affordability (credits may have changed)
@@ -315,35 +403,69 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
             if accounts[acct] < max_c:
                 continue
 
-            # Emit bid_placed
-            events.append(Event(
-                run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                type="bid_placed", world=world, agent=agent
-            ))
-            seq += 1
+            emit(tick=tick, type="bid_placed", world=world, agent=agent)
 
-            # 4. Draw cost and charge
-            cost, cost_detail = cfg.cost_model.draw_cost(agent, world, rng)
+            # 4. Draw the attempt (cost and outcome) from the outcome source
+            passed, cost_detail, source_attempt_id = source.draw(agent, world, rng)
+            cost = cost_detail["credits"]
+
+            if real:
+                emit(tick=tick, type="attempt_started", world=world, agent=agent,
+                     attempt_id=source_attempt_id)
+                stated = cost_detail.get("stated_p")
+                emit(tick=tick, type="confidence_stated", world=world, agent=agent,
+                     attempt_id=source_attempt_id,
+                     p=stated if stated is not None else beliefs[agent][world].mean)
+
             accounts[acct] -= cost
             accounts["lab"] += cost
+            emit(tick=tick, type=cfg.cost_model.charge_event_type(),
+                 world=world, agent=agent,
+                 from_account=acct, to_account="lab", amount=cost,
+                 count=cost_detail.get("count"), attempt_id=source_attempt_id)
 
-            charge_type = cfg.cost_model.charge_event_type()
-            events.append(Event(
-                run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                type=charge_type, world=world, agent=agent,
-                from_account=acct, to_account="lab",
-                amount=cost
-            ))
-            seq += 1
-
-            # 5. Draw pass/fail
-            true_p = cfg.true_probs[agent].get(world, 0.0)
-            passed = bool(rng.random() < true_p)
+            if real:
+                emit(tick=tick, type="attempt_submitted", world=world, agent=agent,
+                     attempt_id=source_attempt_id)
+                emit(tick=tick, type="verdict_issued", world=world, agent=agent,
+                     attempt_id=source_attempt_id,
+                     commitment=cost_detail.get("commitment"),
+                     detail={"passed": passed,
+                             "normalised_mse": cost_detail.get("normalised_mse")})
 
             attempt_id = str(uuid.uuid5(
                 uuid.NAMESPACE_DNS,
                 f"{cfg.run_id}:{cfg.seed}:{tick}:{agent}:{world}"
             ))
+            context = {
+                "prize": cfg.prizes[world],
+                "probability_source": cfg.probability_source,
+                "track": cfg.track,
+            }
+            if source_attempt_id is not None:
+                context["replayed_attempt_id"] = source_attempt_id
+            row = LedgerRow(
+                attempt_id=attempt_id,
+                source="market_sim",
+                question=world,
+                solver=agent,
+                design=f"track_{cfg.track}",
+                context=context,
+                # metric: a measured score (replays) or None; never the hidden truth.
+                outcome={"passed": passed,
+                         "metric": cost_detail.get("normalised_mse")},
+                effort={
+                    "rounds": cost_detail.get("rounds"),
+                    "experiments": cost_detail.get("experiments"),
+                    "credits": cost,
+                },
+                provenance={
+                    "run_id": cfg.run_id,
+                    "seed": cfg.seed,
+                    "code_version": cfg.code_version,
+                },
+                disclosed_at_tick=None,  # hidden until world closes or run ends
+            )
 
             if passed:
                 prize = cfg.prizes[world]
@@ -352,95 +474,26 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                 open_worlds.discard(world)
                 closed_this_tick.add(world)
 
-                events.append(Event(
-                    run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                    type="attempt_passed", world=world, agent=agent
-                ))
-                seq += 1
-
-                events.append(Event(
-                    run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                    type="prize_paid", world=world, agent=agent,
-                    from_account="escrow", to_account=acct,
-                    amount=prize
-                ))
-                seq += 1
+                emit(tick=tick, type="attempt_passed", world=world, agent=agent)
+                emit(tick=tick, type="prize_paid", world=world, agent=agent,
+                     from_account="escrow", to_account=acct, amount=prize)
+                reveal(world, tick)
 
                 # Disclose all hidden rows for this world
-                for row in hidden_rows:
-                    if row.question == world and row.disclosed_at_tick is None:
-                        row.disclosed_at_tick = tick
+                for hidden in hidden_rows:
+                    if hidden.question == world and hidden.disclosed_at_tick is None:
+                        hidden.disclosed_at_tick = tick
 
-                # Create disclosed ledger row for the passing attempt
-                row = LedgerRow(
-                    attempt_id=attempt_id,
-                    source="market_sim",
-                    question=world,
-                    solver=agent,
-                    design=f"track_{cfg.track}",
-                    context={
-                        "prize": cfg.prizes[world],
-                        "probability_source": cfg.probability_source,
-                        "track": cfg.track,
-                    },
-                    outcome={"passed": True, "metric": None},
-                    effort={
-                        "rounds": cost_detail.get("rounds"),
-                        "experiments": cost_detail.get("experiments"),
-                        "credits": cost,
-                    },
-                    provenance={
-                        "run_id": cfg.run_id,
-                        "seed": cfg.seed,
-                        "code_version": cfg.code_version,
-                    },
-                    disclosed_at_tick=tick,
-                )
-                ledger.append(row)
+                # The passing attempt is disclosed immediately
+                row.disclosed_at_tick = tick
             else:
-                events.append(Event(
-                    run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                    type="attempt_failed", world=world, agent=agent
-                ))
-                seq += 1
-
-                # Hidden ledger row
-                row = LedgerRow(
-                    attempt_id=attempt_id,
-                    source="market_sim",
-                    question=world,
-                    solver=agent,
-                    design=f"track_{cfg.track}",
-                    context={
-                        "prize": cfg.prizes[world],
-                        "probability_source": cfg.probability_source,
-                        "track": cfg.track,
-                    },
-                    outcome={"passed": False, "metric": None},
-                    effort={
-                        "rounds": cost_detail.get("rounds"),
-                        "experiments": cost_detail.get("experiments"),
-                        "credits": cost,
-                    },
-                    provenance={
-                        "run_id": cfg.run_id,
-                        "seed": cfg.seed,
-                        "code_version": cfg.code_version,
-                    },
-                    disclosed_at_tick=None,  # hidden until world closes or run ends
-                )
+                emit(tick=tick, type="attempt_failed", world=world, agent=agent)
                 hidden_rows.append(row)
-                ledger.append(row)
+            ledger.append(row)
 
             # 6. Update belief from own outcome
             beliefs[agent][world].update(passed)
-
-            # Emit estimate_updated
-            events.append(Event(
-                run_id=cfg.run_id, seed=cfg.seed, tick=tick, seq=seq,
-                type="estimate_updated", world=world, agent=agent
-            ))
-            seq += 1
+            emit(tick=tick, type="estimate_updated", world=world, agent=agent)
 
         _check_conservation(accounts, initial_total, tick)
 
@@ -449,18 +502,14 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
         prize = cfg.prizes[world]
         accounts["escrow"] -= prize
         accounts["researcher"] += prize
-        events.append(Event(
-            run_id=cfg.run_id, seed=cfg.seed, tick=cfg.ticks, seq=seq,
-            type="prize_refunded", world=world,
-            from_account="escrow", to_account="researcher",
-            amount=prize
-        ))
-        seq += 1
+        emit(tick=cfg.ticks, type="prize_refunded", world=world,
+             from_account="escrow", to_account="researcher", amount=prize)
+        reveal(world, cfg.ticks)
 
         # Disclose hidden rows for unsolved worlds at run end
-        for row in hidden_rows:
-            if row.question == world and row.disclosed_at_tick is None:
-                row.disclosed_at_tick = cfg.ticks
+        for hidden in hidden_rows:
+            if hidden.question == world and hidden.disclosed_at_tick is None:
+                hidden.disclosed_at_tick = cfg.ticks
 
     _check_conservation(accounts, initial_total, cfg.ticks)
 
