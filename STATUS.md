@@ -493,5 +493,5 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   lock remain git-ignored. No real API calls were made.
 - Preflight with an empty live cache: $4.661748 total worst-case across 8 runs; the largest
   model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
-- Checks: targeted live/POC suite 47 passed; full suite 515 passed, 5 skipped, 14 xfailed,
-  35 warnings.
+- Checks after merging `origin/real-attempts`: targeted live/POC suite 47 passed; full suite
+  657 passed, 5 skipped, 0 xfailed, no XPASS.
