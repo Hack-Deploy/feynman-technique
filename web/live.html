@@ -40,6 +40,14 @@
   .result.lose { background: var(--rust-soft); }
   .wait { color: var(--muted); font-size: 15px; }
   .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--rust); animation: p 1s infinite alternate; }
+  .banner { padding: 14px 16px; border-radius: 10px; margin-top: 18px; font-size: 15px; }
+  .banner.scripted { background: var(--amber-soft); border: 1.5px dashed var(--amber); }
+  .banner.real { background: var(--green-soft); }
+  .cmp { display: grid; grid-template-columns: 1.25fr 1fr; gap: 26px; margin-top: 18px; align-items: start; }
+  @media (max-width: 860px) { .cmp { grid-template-columns: 1fr; } }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  tr.sel td { background: var(--soft); }
+  .btn.sm { padding: 6px 12px; font-size: 13px; }
   @keyframes p { from { opacity: .25 } to { opacity: 1 } }
 </style>
 </head>
@@ -119,8 +127,43 @@
   </div>
 </section>
 
+<section id="recorded">
+  <p class="label">3 · Recorded runs</p>
+  <h2>Replay runs that were already played.</h2>
+  <p class="sub">Every model got the same claims, the same prices and the same spending cap. Replays read saved results from this machine; nothing is sent to an AI model.</p>
+  <div id="recBanner"><p class="wait">Loading…</p></div>
+  <h3 style="margin-top:22px">How the models compare</h3>
+  <div class="cmp">
+    <div id="recCompare"></div>
+    <div class="fig"><svg viewBox="0 0 420 300" id="calChart" role="img" aria-label="Stated chance against what happened, per model"></svg>
+      <p class="cap">Each small dot is one run: how sure the model said it was at the end (left to right) and whether it won (top) or not (bottom). The big dot is the model's average. A well-calibrated model sits on the dashed line: when it says 70%, it wins about 70% of the time.</p></div>
+  </div>
+  <h3 style="margin-top:26px">Pick a run to replay</h3>
+  <div id="recRuns"></div>
+  <div id="replay" style="display:none">
+    <h3 id="repTitle" style="margin-top:26px"></h3>
+    <div class="controls" style="margin-top:10px"><button class="btn sm" id="repPlay">Replay round by round</button><button class="btn ghost sm" id="repAll">Show all rounds</button></div>
+    <div class="board">
+      <div id="repFeed"></div>
+      <div>
+        <div class="kv">
+          <div><span>Round</span><b id="rRound">–</b></div>
+          <div><span>Credits spent</span><b id="rSpent">–</b></div>
+          <div><span>Experiments</span><b id="rExp">–</b></div>
+          <div><span>Stated chance</span><b id="rP">–</b></div>
+          <div><span>API cost</span><b id="rUsd">–</b></div>
+          <div><span>Model</span><b id="rModel" style="font-size:15px">–</b></div>
+        </div>
+        <div class="fig" style="margin-top:14px"><svg viewBox="0 0 420 220" id="repChart" role="img" aria-label="Stated chance and spend by round"></svg>
+          <p class="cap">Navy: the model's stated chance of a correct verdict. Rust: credits spent.</p></div>
+        <div id="repResult"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="record">
-  <p class="label rust">3 · The public record</p>
+  <p class="label rust">4 · The public record</p>
   <h2>Every run is kept, especially the failures.</h2>
   <p class="sub">The next model sees the failed runs for its claim before it bids. Below: live runs with real models, then scripted demo runs.</p>
   <div id="leader"></div>
@@ -134,6 +177,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const pct = v => v == null ? "–" : Math.round(v * 100) + "%";
+const usd = v => v == null ? "–" : Number(v).toFixed(2);
 const n0 = v => v == null ? "–" : (Math.round(v * 10) / 10).toString();
 const ACTION = {experiment: "bought an experiment", mse_fit: "fitted a formula to its data", verdict: "gave its verdict",
   walk_away: "walked away", withdraw: "withdrew", no_tag: "reply had no action"};
@@ -143,7 +187,7 @@ let INFO = null, MODE = "demo", POLL = null;
 function renderStatus() {
   const l = INFO.live;
   $("#status").innerHTML = l.enabled
-    ? `<div class="status on"><span class="pill pass">real models on</span><div>Spend cap $${l.max_usd}. A run is projected at up to $${(l.projected_usd_per_run ?? 0).toFixed(2)}; $${(l.projected_usd_spent ?? 0).toFixed(2)} projected so far.</div></div>`
+    ? `<div class="status on"><span class="pill pass">real models on</span><div>Spend cap $${usd(l.max_usd)}: $${usd(l.spent_usd)} spent so far (shared with the command-line grid), $${usd(l.remaining_usd)} left. A run is refused if its worst case would go over the cap.</div></div>`
     : `<div class="status off"><span class="pill warn">real models off</span><div>The scripted demo runs the full market for free with a pre-written AI scientist: it buys one experiment, then always answers “supported”, so it wins on true claims and loses on false ones. To use a real model on this machine:<ul>${(l.reasons || []).map(r => `<li>${esc(r)}</li>`).join("")}</ul></div></div>`;
   const liveBtn = document.querySelector('#mode [data-m="live"]');
   liveBtn.disabled = !l.enabled;
@@ -159,7 +203,7 @@ function costNote() {
   const ec = INFO.experiment_costs || {};
   const parts = Object.entries(ec).map(([k, v]) => `${v} ${k.replace("per_", "per ").replace(/_/g, " ")}`).join(", ");
   $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}. Up to ${INFO.max_rounds} rounds.` +
-    (MODE === "live" && INFO.live.usd_per_call ? ` Real-money cap for one run ≈ $${(INFO.live.projected_usd_per_run ?? 0).toFixed(2)}.` : "");
+    (MODE === "live" ? ` Real models play up to ${INFO.live.max_rounds} rounds; worst-case API cost for one run with this model: $${usd((INFO.live.projected_usd_per_run || {})[$("#model").value])}.` : "");
 }
 function renderHyp() {
   const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
@@ -169,7 +213,7 @@ function renderHyp() {
     <div class="meta"><span class="pill info">world: ${esc(h.world)}</span><span class="pill pass">prize ${h.prize} credits</span><span class="pill">answer hidden</span></div></div>`;
 }
 
-function chart(rounds) {
+function chart(rounds, el = "#pChart") {
   const W = 420, H = 220, x0 = 36, y0 = 190, w = W - x0 - 14, h = 160;
   const n = Math.max(rounds.length, 4);
   const sx = i => x0 + (n === 1 ? 0 : i / (n - 1) * w);
@@ -177,7 +221,7 @@ function chart(rounds) {
   const pts = rounds.map((r, i) => r.p_success == null ? null : [sx(i), y0 - r.p_success * h]).filter(Boolean);
   const sp = rounds.map((r, i) => [sx(i), y0 - (r.spent_so_far || 0) / maxS * h]);
   const line = (a, c, dash) => a.length ? `<path d="${a.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ")}" stroke="${c}" stroke-width="3" fill="none" ${dash ? 'stroke-dasharray="5 4"' : ""}/>` + a.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c}"/>`).join("") : "";
-  $("#pChart").innerHTML = `<line x1="${x0}" y1="${y0}" x2="${W - 10}" y2="${y0}" stroke="#DADAD6"/><line x1="${x0}" y1="${y0 - h}" x2="${x0}" y2="${y0}" stroke="#DADAD6"/>
+  $(el).innerHTML = `<line x1="${x0}" y1="${y0}" x2="${W - 10}" y2="${y0}" stroke="#DADAD6"/><line x1="${x0}" y1="${y0 - h}" x2="${x0}" y2="${y0}" stroke="#DADAD6"/>
     <text x="${x0 - 6}" y="${y0 - h + 4}" text-anchor="end" font-size="11" fill="#6B6B67">100%</text><text x="${x0 - 6}" y="${y0 + 4}" text-anchor="end" font-size="11" fill="#6B6B67">0</text>
     <text x="${W - 10}" y="${y0 + 18}" text-anchor="end" font-size="11" fill="#6B6B67">round →</text>
     <text x="${W - 10}" y="${y0 - h - 6}" text-anchor="end" font-size="11" fill="#A23B1E">max ${n0(maxS)} credits</text>
@@ -256,10 +300,92 @@ async function loadRuns() {
   $("#runs").innerHTML = runsTable(d.live || [], "Real-model runs") + runsTable(d.demo || [], "Scripted demo runs");
 }
 
+const COLORS = ["#1B3F8B", "#2E7D4F", "#A23B1E", "#B7791F", "#6B6B67", "#3D63B5"];
+let REC = null, REPLAY = null;
+function calChart(cmp) {
+  const W = 420, H = 300, x0 = 46, y0 = 250, w = W - x0 - 20, h = 210;
+  const X = p => x0 + p * w, Y = q => y0 - q * h;
+  let g = `<line x1="${x0}" y1="${y0}" x2="${x0 + w}" y2="${y0}" stroke="#DADAD6"/><line x1="${x0}" y1="${y0 - h}" x2="${x0}" y2="${y0}" stroke="#DADAD6"/>
+    <line x1="${X(0)}" y1="${Y(0)}" x2="${X(1)}" y2="${Y(1)}" stroke="#6B6B67" stroke-dasharray="5 4"/>
+    <text x="${x0 - 6}" y="${Y(1) + 4}" text-anchor="end" font-size="11" fill="#6B6B67">won</text><text x="${x0 - 6}" y="${Y(0) + 4}" text-anchor="end" font-size="11" fill="#6B6B67">lost</text>
+    ${[0, 0.5, 1].map(v => `<text x="${X(v)}" y="${y0 + 16}" text-anchor="middle" font-size="11" fill="#6B6B67">${v * 100}%</text>`).join("")}
+    <text x="${x0 + w}" y="${y0 + 34}" text-anchor="end" font-size="11" fill="#6B6B67">stated chance of winning →</text>`;
+  cmp.forEach((m, i) => {
+    const c = COLORS[i % COLORS.length], pts = m.points || [];
+    pts.forEach((p, k) => { g += `<circle cx="${X(p.p).toFixed(1)}" cy="${(Y(p.passed ? 1 : 0) + (p.passed ? 1 : -1) * (6 + i * 5)).toFixed(1)}" r="4.5" fill="${c}" opacity=".75"><title>${esc(m.label)} · ${pct(p.p)} · ${p.passed ? "won" : "lost"} · ${esc(p.hypothesis_id)}</title></circle>`; });
+    if (pts.length) {
+      const mp = pts.reduce((a, p) => a + p.p, 0) / pts.length, mw = pts.filter(p => p.passed).length / pts.length;
+      g += `<circle cx="${X(mp).toFixed(1)}" cy="${Y(mw).toFixed(1)}" r="9" fill="${c}" stroke="#fff" stroke-width="2"><title>${esc(m.label)}: says ${pct(mp)} on average, won ${pct(mw)}</title></circle>`;
+    }
+  });
+  $("#calChart").innerHTML = g;
+}
+function renderRecorded(d) {
+  REC = d;
+  const real = d.source === "real";
+  $("#recBanner").innerHTML = d.source === "none" ? `<div class="banner scripted">No recorded runs yet.</div>` : real
+    ? `<div class="banner real"><span class="pill pass">real runs</span> ${d.real_count} runs played by real Claude models and saved on this machine. Model prices from Anthropic, checked ${esc(d.prices_checked)}.${d.scripted_count ? ` (${d.scripted_count} scripted demo runs are hidden.)` : ""}</div>`
+    : `<div class="banner scripted"><span class="pill warn">scripted demo · not real models</span> No real runs have been recorded yet, so this shows ${d.scripted_count} runs by pre-written stand-ins, one per model slot. They only show how the view works and say nothing about the real models. API cost is $0 because no model was called.</div>`;
+  const cmp = d.comparison || [];
+  $("#recCompare").innerHTML = `<table><tr><th>Model</th><th class="num">Runs</th><th class="num">Won</th><th class="num">Win rate</th><th class="num">Profit (credits)</th><th class="num">API cost</th><th class="num">Brier score</th></tr>` +
+    cmp.map((m, i) => `<tr><td><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${esc(m.label)}</td><td class="num">${m.runs}</td><td class="num">${m.wins}</td><td class="num">${pct(m.win_rate)}</td>
+      <td class="num" style="color:${m.profit >= 0 ? "var(--green)" : "var(--rust)"}">${m.profit >= 0 ? "+" : ""}${n0(m.profit)}</td><td class="num">$${usd(m.usd_spent)}</td><td class="num">${m.brier == null ? "–" : Number(m.brier).toFixed(3)}</td></tr>`).join("") +
+    `</table><p class="note">Profit = prize won minus credits spent on round fees and experiments. API cost is real money paid for the model's tokens. Brier score measures how honest the stated chance was: 0 is perfect, 0.25 is what always saying 50% gets; lower is better.</p>`;
+  calChart(cmp);
+  const rows = d.runs || [];
+  $("#recRuns").innerHTML = rows.length ? `<table><tr><th>Claim</th><th>Model</th><th>Outcome</th><th>Said / truth</th><th class="num">Final chance</th><th class="num">Exp.</th><th class="num">Profit</th><th class="num">API cost</th><th></th></tr>` +
+    rows.map(r => `<tr data-id="${esc(r.attempt_id)}"><td>${esc(r.hypothesis_id)}</td><td>${esc(r.model_label || r.model)}</td>
+      <td>${r.passed ? '<span class="pill pass">won</span>' : `<span class="pill fail">${r.outcome === "verdict" ? "no prize" : esc(OUTCOME[r.outcome] || r.outcome)}</span>`}</td>
+      <td>${esc(r.agent_verdict || "–")} / ${esc(r.answer)}</td><td class="num">${pct(r.final_p)}</td><td class="num">${r.experiments}</td>
+      <td class="num" style="color:${r.profit >= 0 ? "var(--green)" : "var(--rust)"}">${n0(r.profit)}</td><td class="num">$${usd(r.usd)}</td>
+      <td><button class="btn ghost sm" data-replay="${esc(r.attempt_id)}">Replay</button></td></tr>`).join("") + "</table>" : `<p class="wait">None yet.</p>`;
+  document.querySelectorAll("[data-replay]").forEach(b => b.addEventListener("click", () => openReplay(b.dataset.replay)));
+}
+function showReplay(n) {
+  const R = REPLAY, rs = R.rounds.slice(0, n), last = rs[rs.length - 1] || {};
+  $("#repFeed").innerHTML = rs.map(roundCard).join("") + (n < R.rounds.length ? `<p class="wait"><span class="pulse"></span> next round…</p>` : "");
+  $("#rRound").textContent = rs.length ? `${rs.length} / ${R.rounds.length}` : "–";
+  $("#rSpent").textContent = n0(last.spent_so_far ?? 0);
+  $("#rExp").textContent = rs.reduce((a, r) => a + (r.n_experiments || 0), 0);
+  $("#rP").textContent = pct([...rs].reverse().find(r => r.p_success != null)?.p_success);
+  const u = [...rs].reverse().find(r => r.usd_so_far != null)?.usd_so_far;
+  $("#rUsd").textContent = R.source === "scripted" ? "$0 (scripted)" : "$" + usd(n >= R.rounds.length ? R.run.usd : u);
+  chart(rs, "#repChart");
+  const r = R.run, win = r.passed;
+  $("#repResult").innerHTML = n < R.rounds.length ? "" : `<div class="result ${win ? "win" : "lose"}"><p class="label" style="margin:0">${win ? "Prize paid" : "No prize"}</p>
+    <div class="big" style="color:${win ? "var(--green)" : "var(--rust)"}">${r.profit >= 0 ? "+" : ""}${n0(r.profit)} credits</div>
+    <p style="margin-top:8px">Outcome: <b>${esc(OUTCOME[r.outcome] || r.outcome)}</b>${r.agent_verdict ? `, it said <b>${esc(r.agent_verdict)}</b>` : ""}. The hidden answer was <b>${esc(r.answer)}</b>.</p>
+    <p class="note">Spent ${n0(r.spent)} credits on ${r.rounds} rounds and ${r.experiments} experiments; prize paid ${n0(r.prize_paid)} of ${n0(r.prize)}. API cost $${usd(r.usd)}.</p></div>`;
+}
+function playReplay() {
+  clearTimeout(REPLAY.timer);
+  const step = n => { showReplay(n); if (n < REPLAY.rounds.length) REPLAY.timer = setTimeout(() => step(n + 1), 1100); };
+  step(1);
+}
+async function openReplay(id) {
+  if (REPLAY) clearTimeout(REPLAY.timer);
+  const res = await fetch("/api/live/recorded/run?id=" + encodeURIComponent(id));
+  if (!res.ok) { $("#recRuns").insertAdjacentHTML("beforeend", `<p class="pill fail">Run ${esc(id)} not found.</p>`); return; }
+  const d = await res.json();
+  REPLAY = {...d, rounds: d.rounds || [], timer: null};
+  document.querySelectorAll("#recRuns tr[data-id]").forEach(tr => tr.classList.toggle("sel", tr.dataset.id === id));
+  $("#replay").style.display = "";
+  $("#rModel").textContent = d.run.model_label || d.run.model;
+  $("#repTitle").innerHTML = `${d.source === "scripted" ? '<span class="pill warn">scripted demo</span> ' : '<span class="pill pass">real run</span> '}${esc(d.run.model_label || d.run.model)} on <i>${esc(d.run.hypothesis_id)}</i>`;
+  playReplay();
+  $("#replay").scrollIntoView({behavior: "smooth", block: "start"});
+}
+$("#repPlay").addEventListener("click", () => REPLAY && playReplay());
+$("#repAll").addEventListener("click", () => { if (REPLAY) { clearTimeout(REPLAY.timer); showReplay(REPLAY.rounds.length); } });
+fetch("/api/live/recorded").then(r => r.json()).then(renderRecorded)
+  .catch(e => { $("#recBanner").innerHTML = `<p class="pill fail">Could not load recorded runs: ${esc(e.message)}</p>`; });
+
 fetch("/api/live/info").then(r => r.json()).then(info => {
   INFO = info;
   $("#hyp").innerHTML = info.hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}</option>`).join("");
-  $("#model").innerHTML = info.models.map(m => `<option>${esc(m)}</option>`).join("");
+  const label = Object.fromEntries((info.model_table || []).map(m => [m.id, m.label]));
+  $("#model").innerHTML = info.models.map(m => `<option value="${esc(m)}">${esc(label[m] ? label[m] + " · " + m : m)}</option>`).join("");
+  $("#model").addEventListener("change", costNote);
   $("#hyp").addEventListener("change", renderHyp);
   document.querySelectorAll("#mode button").forEach(b => b.addEventListener("click", () => !b.disabled && setMode(b.dataset.m)));
   renderStatus(); renderHyp(); costNote(); chart([]);
