@@ -7,6 +7,7 @@ Records are never rewritten. A corrected record is appended with the same
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -26,7 +27,8 @@ class AttemptStore:
         n = 0
         with self.path.open("a") as f:
             for r in records:
-                f.write(json.dumps(r.to_dict(), sort_keys=True) + "\n")
+                # One write per line (atomic with O_APPEND on local filesystems); no NaN.
+                f.write(json.dumps(r.to_dict(), sort_keys=True, allow_nan=False) + "\n")
                 n += 1
         return n
 
@@ -36,11 +38,19 @@ class AttemptStore:
         if not self.path.exists():
             return []
         latest: dict[str, AttemptRecord] = {}
-        with self.path.open() as f:
-            for line in f:
-                if line.strip():
-                    r = AttemptRecord.from_dict(json.loads(line))
-                    latest[r.attempt_id] = r
+        lines = self.path.read_text().split("\n")
+        for i, line in enumerate(lines, 1):
+            if not line.strip():
+                continue
+            try:
+                d = json.loads(line)
+            except json.JSONDecodeError:
+                if i == len(lines):  # unterminated final line: an interrupted append
+                    warnings.warn(f"{self.path}:{i}: ignoring truncated final line")
+                    continue
+                raise ValueError(f"{self.path}:{i}: corrupt record") from None
+            r = AttemptRecord.from_dict(d)
+            latest[r.attempt_id] = r
         records = list(latest.values())
         return [r for r in records if where(r)] if where else records
 

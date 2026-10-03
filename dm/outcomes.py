@@ -47,13 +47,32 @@ def recorded_cost() -> CostFn:
 
 class ReplayPool:
     def __init__(self, records: list[AttemptRecord], cost_fn: CostFn,
-                 charge_event: str = "experiment_charged"):
+                 charge_event: str | None = None, venue: str | None = None):
+        """``charge_event`` defaults to ``experiment_charged`` when the cost function
+        reports a ``count`` and ``round_charged`` otherwise. ``venue`` restricts the
+        pool to one venue; without it, mixing venues for one (solver, world) is an error
+        (a ForceBench gravity attempt is not a DiscoverPhysics gravity attempt)."""
         self.cost_fn = cost_fn
-        self.charge_event = charge_event
         pool: dict[tuple[str, str], list[AttemptRecord]] = defaultdict(list)
+        venues: dict[tuple[str, str], set[str]] = defaultdict(set)
         for r in sorted(records, key=lambda r: r.attempt_id):  # order-independent
+            if venue is not None and r.venue != venue:
+                continue
+            if not r.settled:
+                raise ValueError(f"{r.attempt_id}: verdict has no bool 'passed'; "
+                                 "only settled attempts can be replayed")
             pool[(r.solver, r.world)].append(r)
+            venues[(r.solver, r.world)].add(r.venue)
+        mixed = {k: v for k, v in venues.items() if len(v) > 1}
+        if mixed:
+            raise ValueError(f"records from several venues share (solver, world): {mixed}; "
+                             "pass venue=...")
         self.pool = dict(pool)
+        if charge_event is None:
+            sample = next((rs[0] for rs in self.pool.values()), None)
+            has_count = sample is not None and "count" in cost_fn(sample)[1]
+            charge_event = "experiment_charged" if has_count else "round_charged"
+        self.charge_event = charge_event
         self.remaining: dict[tuple[str, str], list[AttemptRecord]] = {}
         self.reset()
 
@@ -69,6 +88,8 @@ class ReplayPool:
         left = self.remaining[(agent, world)]
         rec = left.pop(int(rng.integers(len(left))))
         credits, detail = self.cost_fn(rec)
+        if not (np.isfinite(credits) and credits >= 0):
+            raise ValueError(f"{rec.attempt_id}: cost {credits!r} is not finite and >= 0")
         detail = {
             **detail,
             "credits": credits,
@@ -80,7 +101,9 @@ class ReplayPool:
 
     # --- CostModel -------------------------------------------------------
     def _costs(self, agent: str, world: str) -> list[float]:
-        return [self.cost_fn(r)[0] for r in self.remaining.get((agent, world), [])]
+        # Over the whole pool, not what is left: the bid rule must not learn the exact
+        # cost of the next draw as the pool empties (cost correlates with the outcome).
+        return [self.cost_fn(r)[0] for r in self.pool.get((agent, world), [])]
 
     def max_cost(self, agent: str, world: str) -> float:
         costs = self._costs(agent, world)
