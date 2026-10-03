@@ -396,3 +396,39 @@ class TestP2CalibratedFewBids:
             f"Expected 0 bids under calibrated odds at prize 20 "
             f"(all agents' belief_mean * 20 < 10), got {len(bid_events)}"
         )
+
+
+class TestP1CrossProcessDeterminism:
+    """Same seed gives identical events regardless of Python's hash seed."""
+
+    def test_events_independent_of_hash_seed(self):
+        import subprocess
+        root = Path(__file__).resolve().parent.parent
+        code = (
+            "import json, hashlib; from runner import run_track_a; "
+            "ev, _ = run_track_a(prize=50, probability_source='raw', seed=0); "
+            "print(hashlib.sha256(json.dumps([e.to_dict() for e in ev])"
+            ".encode()).hexdigest())"
+        )
+        digests = set()
+        for hash_seed in ["1", "2", "3"]:
+            out = subprocess.run(
+                [sys.executable, "-c", code], cwd=root, check=True,
+                capture_output=True, text=True,
+                env={**__import__("os").environ, "PYTHONHASHSEED": hash_seed},
+            )
+            digests.add(out.stdout.strip())
+        assert len(digests) == 1, "Events depend on PYTHONHASHSEED"
+
+
+class TestP1AccountFunding:
+    """Opening balances are recorded as events."""
+
+    def test_funding_events_at_tick_zero(self):
+        cfg = _make_simple_run(prize=20)
+        events, _ = run_market(cfg)
+        funded = {e.to_account: e.amount for e in events
+                  if e.type == "account_funded"}
+        assert funded == {"researcher": 20, "agent:test_agent": 100}
+        assert all(e.tick == 0 and e.from_account == "external"
+                   for e in events if e.type == "account_funded")

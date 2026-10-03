@@ -239,6 +239,16 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     # --- Hidden ledger rows (not yet disclosed) ---
     hidden_rows: list[LedgerRow] = []
 
+    # --- Tick 0: fund accounts (so balances are recomputable from events) ---
+    for acct in ["researcher"] + [f"agent:{a}" for a in cfg.agents]:
+        events.append(Event(
+            run_id=cfg.run_id, seed=cfg.seed, tick=0, seq=seq,
+            type="account_funded",
+            from_account="external", to_account=acct,
+            amount=accounts[acct]
+        ))
+        seq += 1
+
     # --- Tick 0: post prizes ---
     for world in cfg.worlds:
         prize = cfg.prizes[world]
@@ -260,7 +270,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
 
         # 1. Collect bids: every open world × every agent with credits
         bids: list[tuple[str, str]] = []  # (agent, world)
-        for world in list(open_worlds):
+        for world in [w for w in cfg.worlds if w in open_worlds]:
             prize = cfg.prizes[world]
             for agent in cfg.agents:
                 acct = f"agent:{agent}"
@@ -425,7 +435,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
         _check_conservation(accounts, initial_total, tick)
 
     # --- End of run: refund open prizes ---
-    for world in list(open_worlds):
+    for world in [w for w in cfg.worlds if w in open_worlds]:
         prize = cfg.prizes[world]
         accounts["escrow"] -= prize
         accounts["researcher"] += prize

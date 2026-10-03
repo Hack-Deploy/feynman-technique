@@ -20,6 +20,13 @@ from analysis import (
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 
 
+def _ensure_outputs():
+    """output/ is gitignored; regenerate it on a fresh clone."""
+    if not (OUTPUT_DIR / "summary.json").exists():
+        import run
+        run.main()
+
+
 def _load_events():
     with open(OUTPUT_DIR / "events.json") as f:
         return json.load(f)
@@ -37,16 +44,19 @@ def _load_summary():
 
 @pytest.fixture(scope="module")
 def all_events():
+    _ensure_outputs()
     return _load_events()
 
 
 @pytest.fixture(scope="module")
 def all_ledger():
+    _ensure_outputs()
     return _load_ledger()
 
 
 @pytest.fixture(scope="module")
 def summary():
+    _ensure_outputs()
     return _load_summary()
 
 
@@ -179,3 +189,91 @@ class TestP4LabRevenue:
             stored = summary["run_summaries"][run_id]["lab_revenue"]
             assert recomputed == pytest.approx(stored, abs=1e-9), \
                 f"Lab revenue mismatch in {run_id}"
+
+
+# ===================================================================
+# Profit and H1 verdict – checked against hand-computed values
+# ===================================================================
+
+from market import MarketRun, run_market, TrackCCostModel
+from analysis import _h1_verdict
+
+
+def _sure_win_events(seed: int) -> list[dict]:
+    """One world, prize 30. 'winner' always passes at cost 8 × 1 = 8;
+    'idle' believes p=0 and never bids."""
+    cfg = MarketRun(
+        run_id=f"hand_seed{seed}", seed=seed, ticks=5,
+        worlds=["w"], agents=["winner", "idle"], prizes={"w": 30},
+        starting_credits=100,
+        cost_model=TrackCCostModel({"winner": 8, "idle": 8}, 1.0),
+        true_probs={"winner": {"w": 1.0}, "idle": {"w": 0.0}},
+        initial_beliefs={"winner": {"w": 1.0}, "idle": {"w": 0.0}},
+        belief_weight=2, track="C", probability_source="test",
+    )
+    events, _ = run_market(cfg)
+    return [e.to_dict() for e in events]
+
+
+class TestProfitsHandComputed:
+
+    def test_profit_equals_prize_minus_cost(self):
+        events = _sure_win_events(0) + _sure_win_events(1)
+        profits = compute_agent_profits(events, [0, 1], "hand_seed{seed}")
+        assert profits["winner"]["mean_profit"] == pytest.approx(30 - 8)
+        assert profits["idle"]["mean_profit"] == pytest.approx(0)
+
+    def test_final_balances_are_absolute(self):
+        balances = compute_final_balances(_sure_win_events(0))
+        assert balances["agent:winner"] == pytest.approx(100 + 30 - 8)
+        assert balances["agent:idle"] == pytest.approx(100)
+
+    def test_non_bidders_counted_with_zero_bids(self):
+        from analysis import compute_agent_bid_counts
+        events = _sure_win_events(0)
+        bids = compute_agent_bid_counts(events, [0], "hand_seed{seed}")
+        assert bids == {"winner": 1.0, "idle": 0.0}
+
+
+def _h1_data(**prize_rows):
+    """prize -> {agent: (mean_profit, mean_bids)} into h1_results shape."""
+    return {
+        prize: {
+            "profits": {a: {"mean_profit": p, "std_profit": 0.0}
+                        for a, (p, _) in row.items()},
+            "mean_bids": {a: b for a, (_, b) in row.items()},
+        }
+        for prize, row in prize_rows.items()
+    }
+
+
+ORDER = ["s1", "s2", "w1", "w2"]
+
+
+class TestH1Verdict:
+
+    def test_supported_when_strong_profit_and_weak_abstain(self):
+        data = _h1_data(**{"50": {"s1": (10, 3), "s2": (5, 2),
+                                  "w1": (0, 0), "w2": (0, 0)}})
+        v = _h1_verdict("raw", data, ORDER)
+        assert "→ SUPPORTED at prize=50" in v
+        assert "never placed a bid" in v
+
+    def test_not_supported_when_a_strong_agent_loses(self):
+        # Old verdict called this SUPPORTED (top agent > 0 was enough)
+        data = _h1_data(**{"50": {"s1": (10, 3), "s2": (-5, 2),
+                                  "w1": (0, 0), "w2": (0, 0)}})
+        v = _h1_verdict("raw", data, ORDER)
+        assert "NOT SUPPORTED at any prize" in v
+
+    def test_partial_when_weak_bid_and_lose(self):
+        data = _h1_data(**{"50": {"s1": (10, 3), "s2": (5, 2),
+                                  "w1": (-8, 1), "w2": (0, 0)}})
+        v = _h1_verdict("raw", data, ORDER)
+        assert "→ PARTIAL at prize=50" in v
+        assert "never placed a bid" not in v
+
+    def test_no_market_when_nobody_bids(self):
+        data = _h1_data(**{"5": {a: (0, 0) for a in ORDER}})
+        v = _h1_verdict("raw", data, ORDER)
+        assert "no market" in v

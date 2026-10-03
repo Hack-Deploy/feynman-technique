@@ -16,6 +16,8 @@ from typing import Any
 
 import numpy as np
 
+from data_loader import load_table2
+
 
 def compute_final_balances(events: list[dict]) -> dict[str, float]:
     """Compute final balance for every account from events."""
@@ -81,7 +83,7 @@ def compute_run_summary(events: list[dict], ledger: list[dict]) -> dict[str, Any
     return {
         "final_balances": balances,
         "worlds_solved": solved,
-        "worlds_unsolved": list(all_worlds - set(solved.keys())),
+        "worlds_unsolved": sorted(all_worlds - set(solved.keys())),
         "worlds_refunded": worlds_refunded,
         "lab_revenue": lab_revenue,
         "refunded_share": len(worlds_refunded) / len(all_worlds) if all_worlds else 0,
@@ -161,11 +163,21 @@ def compute_clearing_prizes(
     return clearing
 
 
+def compute_funding(events: list[dict]) -> dict[str, float]:
+    """Opening balance per account, from tick-0 account_funded events."""
+    return {
+        e["to"]: e["amount"] for e in events if e["type"] == "account_funded"
+    }
+
+
 def compute_agent_profits(
     all_events: list[dict], seeds: list[int],
     run_id_template: str,
 ) -> dict[str, dict[str, float]]:
     """Compute mean and std of final profit for each agent across seeds.
+
+    Profit = final balance - opening balance. Agents that never bid are
+    included with profit 0.
 
     run_id_template: template with {seed} placeholder.
     """
@@ -178,11 +190,10 @@ def compute_agent_profits(
         if not run_events:
             continue
         balances = compute_final_balances(run_events)
-        for acct, balance in balances.items():
+        for acct, funded in compute_funding(run_events).items():
             if acct.startswith("agent:"):
                 agent = acct.replace("agent:", "")
-                profit = balance - 100  # starting credits
-                agent_profits[agent].append(profit)
+                agent_profits[agent].append(balances[acct] - funded)
 
     result: dict[str, dict[str, float]] = {}
     for agent, profits in agent_profits.items():
@@ -207,7 +218,13 @@ def compute_agent_bid_counts(
     for seed in seeds:
         run_id = run_id_template.format(seed=seed)
         run_events = by_run.get(run_id, [])
-        counts: dict[str, int] = defaultdict(int)
+        if not run_events:
+            continue
+        # Start every funded agent at 0 so non-bidders count as 0 bids
+        counts: dict[str, int] = {
+            acct.replace("agent:", ""): 0
+            for acct in compute_funding(run_events) if acct.startswith("agent:")
+        }
         for e in run_events:
             if e["type"] == "bid_placed":
                 counts[e["agent"]] += 1
@@ -286,7 +303,12 @@ def build_full_summary(
             }
 
     # Build verdicts
-    verdicts = _build_verdicts(h1_results, h2_results, h3_results)
+    table2 = load_table2()
+    strength_order = list(
+        table2["pass_at_1"].sort_values(ascending=False).index
+    )
+    verdicts = _build_verdicts(h1_results, h2_results, h3_results,
+                               strength_order)
 
     summary = {
         "caveat": (
@@ -303,70 +325,82 @@ def build_full_summary(
     return summary
 
 
-def _build_verdicts(h1_results, h2_results, h3_results) -> dict[str, Any]:
+def _h1_verdict(source: str, h1_data: dict, strength_order: list[str]) -> str:
+    """H1: do stronger agents end in profit while weaker agents stop bidding?
+
+    Agents are ranked by Table 2 pass@1; the top half are "stronger", the
+    bottom half "weaker". Per prize level:
+      SUPPORTED      every stronger agent has mean profit > 0 and no weaker
+                     agent places a bid
+      PARTIAL        stronger agents profit, but weaker agents bid and lose
+      NOT SUPPORTED  a stronger agent does not profit, or a weaker agent profits
+    """
+    half = len(strength_order) // 2
+    strong, weak = strength_order[:half], strength_order[half:]
+    lines = [
+        f"H1 verdict ({source} odds):",
+        f"  stronger (by pass@1): {', '.join(strong)}; "
+        f"weaker: {', '.join(weak)}",
+    ]
+
+    supported, partial = [], []
+    weak_ever_bid = False
+    for prize_str in sorted(h1_data.keys(), key=int):
+        profits = h1_data[prize_str].get("profits", {})
+        bids = h1_data[prize_str].get("mean_bids", {})
+
+        def profit(a: str) -> float:
+            return profits.get(a, {}).get("mean_profit", 0.0)
+
+        def std(a: str) -> float:
+            return profits.get(a, {}).get("std_profit", 0.0)
+
+        agent_strs = [
+            f"{a}={profit(a):.1f}(±{std(a):.1f}, bids={bids.get(a, 0):.1f})"
+            for a in strength_order
+        ]
+
+        if not any(bids.get(a, 0) > 0 for a in strength_order):
+            lines.append(f"  prize={prize_str}: no agents bid → no market")
+            continue
+
+        weak_bid = any(bids.get(a, 0) > 0 for a in weak)
+        weak_ever_bid |= weak_bid
+        if not all(profit(a) > 0 for a in strong) or any(profit(a) > 0 for a in weak):
+            status = "NOT SUPPORTED"
+        elif weak_bid:
+            status = "PARTIAL"
+            partial.append(prize_str)
+        else:
+            status = "SUPPORTED"
+            supported.append(prize_str)
+        lines.append(f"  prize={prize_str}: {', '.join(agent_strs)} → {status}")
+
+    if supported:
+        lines.append(f"  → SUPPORTED at prize={', '.join(supported)}")
+    elif partial:
+        lines.append(f"  → PARTIAL at prize={', '.join(partial)}")
+    else:
+        lines.append("  → NOT SUPPORTED at any prize level")
+    if not weak_ever_bid:
+        lines.append(
+            f"  Note: weaker agents ({', '.join(weak)}) never placed a bid at any "
+            "prize; their initial belief prices them out from tick 1, so "
+            "\"stop bidding\" reflects the prior, not learning from losses."
+        )
+    return "\n".join(lines)
+
+
+def _build_verdicts(h1_results, h2_results, h3_results,
+                    strength_order: list[str]) -> dict[str, Any]:
     """Build verdict strings from analysis results."""
     verdicts = {}
 
     # H1 verdict (per probability source)
     for source in ["raw", "calibrated"]:
-        key = f"h1_{source}"
-        lines = [f"H1 verdict ({source} odds):"]
-        h1_data = h1_results.get(source, {})
-
-        # Collect profits across all prize levels
-        best_prize = None
-        best_finding = None
-        for prize_str in sorted(h1_data.keys(), key=lambda x: int(x)):
-            data = h1_data[prize_str]
-            profits = data.get("profits", {})
-            bids = data.get("mean_bids", {})
-
-            if not profits:
-                lines.append(f"  prize={prize_str}: no agents bid")
-                continue
-
-            sorted_agents = sorted(
-                profits.items(), key=lambda x: x[1]["mean_profit"], reverse=True
-            )
-
-            agent_strs = []
-            for agent, stats in sorted_agents:
-                mb = bids.get(agent, 0)
-                agent_strs.append(
-                    f"{agent}={stats['mean_profit']:.1f}(±{stats['std_profit']:.1f}, bids={mb:.0f})"
-                )
-            lines.append(f"  prize={prize_str}: {', '.join(agent_strs)}")
-
-            # Track best prize for verdict
-            if len(sorted_agents) >= 2:
-                top = sorted_agents[0]
-                bottom = sorted_agents[-1]
-                if top[1]["mean_profit"] > 0 and bottom[1]["mean_profit"] <= top[1]["mean_profit"]:
-                    if best_prize is None or len(sorted_agents) > len(best_finding[2]):
-                        best_finding = (top, bottom, sorted_agents)
-                        best_prize = prize_str
-
-        # Also note agents that never bid at any prize
-        all_bidders = set()
-        for prize_str, data in h1_data.items():
-            all_bidders.update(data.get("mean_bids", {}).keys())
-        all_agents = {"opus-4.7", "gpt-5.5", "sonnet-4.6", "qwen3.5-397b"} if source in ["raw", "calibrated"] else set()
-        non_bidders = all_agents - all_bidders
-        if non_bidders:
-            lines.append(f"  Never bid at any prize: {', '.join(sorted(non_bidders))}")
-
-        if best_finding:
-            top, bottom, agents = best_finding
-            lines.append(
-                f"  → SUPPORTED at prize={best_prize}: "
-                f"strongest ({top[0]}) profits {top[1]['mean_profit']:.1f}, "
-                f"weakest ({bottom[0]}) profits {bottom[1]['mean_profit']:.1f}. "
-                f"Weaker agents {', '.join(sorted(non_bidders))} stop bidding entirely."
-            )
-        else:
-            lines.append("  → INCONCLUSIVE: insufficient data across prize levels.")
-
-        verdicts[key] = "\n".join(lines)
+        verdicts[f"h1_{source}"] = _h1_verdict(
+            source, h1_results.get(source, {}), strength_order
+        )
 
     # H2 verdict
     for source in ["raw", "calibrated"]:
