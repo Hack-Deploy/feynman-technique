@@ -136,6 +136,17 @@ class Handler(BaseHTTPRequestHandler):
             self._json(live_market.info())
         elif path == "/api/live/runs":
             self._json(live_market.runs())
+        elif path == "/api/live/recorded":
+            self._json(live_market.recorded())
+        elif path == "/api/live/recorded/run":
+            attempt_id = urllib.parse.parse_qs(
+                urllib.parse.urlsplit(self.path).query
+            ).get("id", [""])[0]
+            result = live_market.recorded_run(attempt_id)
+            if result is None:
+                self._json({"error": "not found"}, 404)
+            else:
+                self._json(result)
         elif path == "/api/live/job":
             job_id = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("id", [""])[0]
             result = live_market.job(job_id)

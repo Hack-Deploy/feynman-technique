@@ -28,24 +28,41 @@ same hypothesis: model, outcome, rounds, spend, stated p, withdrawal reason, and
 experiment data. Their verdicts, evidence and assessments are hidden, because a wrong verdict
 would give the answer away.
 
-## API key
-
-Copy `poc/.env.example` to `poc/.env` (git-ignored; an empty one is already there) and fill in
-`ANTHROPIC_API_KEY`. `poc.bench` loads it; values set in your shell win.
-
 ## Commands
 
 ```bash
 uv run pytest tests/test_poc.py -q
 uv run python -m poc.bench --fake                       # scripted LLM, real simulator, no API
-ENABLE_LIVE=1 DM_MAX_USD=20 uv run python -m poc.bench --models claude-sonnet-4-6 \
-    --seeds 0 1 2 --usd-per-call 0.05                   # live; prints projected spend first
+uv run python -m poc.demo_grid --fake                   # multi-model recorded demo, no API
+uv run python -m poc.demo_grid --preflight              # worst-case live spend, no key needed
 uv run python -m poc.report --dashboard                 # summary + output/poc_dashboard.html
 ```
 
-The report covers, per model: outcomes, correct verdicts, Brier score for the final p and for
-the bid-time p, a reliability table, experiments, spend, cost per correct
-verdict, and profit. It also breaks results down by how many failed runs a run had seen.
+`--fake` writes the deterministic recorded demo to
+`attempts/fixtures/live/scripted_demo.jsonl` and its derived
+`scripted_demo.summary.json`; it makes no API calls.
+
+## Run the live market with your key
+
+```bash
+cp poc/.env.example poc/.env
+# Set ANTHROPIC_API_KEY in poc/.env.
+uv run python -m poc.demo_grid --preflight
+ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.demo_grid
+# Add --yes to skip the confirmation prompt.
+git add attempts/fixtures/live/runs.jsonl attempts/fixtures/live/runs.summary.json && git commit -m "Live demo runs"
+uv run python app.py
+# Open /live and choose "Recorded runs".
+```
+
+The spend ledger at `attempts/live_spend.jsonl` is git-ignored, shared by the app and CLI, and
+cumulative. Open reservations count toward the cap until settled or voided. The effective cap
+is the lower of `DM_MAX_USD` and `live.max_usd` in `poc/live_models.yaml` (default $5); rerun the
+same command to resume from the cached runs.
+
+The report covers, per model: outcomes, correct verdicts, Brier score for the final p and for the
+bid-time p, a reliability table, experiments, spend, cost per correct verdict, and profit. It also
+breaks results down by how many failed runs a run had seen.
 
 ## Files
 

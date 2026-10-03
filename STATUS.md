@@ -477,3 +477,15 @@ XPASS-fail and should be removed).
 
 - Consolidated the rich 60-row ForceBench snapshot into `attempts/fixtures/demo/forcebench_settle.json`; removed the duplicate `web/data` copy and restored `real_data._source()` fallback.
 - Verification: targeted snapshot/app/live tests 20 passed, 1 skipped; full suite 455 passed, 5 skipped, 14 xfailed.
+
+## Multi-model live grid and recorded demo (2026-10-03)
+
+- Added the configured Anthropic model-price table, cumulative append-only spend ledger,
+  per-call metering and reservations, bounded run projections, and resumable multi-model grid.
+  The configured hard cap is $5; `DM_MAX_USD` can only lower it.
+- Added the deterministic scripted grid at `attempts/fixtures/live/scripted_demo.jsonl` and
+  its derived summary, plus real/scripted recorded-run APIs and documentation. The ledger and
+  lock remain git-ignored. No real API calls were made.
+- Preflight with an empty live cache: $4.661748 total worst-case across 8 runs; the largest
+  model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
+- Checks: targeted live/POC suite 44 passed; full suite 505 passed, 5 skipped, 14 xfailed.

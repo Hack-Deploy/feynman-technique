@@ -5,8 +5,8 @@ the failed runs before it. Every run happens even after a hypothesis is settled 
 successes are never shown. Results are appended to attempts/poc_dp_bench.jsonl (resumable).
 
     uv run python -m poc.bench --fake                         # scripted LLM, no API calls
-    ENABLE_LIVE=1 DM_MAX_USD=20 uv run python -m poc.bench \\
-        --models claude-sonnet-4-6 --seeds 0 1 2 --usd-per-call 0.05
+    ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.demo_grid --preflight
+    ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.demo_grid
 """
 
 from __future__ import annotations
@@ -23,7 +23,9 @@ from poc import protocol
 from poc.attempt import run_attempt
 
 
-def resolve(hyp: C.Hypothesis, s: SubmittedAttempt) -> AttemptRecord:
+def resolve(
+    hyp: C.Hypothesis, s: SubmittedAttempt, llm_usage: dict | None = None
+) -> AttemptRecord:
     """Judge a run against the hidden answer. A clear verdict that matches it wins the prize."""
     agent_verdict = s.extra.get("agent_verdict")
     passed = s.extra.get("outcome") == "verdict" and agent_verdict == hyp.answer
@@ -31,7 +33,8 @@ def resolve(hyp: C.Hypothesis, s: SubmittedAttempt) -> AttemptRecord:
         attempt_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"{C.PROTOCOL}:{hyp.id}:{s.solver}:{s.seed}")),
         source=s.source, protocol=s.protocol, venue=s.venue, world=s.world, solver=s.solver,
         seed=s.seed, stated_p_success=s.stated_p_success, rounds=s.rounds,
-        experiments=s.experiments, lab_cost=s.lab_cost, llm_usage={}, submitted_law=None,
+        experiments=s.experiments, lab_cost=s.lab_cost, llm_usage=llm_usage or {},
+        submitted_law=None,
         verdict={"passed": passed, "agent_verdict": agent_verdict, "answer": hyp.answer,
                  "resolved_by": "answer_key"},
         transcript_path=s.transcript_path, created_at=s.created_at,
