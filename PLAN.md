@@ -120,3 +120,16 @@ Event types added: `prereg_committed`, `prereg_revealed`, `confidence_stated`,
 
 Phase 0 → 1 → 2 → 3 → 4 → **STOP 1** (ask for the cheapest model and a budget) → 5 → 6 (only
 within the approved budget) → 7 → 8. Paid calls only with `ENABLE_LIVE=1` and `DM_MAX_USD`.
+
+## 6. Bounty benchmark on DiscoverPhysics (`poc/`, 3 Oct 2026)
+
+The market from `slides.html` on the 11 DiscoverPhysics worlds: a posted hypothesis with
+resolution criteria and a prize; the AI scientist bids or walks away, pays per round and per
+experiment, states its assessment, p_success and planned cost every round, and is paid only for a
+clear verdict that matches the hidden answer. Failed runs (with their data, without their
+conclusions) are shown to later runs; no other memory. All settings in `poc/config.yaml`;
+details in `poc/README.md`. Vendor code is not edited; the vendor agent loop is re-implemented in
+`poc/agent.py` because it cannot be extended from outside.
+
+**Before running:** install `uv` and run `tests/test_poc.py` (not yet run); pick models, seeds and
+API budget for the live run (STOP 1).

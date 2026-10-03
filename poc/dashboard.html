@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bounty Runs</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3f0;
+  --surface-1: #fcfcfb;
+  --border: #e2e1dc;
+  --grid: #ecebe7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --diag: #b9b8b2;
+  --good: #1a7f37;
+  --bad: #b42318;
+  --warn-bg: #fff4d6;
+  --warn-text: #6b4a00;
+  --row-hover: #f0efec;
+  --row-active: #e4eefb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --border: #2f2f2c;
+    --grid: #262624;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --diag: #55554f;
+    --good: #4ac26b;
+    --bad: #f47067;
+    --warn-bg: #3a2e0a;
+    --warn-text: #f5d37a;
+    --row-hover: #232321;
+    --row-active: #1d2c40;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211;
+  --surface-1: #1a1a19;
+  --border: #2f2f2c;
+  --grid: #262624;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8f8e86;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --diag: #55554f;
+  --good: #4ac26b;
+  --bad: #f47067;
+  --warn-bg: #3a2e0a;
+  --warn-text: #f5d37a;
+  --row-hover: #232321;
+  --row-active: #1d2c40;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 4px; }
+p.sub { margin: 0 0 16px; color: var(--text-secondary); }
+.banner {
+  background: var(--warn-bg); color: var(--warn-text); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-weight: 600;
+}
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; align-items: end; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+select {
+  font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; min-width: 180px; max-width: 100%;
+}
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+.card .note { color: var(--text-muted); font-size: 12px; margin: 0 0 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.tile h3 { margin: 0 0 10px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; }
+.kpi .v { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi .l { font-size: 12px; color: var(--text-secondary); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin: 4px 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--text-secondary); font-size: 11px; }
+.axis line, .axis path { stroke: var(--border); }
+.gridline { stroke: var(--grid); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+td.wrap { white-space: normal; min-width: 260px; }
+tbody.runs tr:hover { background: var(--row-hover); }
+tbody.runs tr.active { background: var(--row-active); }
+.ok { color: var(--good); font-weight: 600; }
+.no { color: var(--bad); font-weight: 600; }
+.muted { color: var(--text-muted); }
+#tip {
+  position: fixed; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.15); display: none; z-index: 10; max-width: 280px;
+}
+details summary { cursor: pointer; color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
+.section { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bounty runs</h1>
+  <p class="sub">DiscoverPhysics proof of concept: posted hypotheses, AI scientists' stated odds, what they spent, and whether they got a clear, correct verdict.</p>
+  <div id="banner" class="banner" hidden>Dummy data: placeholder runs for "Dummy A" and "Dummy B". These are not real results. Run <code>python -m poc.report --dashboard</code> to fill this page with real runs.</div>
+
+  <div class="filters">
+    <label>Model <select id="f-model"></select></label>
+    <label>Hypothesis <select id="f-hyp"></select></label>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Calibration</h2>
+      <p class="note">Runs grouped by stated chance of a clear, correct verdict (final round, grouped around 10%, 20% … 90%; bins with 3+ runs). Dashed line: stated odds match results; below it: overconfident.</p>
+      <div class="legend" id="legend-cal"></div>
+      <div id="chart-cal"></div>
+    </div>
+    <div class="card">
+      <h2>Payoff</h2>
+    <p class="note">AI scientist's running total: prizes won minus everything spent, run by run.</p>
+    <div class="legend" id="legend-pay"></div>
+    <div id="chart-pay"></div>
+    </div>
+  </div>
+
+  <div class="card section">
+    <h2>Runs</h2>
+    <div class="table-wrap" style="max-height:480px;overflow-y:auto">
+      <table>
+        <thead><tr><th>Hypothesis</th><th>Model</th><th>Seed</th><th>Outcome</th><th>Result</th><th>Rounds</th><th>Exps</th><th>Spent</th><th>Payoff</th><th>p first → final</th></tr></thead>
+        <tbody class="runs" id="runs"></tbody>
+      </table>
+    </div>
+  </div>
+
+
+</main>
+<div id="tip"></div>
+
+<!-- poc.report --dashboard replaces the null below with real runs. -->
+<script id="runs-data" type="application/json">null</script>
+<script>
+"use strict";
+const SVGNS = "http://www.w3.org/2000/svg";
+const OUTCOME = { verdict: "Verdict", walked_away: "Walked away", withdrawn: "Withdrew", out_of_rounds: "Out of rounds" };
+
+// ---------------------------------------------------------------- dummy data
+function dummyData() {
+  // Placeholder runs shaped like the mock on slide 11: both models below the diagonal, Dummy B
+  // further below. Prices follow config.yaml: round fee 10, experiment 10 + 1/measurement +
+  // 1/time unit + 1/particle + 1/custom property, prize 100.
+  let s = 11;
+  const rnd = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const pick = xs => xs[Math.floor(rnd() * xs.length)];
+  const hyps = [
+    ["gravity-inverse-square", "In this simulated world, gravity between particles falls off as 1/r², as in Newtonian physics.", 1],
+    ["oscillator-time-varying", "In this simulated world, the strength of gravity between particles changes over time.", 1],
+    ["dark-matter-unseen-pull", "In this simulated world, unseen particles exert a gravitational pull on the visible particles.", 5],
+    ["yukawa-screened", "Beyond a few units of distance the pull on the probe weakens much faster than any 1/r law.", 1],
+    ["coulomb-source-strength", "The force on the probe grows with the source particle's property p1.", 1],
+    ["fractional-p2-inertia", "The probe's acceleration is inversely proportional to its own property p2.", 1],
+    ["extra-dimensions-short-range", "At distances well below 0.5 the force falls off faster than at long range.", 1],
+    ["circle-ordinary-gravity", "The ring particles interact through the same 1/r force as ordinary 2D gravity.", 11],
+    ["three-species-repulsion", "Some of the particles repel the probes.", 5],
+    ["ether-outward-push", "Particles are pushed outward in proportion to their distance from the centre.", 5],
+    ["hubble-outward-push", "Particles are pushed outward in proportion to their distance from the centre.", 5],
+  ].map(([id, hypothesis, particles]) => ({ id, hypothesis, prize: 100, particles }));
+  const models = [
+    { name: "Dummy A", rate: p => 0.95 * p, extraExp: 0.1 },                   // slightly overconfident, lean
+    { name: "Dummy B", rate: p => 0.06 + 0.56 * (p - 0.1) / 0.8, extraExp: 0.4 }, // overconfident, buys more
+  ];
+  const expPrice = h => 10 + pick([4, 5, 6, 8]) + pick([5, 8, 10]) + h.particles + pick([0, 0, 1]);
+  const runs = [];
+  for (const m of models) {
+    const cells = [];
+    // Final stated odds in 9 bins (10%..90%); more runs at higher odds, as agents that finish are
+    // mostly confident. Within a bin, exactly round(n × rate) runs are correct.
+    for (let k = 1; k <= 9; k++) {
+      const n = Math.round(3 + k * k / 2), center = k / 10, wins = Math.round(n * m.rate(center));
+      for (let i = 0; i < n; i++) cells.push({ finalP: clamp(center + (rnd() - 0.5) * 0.06, 0.03, 0.97), passed: i < wins });
+    }
+    for (let i = 0; i < 22; i++) cells.push({ walk: true, finalP: clamp(0.15 + rnd() * 0.3, 0.03, 0.97) });
+    cells.sort(() => rnd() - 0.5);
+    cells.forEach((c, idx) => {
+      const h = hyps[idx % hyps.length], seed = Math.floor(idx / hyps.length);
+      const rounds = [];
+      let spent = 0;
+      if (c.walk) {
+        rounds.push({ round: 1, action: "walk_away", p_success: +c.finalP.toFixed(2), experiments: 0, charged: 0, spent_so_far: 0,
+          assessment: "Placeholder: my chance is below break-even for this prize." });
+      } else {
+        const bidP = clamp(c.finalP + (rnd() - 0.4) * 0.2, 0.05, 0.95);
+        const expRounds = 1 + (rnd() < m.extraExp ? 1 : 0);
+        for (let r = 1; r <= expRounds + 1; r++) {
+          const verdictRound = r === expRounds + 1;
+          const exps = verdictRound ? 0 : (rnd() < m.extraExp ? 2 : 1);
+          let cost = 10;
+          for (let e = 0; e < exps; e++) cost += expPrice(h);
+          spent += cost;
+          const p = bidP + (c.finalP - bidP) * r / (expRounds + 1);
+          rounds.push({ round: r, action: verdictRound ? "verdict" : "experiment", p_success: +p.toFixed(2), experiments: exps,
+            charged: cost, spent_so_far: spent,
+            assessment: verdictRound ? "Placeholder: the experiments above settle it." : "Placeholder: what this experiment showed." });
+        }
+      }
+      const passed = !!c.passed;
+      runs.push({ hypothesis_id: h.id, model: m.name, seed, outcome: c.walk ? "walked_away" : "verdict",
+        verdict_result: c.walk ? null : passed ? "correct" : (rnd() < 0.4 ? "inconclusive" : "wrong"), passed,
+        rounds: rounds.length, experiments: rounds.reduce((a, r) => a + r.experiments, 0), spent,
+        prize: h.prize, prize_paid: passed ? h.prize : 0, first_p: rounds[0].p_success,
+        final_p: rounds[rounds.length - 1].p_success, round_log: rounds });
+    });
+  }
+  return { dummy: true, hypotheses: hyps.map(({ id, hypothesis, prize }) => ({ id, hypothesis, prize })), runs };
+}
+
+// ---------------------------------------------------------------- helpers
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const el = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const fmt = (x, d = 0) => x == null || Number.isNaN(x) ? "–" : Number(x).toFixed(d);
+const mean = xs => { const v = xs.filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const tip = document.getElementById("tip");
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const x = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8);
+  const y = Math.min(e.clientY + 12, innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+
+// ---------------------------------------------------------------- data
+let DATA;
+try { DATA = JSON.parse(document.getElementById("runs-data").textContent); } catch { DATA = null; }
+if (!DATA) DATA = dummyData();
+document.getElementById("banner").hidden = !DATA.dummy;
+const MODELS = [...new Set(DATA.runs.map(r => r.model))];
+const color = m => css(`--series-${(MODELS.indexOf(m) % 2) + 1}`); // fixed order by first appearance
+const HYP = Object.fromEntries(DATA.hypotheses.map(h => [h.id, h]));
+
+const fModel = document.getElementById("f-model");
+const fHyp = document.getElementById("f-hyp");
+fModel.innerHTML = `<option value="">All models</option>` + MODELS.map(m => `<option>${esc(m)}</option>`).join("");
+fHyp.innerHTML = `<option value="">All hypotheses</option>` + DATA.hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}</option>`).join("");
+fModel.onchange = fHyp.onchange = render;
+
+const filtered = () => DATA.runs.filter(r => (!fModel.value || r.model === fModel.value) && (!fHyp.value || r.hypothesis_id === fHyp.value));
+const visibleModels = runs => MODELS.filter(m => runs.some(r => r.model === m));
+
+function legend(id, models) {
+  document.getElementById(id).innerHTML = models.map(m => `<span><i class="swatch" style="background:${color(m)}"></i>${esc(m)}</span>`).join("");
+}
+
+
+const BINS = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1.0001];
+function calBins(runs) {
+  const v = runs.filter(r => r.outcome === "verdict" && r.final_p != null);
+  return BINS.slice(0, -1).map((lo, i) => {
+    const inside = v.filter(r => r.final_p >= lo && r.final_p < BINS[i + 1]);
+    return { lo, hi: Math.min(BINS[i + 1], 1), n: inside.length, p: mean(inside.map(r => r.final_p)), rate: mean(inside.map(r => r.passed ? 1 : 0)) };
+  });
+}
+function calibration(runs) {
+  const host = document.getElementById("chart-cal"); host.innerHTML = "";
+  const W = 440, H = 440, m = { l: 56, r: 16, t: 12, b: 44 };
+  const x = v => m.l + v * (W - m.l - m.r), y = v => H - m.b - v * (H - m.t - m.b);
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Calibration chart" }, host);
+  for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+    el("line", { x1: x(0), x2: x(1), y1: y(t), y2: y(t), class: "gridline" }, svg);
+    el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end" }, svg).textContent = `${t * 100}%`;
+    el("text", { x: x(t), y: H - m.b + 16, "text-anchor": "middle" }, svg).textContent = `${t * 100}%`;
+  }
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 6, "text-anchor": "middle" }, svg).textContent = "Stated odds";
+  const yl = el("text", { x: 10, y: (m.t + H - m.b) / 2, "text-anchor": "middle", transform: `rotate(-90 10 ${(m.t + H - m.b) / 2})` }, svg);
+  yl.textContent = "Success rate";
+  el("line", { x1: x(0), y1: y(0), x2: x(1), y2: y(1), stroke: css("--diag"), "stroke-width": 1.5, "stroke-dasharray": "5 5" }, svg);
+  const surface = css("--surface-1");
+  for (const mod of visibleModels(runs)) {
+    const pts = calBins(runs.filter(r => r.model === mod)).filter(b => b.n >= 3);
+    if (pts.length > 1) el("polyline", { points: pts.map(b => `${x(b.p)},${y(b.rate)}`).join(" "), fill: "none", stroke: color(mod), "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+    for (const b of pts) {
+      const r = 5;
+      el("circle", { cx: x(b.p), cy: y(b.rate), r, fill: color(mod), stroke: surface, "stroke-width": 2 }, svg);
+      const hit = el("circle", { cx: x(b.p), cy: y(b.rate), r: r + 8, fill: "transparent" }, svg);
+      hit.addEventListener("mousemove", e => showTip(e, `<b>${esc(mod)}</b><br>Stated ${fmt(b.lo * 100)}–${fmt(b.hi * 100)}%: mean ${fmt(b.p * 100)}%<br>Success rate ${fmt(b.rate * 100)}% (${b.n} runs)`));
+      hit.addEventListener("mouseleave", hideTip);
+    }
+  }
+  legend("legend-cal", visibleModels(runs));
+}
+
+
+const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(Math.abs(v));
+
+function payoff(runs) {
+  const host = document.getElementById("chart-pay"); host.innerHTML = "";
+  const mods = visibleModels(runs);
+  const series = mods.map(mod => {
+    let acc = 0;
+    return { mod, pts: runs.filter(r => r.model === mod).map(r => ({ r, v: (acc += r.prize_paid - r.spent) })) };
+  });
+  const n = Math.max(2, ...series.map(s => s.pts.length));
+  const vals = series.flatMap(s => s.pts.map(p => p.v)).concat(0);
+  const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 10;
+  const mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 5, 10].map(f => f * mag).find(v => v >= raw);
+  const y0 = Math.floor(Math.min(...vals) / step) * step, y1 = Math.ceil(Math.max(...vals) / step) * step;
+  const W = 440, H = 440, m = { l: 56, r: 16, t: 12, b: 44 };
+  const x = i => m.l + (i / n) * (W - m.l - m.r), y = v => H - m.b - ((v - y0) / (y1 - y0)) * (H - m.t - m.b);
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Cumulative payoff" }, host);
+  for (let t = y0; t <= y1 + 1e-9; t += step) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), class: "gridline" }, svg);
+    el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end" }, svg).textContent = signed(Math.round(t));
+  }
+  el("line", { x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), stroke: css("--text-muted") }, svg);
+  for (let k = 0; k <= n; k += Math.max(1, Math.ceil(n / 8))) el("text", { x: x(k), y: H - m.b + 16, "text-anchor": "middle" }, svg).textContent = k;
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle" }, svg).textContent = "Runs";
+  for (const s of series) {
+    el("polyline", { points: [`${x(0)},${y(0)}`, ...s.pts.map((p, i) => `${x(i + 1)},${y(p.v)}`)].join(" "), fill: "none", stroke: color(s.mod), "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+    const last = s.pts[s.pts.length - 1];
+    if (last) el("text", { x: x(s.pts.length) - 4, y: y(last.v) - 8, "text-anchor": "end", style: "font-weight:600" }, svg).textContent = `${s.mod} ${signed(Math.round(last.v))}`;
+  }
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: css("--diag"), visibility: "hidden" }, svg);
+  const overlay = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+  overlay.addEventListener("mousemove", e => {
+    const box = svg.getBoundingClientRect();
+    const k = Math.max(1, Math.min(n, Math.round((((e.clientX - box.left) * (W / box.width)) - m.l) / (W - m.l - m.r) * n)));
+    cross.setAttribute("x1", x(k)); cross.setAttribute("x2", x(k)); cross.setAttribute("visibility", "visible");
+    showTip(e, `<b>After run ${k}</b><br>` + series.filter(s => s.pts[k - 1]).map(s => {
+      const p = s.pts[k - 1];
+      return `${esc(s.mod)}: ${signed(Math.round(p.v))} (this run ${signed(p.r.prize_paid - p.r.spent)}, ${esc(p.r.hypothesis_id)})`;
+    }).join("<br>"));
+  });
+  overlay.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  document.getElementById("legend-pay").innerHTML = mods.map(mod => `<span><i class="swatch" style="background:${color(mod)}"></i>${esc(mod)}</span>`).join("");
+}
+
+function resultCell(r) {
+  if (r.passed) return `<span class="ok">✓ correct</span>`;
+  if (r.outcome === "verdict") return `<span class="no">✗ ${esc(r.verdict_result || "no clear result")}</span>`;
+  return `<span class="muted">no verdict</span>`;
+}
+function runsTable(runs) {
+  const tb = document.getElementById("runs");
+  tb.innerHTML = runs.map((r, i) => `<tr data-i="${DATA.runs.indexOf(r)}" >
+    <td>${esc(r.hypothesis_id)}</td><td><i class="swatch" style="background:${color(r.model)}"></i> ${esc(r.model)}</td><td>${r.seed}</td>
+    <td>${OUTCOME[r.outcome] || esc(r.outcome)}</td><td>${resultCell(r)}</td><td>${r.rounds}</td><td>${r.experiments}</td>
+    <td>${fmt(r.spent)}</td><td>${signed(r.prize_paid - r.spent)}</td><td>${fmt(r.first_p, 2)} → ${fmt(r.final_p, 2)}</td></tr>`).join("");
+}
+
+function render() {
+  const runs = filtered();
+  calibration(runs); payoff(runs); runsTable(runs);
+}
+render();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+</script>
+</body>
+</html>

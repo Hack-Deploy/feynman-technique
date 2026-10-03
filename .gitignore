@@ -34,3 +34,4 @@ vendor/**/results/
 # Secrets
 .env
 .env.*
+!.env.example
