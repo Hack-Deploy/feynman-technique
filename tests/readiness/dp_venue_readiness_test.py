@@ -5,8 +5,7 @@ is not built yet. These tests pin down the vendor behaviour the venue will rely 
 using throwaway spike helpers defined here (``_SpikeWallet``, ``_SpikeMeter``,
 ``_ScriptedLLM``). They never edit vendor files and never call a real LLM.
 
-Tests marked ``xfail(strict=True)`` encode the behaviour Phase 3 needs but the
-current scaffolding does not provide; they flip to XPASS (and fail) once fixed.
+The tests distinguish the float-hazard spike from the integer-backed production wallet.
 """
 
 from __future__ import annotations

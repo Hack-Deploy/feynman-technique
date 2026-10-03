@@ -438,7 +438,7 @@ ForceBench attempt through `dm.settle` and shows the ARA replay and the settled 
 | Phase | State | Outstanding |
 |---|---|---|
 | 0 Hygiene and vendor | ✅ done | — |
-| 1 Engine generalisation | ✅ done, hardened by review agents | Merge `review/remaining-readiness` (fixes several engine xfails) |
+| 1 Engine generalisation | ✅ done, hardened by review agents | Merged `review/remaining-readiness`; readiness fixes are summarized below |
 | 2 Oracle | ✅ done | Sandboxed scoring, salt from `DM_ORACLE_SECRET`, 39 tests; pass-rule blind spots accepted and reported; `explain_score` untested (live only) |
 | 3 DiscoverPhysics venue | ✅ done offline | No live call yet; `explain_score` at settle untested (live only) |
 | 4 ARA import + replay | ✅ done | Caveat: one attempt per (model, world), so H2 is near-deterministic; coulomb_easy nMSE in ARA uses Var ≈ 4.24, not 11.465 |
@@ -448,14 +448,7 @@ ForceBench attempt through `dm.settle` and shows the ARA replay and the settled 
 | 7 Markets on real attempts | 🟡 partly | ARA replay sweep exists (`dm/replay.py`). Missing: ForceBench and live pools, H1–H4 from the log, H3 on ForceBench, `dm/calibration.py` (Brier + reliability), `dm/live_market.py` |
 | 8 Dashboard, report, demo | 🟡 partly | `/real` page in the app (PR #16). Missing: calibration view, replay slider, failure-ledger view, `REPORT.md`, `DEMO.md`, README "three ways to run" |
 
-**Known bugs still marked xfail** (14): float credits in the DP venue spike (3 × 0.1 > 0.3),
-mutable verdict dicts inside frozen records, `analysis.compute_clearing_prizes` and
-`build_full_summary` assume Track A/C run ids, events can't be joined to ledger rows,
-`verdict_issued.commitment` copied rather than checked, cost model vs outcome source can
-disagree, negative `lab_cost` accepted, rounds charges have no `count`, dashboard loads
-non-cdnjs hosts and drops unknown solver names. Several are fixed on the unmerged
-`review/remaining-readiness` branch; rerun the suite after merging it (stale xfails will
-XPASS-fail and should be removed).
+**Known bugs still marked xfail**: none (0 strict xfails after merging `review/remaining-readiness`).
 
 **Loose ends**: `forcebench_demo.py` (repo root) runs one ForceBench attempt end to end.
 `hypothesis` is not installed, so 2 property tests skip.
@@ -477,3 +470,15 @@ XPASS-fail and should be removed).
 
 - Consolidated the rich 60-row ForceBench snapshot into `attempts/fixtures/demo/forcebench_settle.json`; removed the duplicate `web/data` copy and restored `real_data._source()` fallback.
 - Verification: targeted snapshot/app/live tests 20 passed, 1 skipped; full suite 455 passed, 5 skipped, 14 xfailed.
+
+## Readiness fixes landed
+
+Merged `review/remaining-readiness`: ForceBench readiness tests, replay cost validation and store persistence, replay event links and affordability, and replay-generic clearing prizes and `UNAVAILABLE` verdicts.
+
+- Deep-freeze nested dict/list fields in `AttemptRecord` while preserving JSON, pickle, and mutable `to_dict()` compatibility.
+- Verify fractional-price charging through the integer-backed production wallet.
+- Add integer round counts and explicit charge-event metadata to replay cost functions.
+- Remove external font loads from the report and treat anchor citations as navigation, not resource loads.
+- Preserve balances for unknown solvers without changing the chart's fixed agent list or legacy Track A/C output.
+
+Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfailed, 27 warnings.
