@@ -72,8 +72,7 @@ class _SpikeWallet:
         amount = count * price
         if amount > self.balance:
             raise InsufficientCredits(
-                f"need {amount} credits for {count} experiment(s) at {price}, "
-                f"balance {self.balance}")
+                needed=amount, balance=self.balance, count=count, price=price)
         self.balance -= amount
         self.lab += amount
         self.charges.append((count, amount))
@@ -199,36 +198,30 @@ class TestAttemptRecordHoldsRunAttemptOutput:
             rec.verdict["passed"] = True
         assert rec.passed is False
 
-    @pytest.mark.xfail(strict=True, reason="BUG: numpy scalars (np.bool_ from `nmse < 0.1` on an "
-                       "np.var-normalised MSE) are accepted but not JSON-serialisable")
     def test_numpy_verdict_serialises(self, tmp_path):
         rec = _full_record(verdict={"normalised_mse": np.float64(0.01),
                                     "passed": np.bool_(True)})
-        AttemptStore(tmp_path / "a.jsonl").append([rec])  # json.dumps raises on np.bool_
-        canonical_json(rec.to_dict())
+        assert type(rec.verdict["normalised_mse"]) is float
+        assert type(rec.verdict["passed"]) is bool
+        assert AttemptRecord.from_dict(json.loads(canonical_json(rec.to_dict()))) == rec
+        AttemptStore(tmp_path / "a.jsonl").append([rec])
 
-    @pytest.mark.xfail(strict=True, reason="BUG: a diverging law gives mean_pos_error=NaN (verified); "
-                       "store writes non-standard 'Infinity' while canonical_json raises")
     def test_nonfinite_mse_consistent(self, tmp_path):
-        rec = _full_record(verdict={"normalised_mse": math.inf, "passed": False})
-        path = tmp_path / "a.jsonl"
-        AttemptStore(path).append([rec])
-        json.loads(path.read_text(), parse_constant=lambda c: (_ for _ in ()).throw(
-            ValueError(c)))  # strict JSON readers (JS dashboard) reject Infinity
-        canonical_json(rec.to_dict())
+        with pytest.raises(ValueError):
+            _full_record(verdict={"normalised_mse": math.inf, "passed": False})
 
-    @pytest.mark.xfail(strict=True, reason="GAP: from_dict silently drops unknown keys, "
-                       "so a newer record read by older code loses data without warning")
     def test_unknown_keys_not_silently_dropped(self):
         d = _full_record().to_dict() | {"training_ref": "x.json"}
-        with pytest.raises((TypeError, ValueError, KeyError)):
+        with pytest.raises(ValueError, match="training_ref"):
             AttemptRecord.from_dict(d)
 
-    @pytest.mark.xfail(strict=True, reason="GAP: no validation; stated_p_success=1.7 and "
-                       "negative lab_cost are accepted")
-    def test_rejects_out_of_range_values(self):
-        with pytest.raises((TypeError, ValueError)):
-            _full_record(stated_p_success=1.7, lab_cost=-1.0)
+    def test_rejects_out_of_range_stated_probability(self):
+        with pytest.raises(ValueError):
+            _full_record(stated_p_success=1.7)
+
+    def test_rejects_negative_lab_cost(self):
+        with pytest.raises(ValueError):
+            _full_record(lab_cost=-1.0)
 
 
 # --------------------------------------------------------------------- metering
@@ -370,9 +363,12 @@ class TestAgentLoopOffline:
         assert wallet.lab == 0.0 and wallet.balance == 1.0
         r1 = agent.conversation_log[0]
         assert r1["action"] == "experiment" and r1["experiment_output"] is None
-        assert "need 1.5 credits" in r1["experiment_error"]
+        assert r1["experiment_error"].startswith(
+            "insufficient credits: 3 experiment(s) x 0.5 = 1.5")
         shown = llm.calls[1]["messages"][-1]["content"]
-        assert shown.startswith("<experiment_output>\nError running experiment: need 1.5")
+        assert shown.startswith(
+            "<experiment_output>\nError running experiment: "
+            "insufficient credits: 3 experiment(s) x 0.5 = 1.5")
         from scienceagent.evaluator import _extract_training_trajectories
         assert _extract_training_trajectories(agent.conversation_log) == []
 

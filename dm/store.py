@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Callable, Iterable
 
-from dm.types import AttemptRecord
+from dm.types import AttemptRecord, canonical_json
 
 ROOT = Path(__file__).resolve().parent.parent
 ATTEMPTS_DIR = ROOT / "attempts"
@@ -26,7 +26,7 @@ class AttemptStore:
         n = 0
         with self.path.open("a") as f:
             for r in records:
-                f.write(json.dumps(r.to_dict(), sort_keys=True) + "\n")
+                f.write(canonical_json(r.to_dict()) + "\n")
                 n += 1
         return n
 
