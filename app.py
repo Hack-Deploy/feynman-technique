@@ -13,6 +13,7 @@ import errno
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import threading
@@ -216,11 +217,26 @@ def _bind(port: int, tries: int = 20) -> ThreadingHTTPServer:
     raise SystemExit(f"No free port in {port}-{port + tries - 1}; set PORT to choose another.")
 
 
+class _V6Server(ThreadingHTTPServer):
+    address_family = socket.AF_INET6
+
+
+def _also_ipv6(port: int) -> None:
+    """Serve the same app on IPv6 loopback too: on many Linux systems ``localhost``
+    resolves to ::1 first, and a browser would otherwise get 'connection refused'."""
+    try:
+        v6 = _V6Server(("::1", port), Handler)
+    except OSError:
+        return  # no IPv6 loopback, or ::1 port taken; 127.0.0.1 still works
+    threading.Thread(target=v6.serve_forever, daemon=True).start()
+
+
 def main() -> None:
     server = _bind(PORT)
     port = server.server_address[1]
-    url = f"http://localhost:{port}"
-    print(f"Discovery Market app running at {url}  (Ctrl+C to stop)")
+    _also_ipv6(port)
+    url = f"http://127.0.0.1:{port}"
+    print(f"Discovery Market app running at {url}  (also http://localhost:{port})  (Ctrl+C to stop)")
     if "--no-browser" not in sys.argv:
         webbrowser.open(url)
     try:
