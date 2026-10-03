@@ -3,131 +3,126 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Discovery Market</title>
+<title>AI scientists in real labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&family=Source+Serif+4:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Archivo:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <style>
   :root {
-    --bg: #FBFBF9;
-    --ink: #111111;
-    --body: #333333;
-    --muted: #4A4A4A;
-    --line: #D9D9D4;
-    --accent: #1B3F8B;
-    --accent-soft: #EEF2F9;
-    --loss: #A23B1E;
-    --serif: 'Source Serif 4', Georgia, serif;
-    --sans: 'Source Sans 3', Arial, sans-serif;
-    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --ink: #161616; --body: #4D4D4D; --muted: #6B6B67; --line: #DADAD6;
+    --navy: #1B3F8B; --rust: #A23B1E; --soft: #EEF2F9; --bg: #FFFFFF; --dark: #0B0B0B;
+    --sans: 'Archivo', system-ui, sans-serif;
+    --narrow: 'Archivo Narrow', 'Arial Narrow', sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
   body { background: #2A2A28; font-family: var(--sans); color: var(--ink); overflow: hidden; }
-
-  /* Fixed 1920×1080 stage, scaled to fit the window */
-  .stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
-  .slide {
-    position: absolute; inset: 0; display: none; flex-direction: column; gap: 32px;
-    padding: 128px; background: var(--bg); overflow: hidden;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
-  }
-  .slide.active { display: flex; }
-
-  .eyebrow { font-family: var(--mono); font-size: 24px; letter-spacing: 2px; color: var(--accent); }
-  h1 { font-family: var(--serif); font-size: 120px; font-weight: 600; line-height: 1.05; letter-spacing: -2px; }
-  h2 { font-family: var(--serif); font-size: 72px; font-weight: 600; line-height: 1.1; letter-spacing: -1px; }
-  h3 { font-size: 32px; font-weight: 600; }
-  .lead { font-size: 36px; line-height: 1.4; color: var(--body); }
-  .mono { font-family: var(--mono); }
-  .card { border: 2px solid var(--ink); background: #FFFFFF; padding: 36px 40px; }
-  .callout { font-size: 32px; line-height: 1.4; padding: 24px 32px; border-left: 6px solid var(--accent); background: var(--accent-soft); }
-  .page-num { position: absolute; right: 128px; bottom: 56px; font-family: var(--mono); font-size: 24px; color: var(--muted); }
-  .head { display: flex; flex-direction: column; gap: 12px; }
   svg text { font-family: var(--sans); }
 
+  /* Stage: fixed 1920×1080, scaled to the window */
+  .stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+  .slide { position: absolute; inset: 0; display: none; flex-direction: column; padding: 112px 128px 136px; background: var(--bg); overflow: hidden;
+           -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide.active { display: flex; }
+
+  /* Type scale: 104 / 64 / 40 / 32 / 28 / 24 / 22 / 20 */
+  h1 { font-size: 104px; font-weight: 700; line-height: 0.98; letter-spacing: -0.035em; }
+  h2 { font-size: 64px; font-weight: 700; line-height: 1.08; letter-spacing: -0.02em; }
+  .label { font: 700 22px/1.2 var(--narrow); letter-spacing: 0.16em; text-transform: uppercase; color: var(--navy); }
+  .label.rust { color: var(--rust); }
+  .cover .label.rust { color: #C2603F; }
+  .card.problem { background: #F7ECE8; border-top-color: var(--rust); min-height: 360px; }
+  .card.problem .card-title { font-size: 36px; white-space: nowrap; }
+  .lead { font-size: 32px; line-height: 1.45; color: var(--body); max-width: 1500px; }
+  .cover .lead { max-width: 1340px; }
+  .text { font-size: 30px; line-height: 1.45; color: var(--body); }
+  .text b { color: var(--ink); }
+  .card-title { font-size: 40px; font-weight: 700; line-height: 1.12; }
+  .fig-title { font-size: 30px; font-weight: 600; margin-bottom: 16px; }
+  figcaption { font-size: 24px; line-height: 1.45; color: var(--body); margin-top: 16px; max-width: 1000px; }
+  .credit { display: block; font: 700 18px var(--narrow); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+  .foot { position: absolute; left: 128px; right: 240px; bottom: 56px; font-size: 20px; line-height: 1.4; color: var(--muted); }
+  .pg { position: absolute; right: 128px; bottom: 56px; font: 700 22px var(--narrow); color: var(--muted); }
+  .navy { color: var(--navy); } .rust { color: var(--rust); }
+  sup { font-size: 0.6em; }
+
+  /* Layout: header on top, body centred in the space below */
+  header { display: flex; flex-direction: column; gap: 14px; }
+  .body { margin: auto 0; padding-top: 32px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .stack { display: flex; flex-direction: column; gap: 32px; }
+  figure { margin: 0; }
+  figure img { display: block; width: 100%; height: 480px; object-fit: cover; }
+  figure svg { display: block; max-width: 100%; height: auto; }
+
+  /* Cards and callouts: one style */
+  .card { display: flex; flex-direction: column; gap: 20px; padding: 40px; background: var(--soft); border-top: 6px solid var(--navy); }
+  .two > .card { height: 480px; justify-content: center; }
+  .three > .card { min-height: 300px; }
+  .quote { font-size: 46px; line-height: 1.25; }
+  .num { font: 700 88px/1 var(--narrow); color: var(--navy); }
+  .callout { font-size: 28px; line-height: 1.45; color: var(--body); padding: 24px 32px; background: var(--soft); border-top: 6px solid var(--navy); }
+  .callout b { color: var(--ink); }
+
+  /* Money grid */
+  .money { display: grid; grid-template-columns: 300px 1fr 1fr 1fr; column-gap: 40px; align-items: center; }
+  .money > .label { padding-bottom: 16px; border-bottom: 3px solid var(--navy); }
+  .money .case { font-size: 32px; font-weight: 600; align-self: stretch; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+  .money > div:not(:first-child) { display: flex; flex-direction: column; gap: 8px; padding: 32px 0; border-bottom: 1px solid var(--line); }
+  .money b { font: 700 88px/1 var(--narrow); }
+  .money span { font-size: 24px; line-height: 1.45; color: var(--body); }
+
+  /* Flow diagram */
+  .flow { display: grid; grid-template-columns: 1fr 72px 1fr 72px 1fr 72px 1.35fr; align-items: start; }
+  .flow .arr { width: 40px; height: 24px; justify-self: center; margin-top: 78px; }
+  .step { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+  .badge { width: 180px; height: 180px; border-radius: 50%; background: var(--soft); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .badge .ico { width: 96px; height: 96px; }
+  .badge.sm { width: 96px; height: 96px; margin: 0; flex: none; }
+  .badge.sm .ico { width: 52px; height: 52px; }
+  .badge.no { background: #F7ECE8; }
+  .node-title { font-size: 30px; font-weight: 700; line-height: 1.15; }
+  .node-text { font-size: 22px; line-height: 1.4; color: var(--body); }
+  .outcomes { display: flex; flex-direction: column; gap: 28px; margin-top: 20px; }
+  .out { display: flex; align-items: center; gap: 20px; }
+  .out > div:last-child { display: flex; flex-direction: column; gap: 6px; }
+  .record { display: flex; align-items: center; gap: 20px; padding: 22px 32px; border-left: 6px solid var(--navy); background: var(--soft); }
+  .record .rec { width: 40px; height: 40px; flex: none; }
+  .record b { font: 700 22px var(--narrow); letter-spacing: 0.16em; text-transform: uppercase; color: var(--navy); white-space: nowrap; }
+  .record span { font-size: 28px; color: var(--ink); }
+
+  /* Outcome cards */
+  .outcome { gap: 0; padding: 36px 40px 16px; }
+  .two > .outcome { height: auto; }
+  .outcome .label { margin-bottom: 12px; }
+  .outcome .label.rust { color: var(--rust); }
+  .card.outcome:last-child { border-top-color: var(--rust); background: #F7ECE8; }
+  .outcome .row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 0; border-top: 1px solid rgba(0,0,0,0.08); }
+  .outcome .row p { display: flex; flex-direction: column; gap: 4px; }
+  .outcome .row span { font-size: 30px; font-weight: 600; }
+  .outcome .row b { font: 700 64px/1 var(--narrow); }
+  .outcome .row em { font-style: normal; font-size: 24px; color: var(--body); }
+
   /* Cover */
-  .story { display: grid; grid-template-columns: 1fr 56px 1fr 56px 1fr; align-items: stretch; }
-  .story .beat { display: flex; flex-direction: column; gap: 16px; padding: 36px 40px; border: 2px solid var(--ink); background: #FFFFFF; }
-  .story .beat.problem { border-color: var(--loss); background: #FBEDE8; }
-  .story .beat.fix { border-color: var(--accent); background: var(--accent-soft); }
-  .story .tag { font-family: var(--mono); font-size: 24px; letter-spacing: 2px; color: var(--accent); }
-  .story .problem .tag { color: var(--loss); }
-  .story .beat p:last-child { font-size: 36px; font-weight: 600; line-height: 1.3; }
-  .story .arrow { display: flex; align-items: center; justify-content: center; font-size: 44px; color: var(--muted); }
-  .story sup { font-size: 20px; color: var(--muted); }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
-  .steps div { display: flex; align-items: center; gap: 24px; border: 2px solid var(--ink); padding: 32px 40px; font-size: 36px; font-weight: 600; }
-  .steps svg { width: 64px; height: 64px; flex: none; }
+  .cover { background: var(--dark); color: #FFFFFF; justify-content: center; padding-bottom: 112px; }
+  .cover .bg { position: absolute; right: 0; top: 0; width: 1100px; height: 1320px; object-fit: cover; object-position: 50% 0%; opacity: 0.7; }
+  .cover .fade { position: absolute; left: 0; top: 0; width: 1750px; height: 1080px; background: linear-gradient(90deg, var(--dark) 62%, rgba(11,11,11,0)); }
+  .cover-body { position: relative; display: flex; flex-direction: column; gap: 32px; max-width: 1340px; }
+  .cover .lead { color: #D8D8D8; }
+  .cover-body .label { margin-bottom: -8px; }
+  .probs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: -8px; }
+  .probs div { display: flex; flex-direction: column; gap: 10px; padding-left: 24px; border-left: 4px solid var(--rust); }
+  .probs b { font-size: 32px; font-weight: 700; line-height: 1.2; }
+  .probs span { font-size: 24px; line-height: 1.4; color: #BBBBBB; }
+  .cover .foot { color: #8A8A85; }
 
-  /* Step 1 */
-  .prize { display: flex; justify-content: space-between; align-items: baseline; gap: 32px; }
-  .prize .q { font-family: var(--serif); font-size: 40px; }
-  .prize .amt { font-family: var(--mono); font-size: 48px; }
-  .outcomes { display: grid; grid-template-columns: repeat(3, 1fr); border: 2px solid var(--ink); font-size: 30px; font-weight: 600; text-align: center; margin-top: 32px; }
-  .outcomes div { padding: 20px; }
-  .outcomes .paid { background: var(--accent); color: #FFFFFF; }
-  .outcomes .paid + .paid { border-left: 2px solid #FFFFFF; }
-  .outcomes .unpaid { background: #F2F2EE; color: var(--muted); border-left: 2px solid var(--ink); }
-
-  /* Step 3 */
-  .prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
-  .prices div { display: flex; align-items: center; gap: 28px; border: 2px solid var(--line); background: #FFFFFF; padding: 20px 32px; }
-  .prices p { display: flex; justify-content: space-between; align-items: baseline; flex: 1; }
-  .prices svg { width: 64px; height: 64px; flex: none; }
-  .prices b { display: block; font-size: 36px; font-weight: 600; }
-  .prices span { font-family: var(--mono); font-size: 32px; }
-  .total { display: flex; align-items: center; gap: 48px; margin-top: 16px; }
-  .total .sum { font-family: var(--mono); font-size: 56px; font-weight: 500; }
-  .safety { display: flex; align-items: center; gap: 12px; font-size: 36px; font-weight: 600; color: var(--accent); }
-  .safety svg { width: 48px; height: 48px; }
-
-  /* Step 4 */
-  .payouts { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-  .payouts > div { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 40px 48px; }
-  .payouts .txt { display: flex; flex-direction: column; gap: 8px; }
-  .payouts .win { border: 3px solid var(--accent); background: var(--accent-soft); }
-  .payouts .lose { border: 3px solid #8A8A85; background: #FFFFFF; }
-  .payouts b { font-size: 36px; font-weight: 600; }
-  .payouts .big { font-family: var(--mono); font-size: 120px; line-height: 1.1; }
-  .payouts .win .big { color: var(--accent); }
-  .payouts .lose .big { color: var(--loss); }
-  .payouts small { font-size: 28px; color: var(--muted); }
-
-  /* Step 5 */
-  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
-  .charts figure { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-  .charts svg { width: 580px; height: 552px; }
-
-  /* Setup */
-  .note { position: absolute; left: 128px; bottom: 56px; font-size: 24px; color: var(--muted); }
-
-  /* Closing statement */
-  .slide.statement { background: var(--accent); color: #FBFBF9; justify-content: center; }
-  .statement .eyebrow { color: #C9D3E6; }
-  .statement h2 { font-size: 96px; }
-  .statement .lead { color: #E4E9F3; max-width: 1400px; }
-  .statement .page-num { color: #C9D3E6; }
-
-  /* Illustrations */
-  .illus { position: absolute; }
-  .plan { display: flex; align-items: center; gap: 20px; flex: none; }
-  .plan svg { width: 72px; height: 72px; }
-  .plan .arrow { font-size: 36px; color: var(--muted); }
-  .payouts .art { width: 240px; height: 218px; flex: none; }
-
-  /* Novelty */
-  .novel { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-  .novel h3 { font-family: var(--mono); font-size: 24px; font-weight: 500; letter-spacing: 2px; color: var(--accent); padding-bottom: 12px; border-bottom: 3px solid var(--accent); }
-  .novel .matters h3 { color: var(--loss); border-color: var(--loss); }
-  .novel ul { list-style: none; display: flex; flex-direction: column; gap: 36px; margin-top: 40px; }
-  .novel li { font-size: 38px; font-weight: 600; line-height: 1.25; padding-left: 28px; border-left: 6px solid var(--accent); }
-  .novel .matters li { border-color: var(--loss); }
-  .novel sup { font-size: 22px; font-weight: 400; color: var(--muted); }
-  .landscape { font-size: 30px; line-height: 1.4; padding: 20px 28px; background: #F2F2EE; border-left: 6px solid var(--ink); }
-  .sources { position: absolute; left: 128px; right: 220px; bottom: 52px; font-size: 18px; line-height: 1.4; color: var(--muted); }
+  /* Demo */
+  .demo { justify-content: center; }
+  .demo .side { position: absolute; right: 0; top: 0; width: 760px; height: 1240px; object-fit: cover; object-position: 50% 0%; }
+  .demo-body { display: flex; flex-direction: column; gap: 24px; max-width: 900px; }
 
   /* Controls */
-  .controls { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font: 14px/1 var(--mono); color: #CFCFC8; background: rgba(0,0,0,.45); padding: 6px 8px; border-radius: 999px; z-index: 2; }
+  .controls { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font: 14px/1 var(--narrow); color: #CFCFC8; background: rgba(0,0,0,.45); padding: 6px 8px; border-radius: 999px; z-index: 2; }
   .controls button { background: none; border: none; color: inherit; font: inherit; font-size: 18px; padding: 4px 10px; cursor: pointer; border-radius: 999px; }
   .controls button:hover { background: rgba(255,255,255,.12); }
 
@@ -142,338 +137,330 @@
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position: absolute" aria-hidden="true">
-  <defs>
-    <symbol id="apple" viewBox="0 0 40 44">
-      <path d="M20 12c-3-2.5-11-3.5-14 3-3 7 1 19 7 21 2.5.8 4-.8 7-.8s4.5 1.6 7 .8c6-2 10-14 7-21-3-6.5-11-5.5-14-3z" fill="#D2442B" stroke="#7A2A18" stroke-width="2"/>
-      <path d="M11 19c-1 3-1 6 0 9" stroke="#FFFFFF" stroke-opacity=".6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M20 12c0-4 1-7 3-9" stroke="#5B3A1E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M22 7c4-5 10-5 12-3-2 4-7 6-12 3z" fill="#5E9E4A" stroke="#3B6B2E" stroke-width="1.5"/>
-    </symbol>
-
-    <!-- Scientist on a ladder dropping an apple. Outlines follow the CSS color. -->
-    <symbol id="drop" viewBox="0 0 420 640">
-      <ellipse cx="210" cy="604" rx="200" ry="14" style="fill: var(--illus-soft, #E6E4DC)"/>
-      <path d="M10 600h400" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-      <!-- ladder -->
-      <g stroke="#9A6B3F" stroke-width="7" stroke-linecap="round">
-        <path d="M100 600L150 190"/><path d="M180 600L230 190"/>
-        <path d="M106 550h80"/><path d="M112 500h80"/><path d="M118 450h80"/><path d="M124 400h80"/>
-        <path d="M130 350h80"/><path d="M137 300h80"/><path d="M143 250h80"/><path d="M148 205h80"/>
-      </g>
-      <!-- measuring tape -->
-      <rect x="196" y="610" width="146" height="14" rx="3" fill="#F2D27A" stroke="currentColor" stroke-width="2"/>
-      <path d="M216 610v6M236 610v8M256 610v6M276 610v8M296 610v6M316 610v8" stroke="currentColor" stroke-width="2"/>
-      <!-- landing mark -->
-      <ellipse cx="302" cy="598" rx="34" ry="7" fill="none" stroke="#A23B1E" stroke-width="3" stroke-dasharray="6 5"/>
-      <!-- legs and shoes -->
-      <path d="M160 226l-2 70h14l4-70z M180 226l4 70h14l-4-70z" fill="#3B4A6B" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
-      <ellipse cx="163" cy="298" rx="13" ry="6" fill="#2A2A28"/><ellipse cx="193" cy="298" rx="13" ry="6" fill="#2A2A28"/>
-      <!-- arm holding the ladder -->
-      <path d="M156 162q-18 30-10 54" stroke="currentColor" stroke-width="16" stroke-linecap="round" fill="none"/>
-      <path d="M156 162q-18 30-10 54" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" fill="none"/>
-      <circle cx="146" cy="218" r="8" fill="#F1C9A5" stroke="currentColor" stroke-width="2.5"/>
-      <!-- lab coat -->
-      <path d="M152 150q25-12 50 0l6 86h-62z" fill="#FFFFFF" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M177 152v82M168 150l9 18 9-18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-      <rect x="186" y="186" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-      <!-- arm reaching out -->
-      <path d="M198 162q40-12 82-12" stroke="currentColor" stroke-width="16" stroke-linecap="round" fill="none"/>
-      <path d="M198 162q40-12 82-12" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" fill="none"/>
-      <circle cx="288" cy="150" r="9" fill="#F1C9A5" stroke="currentColor" stroke-width="2.5"/>
-      <!-- head -->
-      <circle cx="177" cy="118" r="22" fill="#F1C9A5" stroke="currentColor" stroke-width="2.5"/>
-      <path d="M155 114q3-22 23-20 20 0 22 18-10-8-23-6-12 0-22 8z" fill="#3A2A20"/>
-      <rect x="163" y="110" width="30" height="11" rx="5.5" fill="#CFE3F2" stroke="currentColor" stroke-width="2"/>
-      <path d="M170 129q7 6 14 0" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <!-- falling apple -->
-      <path d="M302 172V282" stroke="currentColor" stroke-opacity=".45" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
-      <path d="M290 262v18M302 252v26M314 262v18" stroke="currentColor" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
-      <use href="#apple" x="280" y="290" width="44" height="48"/>
-    </symbol>
-  </defs>
-</svg>
-
 <div class="stage" id="stage">
 
-<!-- 1 · Cover -->
-<section class="slide" style="justify-content: space-between">
-  <div class="head" style="gap: 32px">
-    <p class="eyebrow" style="color: var(--muted)">DISCOVERY MARKET</p>
-    <h1 style="max-width: 1180px; font-size: 112px">Pay AI scientists only for answers.</h1>
+<section class="slide cover">
+  <img class="bg" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/E._coli_Bacteria_%287316101966%29.jpg/1920px-E._coli_Bacteria_%287316101966%29.jpg" alt="">
+  <div class="fade"></div>
+  <div class="cover-body">
+    <h1>Real progress needs real science with real stakes.</h1>
+    <p class="lead">AI scientists stake their own money on real lab experiments, and get paid only for a statistically significant result, for or against the hypothesis.</p>
   </div>
-  <div class="story">
-    <div class="beat problem"><p class="tag">THE PROBLEM</p><p>AI agents predict 77% success and deliver 22%.<sup>1</sup></p></div>
-    <div class="arrow">→</div>
-    <div class="beat fix"><p class="tag">OUR FIX</p><p>A market that pays AI scientists only for a clear answer, true or false.</p></div>
-    <div class="arrow">→</div>
-    <div class="beat"><p class="tag">THE PAYOFF</p><p>Funders pay only for answers. Overconfidence costs the bidder.</p></div>
-  </div>
-  <p class="note">1 Some agents tested in Kaddour et al., ICLR 2026.</p>
-  <svg class="illus" viewBox="0 0 440 470" style="right: 128px; top: 96px; width: 380px; height: 397px" aria-hidden="true">
-    <ellipse cx="220" cy="452" rx="150" ry="12" fill="#E6E4DC"/>
-    <!-- sparkles around the apple -->
-    <g fill="#F2B84B"><path d="M402 52l5 12 12 5-12 5-5 12-5-12-12-5 12-5z"/><path d="M300 30l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/></g>
-    <!-- antenna -->
-    <path d="M220 72V44" stroke="#1B3F8B" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="220" cy="36" r="10" fill="#F2B84B" stroke="#1B3F8B" stroke-width="4"/>
-    <!-- legs -->
-    <rect x="172" y="392" width="34" height="46" rx="6" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="4"/>
-    <rect x="234" y="392" width="34" height="46" rx="6" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="4"/>
-    <ellipse cx="186" cy="442" rx="26" ry="10" fill="#1B3F8B"/><ellipse cx="254" cy="442" rx="26" ry="10" fill="#1B3F8B"/>
-    <!-- arm holding the clipboard -->
-    <path d="M146 218q-34 56-16 108" stroke="#1B3F8B" stroke-width="24" stroke-linecap="round" fill="none"/>
-    <path d="M146 218q-34 56-16 108" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" fill="none"/>
-    <!-- lab coat -->
-    <path d="M140 202q80-24 160 0l18 196H122z" fill="#FFFFFF" stroke="#1B3F8B" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M196 196l24 66 24-66z" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M220 262v134" stroke="#1B3F8B" stroke-width="3"/>
-    <rect x="248" y="290" width="38" height="30" rx="4" fill="none" stroke="#1B3F8B" stroke-width="3"/>
-    <path d="M258 282v18" stroke="#D2442B" stroke-width="5" stroke-linecap="round"/>
-    <!-- clipboard -->
-    <rect x="92" y="296" width="76" height="96" rx="8" fill="#F7F3E8" stroke="#1B3F8B" stroke-width="4"/>
-    <rect x="112" y="288" width="36" height="14" rx="4" fill="#1B3F8B"/>
-    <path d="M106 324h48M106 342h48M106 360h30" stroke="#8A8A85" stroke-width="4" stroke-linecap="round"/>
-    <!-- arm raised with the apple -->
-    <path d="M296 218q52-24 54-90" stroke="#1B3F8B" stroke-width="24" stroke-linecap="round" fill="none"/>
-    <path d="M296 218q52-24 54-90" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" fill="none"/>
-    <circle cx="350" cy="120" r="17" fill="#E4EAF5" stroke="#1B3F8B" stroke-width="4"/>
-    <use href="#apple" x="326" y="56" width="50" height="55"/>
-    <!-- neck and head -->
-    <rect x="204" y="178" width="32" height="20" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="4"/>
-    <rect x="134" y="106" width="18" height="40" rx="7" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="4"/>
-    <rect x="288" y="106" width="18" height="40" rx="7" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="4"/>
-    <rect x="148" y="70" width="144" height="112" rx="30" fill="#E4EAF5" stroke="#1B3F8B" stroke-width="4"/>
-    <rect x="170" y="94" width="100" height="64" rx="18" fill="#1B3F8B"/>
-    <circle cx="198" cy="122" r="9" fill="#8FE3FF"/><circle cx="242" cy="122" r="9" fill="#8FE3FF"/>
-    <path d="M205 140q15 10 30 0" stroke="#8FE3FF" stroke-width="4" fill="none" stroke-linecap="round"/>
-  </svg>
 </section>
-
-<!-- 2 · What's new and why it matters -->
-<section class="slide" style="gap: 48px; padding-bottom: 160px">
-  <div class="head">
-    <p class="eyebrow">WHY DISCOVERY MARKET</p>
-    <h2>What's new, and why it matters</h2>
-  </div>
-  <div class="novel">
-    <div>
-      <h3>WHAT'S NEW</h3>
-      <ul>
-        <li>Paid only for clear answers</li>
-        <li>AI scientists bid on their own confidence</li>
-        <li>Every prediction scored, every run logged</li>
-      </ul>
-    </div>
-    <div class="matters">
-      <h3>WHY IT MATTERS</h3>
-      <ul>
-        <li>Agents predict 77% success, deliver 22%<sup>1</sup></li>
-        <li>65% of null results are never written up<sup>2</sup></li>
-        <li>$850M into AI-run labs before proven results<sup>3</sup></li>
-      </ul>
-    </div>
-  </div>
-  <p class="landscape">Others cover one piece: AI scientists, cloud labs, science prediction markets. We found none that pays only for clear answers from real labs.</p>
-  <p class="sources">1 Some agents tested in Kaddour et al., ICLR 2026 · 2 Franco et al., Science 2014 · 3 Lila Sciences $550M, Periodic Labs $300M seed (Startup Fortune 2026, TechBuzz 2025) · Details: novelty-review.md</p>
-  <p class="page-num">2</p>
-</section>
-
-<!-- 3 · Step 1 -->
 <section class="slide">
-  <div class="head">
-    <p class="eyebrow">STEP 1 OF 5</p>
-    <h2>Post a hypothesis and a prize</h2>
+  <header><p class="label rust">Why now</p><h2>The problem</h2></header>
+  <div class="body three">
+    <div class="card problem"><p class="card-title">Benchmarks get gamed</p><p class="text">Known answers get overfitted or brute-forced. Only open questions, with every attempt counted, are a real test.</p></div>
+    <div class="card problem"><p class="card-title">AI overrates itself</p><p class="text">Agents claim 77%, deliver 22%.<sup>1</sup> Self-assessment is the bottleneck for markets of AI agents.<sup>2</sup></p></div>
+    <div class="card problem"><p class="card-title">Null results vanish</p><p class="text">65% never get written up.<sup>3</sup> The next experiment can't learn from what didn't work.</p></div>
   </div>
-  <p class="lead">True or false both pay. No clear answer, no payout.</p>
-  <div class="card" style="width: 1140px">
-    <div class="prize"><span class="q">“Gravity makes objects fall to the ground.”</span><span class="amt">£50</span></div>
-    <div class="outcomes">
-      <div class="paid">True → paid</div>
-      <div class="paid">False → paid</div>
-      <div class="unpaid">No answer → not paid</div>
+  <p class="foot">1 Some agents tested in Kaddour et al., ICLR 2026 · 2 Fradkin &amp; Krishnan, MarketBench, 2026 · 3 Franco et al., Science 2014</p>
+  <p class="pg">2</p>
+</section>
+<section class="slide">
+  <header><p class="label">How it works</p><h2>From hypothesis to payout</h2></header>
+  <div class="body stack">
+    <div class="flow">
+      <div class="step"><div class="badge"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/><circle cx="19" cy="18" r="3.2" fill="#F2C94C" stroke="#B8871B"/></svg></div><p class="label">Researcher</p><p class="node-title">Posts hypothesis, resolution criteria + prize</p></div>
+      <svg class="arr" viewBox="0 0 40 24" aria-hidden="true"><path d="M0 12h32M24 4l10 8-10 8" fill="none" stroke="#9A9A96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="step"><div class="badge"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1"/><circle cx="9" cy="12" r="1.2" fill="#1B3F8B"/><circle cx="15" cy="12" r="1.2" fill="#1B3F8B"/><path d="M9.5 15.5h5"/><path d="M2 12v3M22 12v3"/></svg></div><p class="label">AI scientist</p><p class="node-title">Designs the experiment + pays the lab</p></div>
+      <svg class="arr" viewBox="0 0 40 24" aria-hidden="true"><path d="M0 12h32M24 4l10 8-10 8" fill="none" stroke="#9A9A96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="step"><div class="badge"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg></div><p class="label">Lab</p><p class="node-title">Runs it</p></div>
+      <svg class="arr" viewBox="0 0 40 24" aria-hidden="true"><path d="M0 12h32M24 4l10 8-10 8" fill="none" stroke="#9A9A96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="outcomes">
+        <div class="out"><div class="badge sm"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></div><div><p class="label">Significant</p><p class="node-title">AI scientist wins prize</p></div></div>
+        <div class="out"><div class="badge sm no"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#A23B1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></div><div><p class="label rust">Not significant</p><p class="node-title">Prize goes back</p></div></div>
+      </div>
     </div>
   </div>
-  <p class="callout" style="width: 1140px">University researchers: your grant money is only spent when it buys an answer.</p>
-  <svg class="illus" viewBox="0 0 440 560" style="right: 128px; top: 300px; width: 440px; height: 560px" aria-hidden="true">
-    <ellipse cx="220" cy="540" rx="170" ry="14" fill="#E6E4DC"/>
-    <path d="M196 540c6-90 2-150-10-206h62c-12 56-14 116-8 206z" fill="#9A6B3F" stroke="#6B4526" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M206 380q-30-24-40-60M232 400q30-30 52-50" stroke="#6B4526" stroke-width="10" stroke-linecap="round" fill="none"/>
-    <path d="M90 260c-30-60 20-130 80-120 20-60 120-70 150-10 70-10 100 70 60 120 30 60-40 100-90 80-40 40-120 30-140-10-50 10-80-20-60-60z" fill="#9CC58A" stroke="#4E7F3E" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M150 210q20-14 40-6M260 170q22-10 40 2M300 270q18-6 30 6" stroke="#4E7F3E" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6"/>
-    <use href="#apple" x="128" y="236" width="30" height="33"/>
-    <use href="#apple" x="226" y="128" width="30" height="33"/>
-    <use href="#apple" x="340" y="214" width="30" height="33"/>
-    <use href="#apple" x="196" y="266" width="30" height="33"/>
-    <!-- the prize apple, hanging lower with its tag -->
-    <path d="M300 318v26" stroke="#5B3A1E" stroke-width="3"/>
-    <use href="#apple" x="278" y="340" width="46" height="50"/>
-    <path d="M314 382q16 14 34 22" stroke="#1B3F8B" stroke-width="2.5" fill="none"/>
-    <path d="M348 392h72a6 6 0 0 1 6 6v40a6 6 0 0 1-6 6h-72l-18-26z" fill="#FFF7E0" stroke="#1B3F8B" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="346" cy="418" r="4.5" fill="#FFFFFF" stroke="#1B3F8B" stroke-width="2.5"/>
-    <text x="390" y="428" font-size="26" font-weight="500" text-anchor="middle" fill="#1B3F8B" style="font-family: var(--mono)">£50</text>
-  </svg>
-  <p class="page-num">3</p>
+  <p class="pg">3</p>
 </section>
-
-<!-- 4 · Step 2 -->
-<section class="slide" style="gap: 28px">
-  <div class="head">
-    <p class="eyebrow">STEP 2 OF 5</p>
-    <h2>Design the experiment, or walk away</h2>
+<section class="slide">
+  <header><p class="label">Step 1 · Post a hypothesis, criteria and a prize</p><h2>Does DM-17 stop the growth of <i>E. coli</i>?</h2></header>
+  <div class="body two">
+    <div class="card">
+      <p class="quote">“Compound DM-17 inhibits growth of <i>E. coli</i> K-12 at 10&nbsp;µg/mL.”</p>
+      <p class="text"><b>Resolution criteria:</b> a significant result in either direction, with both controls in working order.</p>
+      <p class="text"><b>Prize:</b> £500</p>
+    </div>
+    <figure><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Antibiotic_susceptibility_disk_diffusion.jpg/1920px-Antibiotic_susceptibility_disk_diffusion.jpg" alt="Stacks of agar plates with clear rings around antibiotic discs"><figcaption>Disk diffusion plates. A clear ring marks each spot where a compound stops bacterial growth.<span class="credit">Photo: Microrao, CC BY-SA 4.0</span></figcaption></figure>
   </div>
-  <div class="card" style="padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; gap: 32px">
-    <p style="font-family: var(--serif); font-size: 44px">Climb a ladder, drop an apple, record where it lands.</p>
-    <div class="plan"><svg viewBox="0 0 24 24" fill="none" stroke="#9A6B3F" stroke-width="2" stroke-linecap="round" aria-label="Ladder"><path d="M7 3v18"/><path d="M17 3v18"/><path d="M7 7h10"/><path d="M7 11h10"/><path d="M7 15h10"/><path d="M7 19h10"/></svg><span class="arrow">→</span><svg viewBox="0 0 40 44" aria-label="Apple"><use href="#apple"/></svg><span class="arrow">→</span><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linejoin="round" aria-label="Measuring tape"><rect x="2" y="9" width="20" height="7" rx="1.5" fill="#F2D27A"/><path d="M6 9v3M10 9v4M14 9v3M18 9v4"/></svg></div>
-  </div>
-  <svg viewBox="0 0 860 210" role="img" aria-label="The designer is about 95% sure of a clear answer; it only needs 8% to cover the cost" style="width: 1664px; height: 406px">
-    <path d="M676,150 L676.0,149.9 678.0,149.9 680.1,149.9 682.1,149.8 684.2,149.8 686.2,149.8 688.3,149.8 690.4,149.7 692.4,149.7 694.5,149.6 696.5,149.6 698.5,149.5 700.6,149.4 702.6,149.4 704.7,149.3 706.8,149.2 708.8,149.0 710.9,148.9 712.9,148.7 715.0,148.5 717.0,148.3 719.1,148.1 721.1,147.8 723.1,147.6 725.2,147.2 727.2,146.8 729.3,146.4 731.4,146.0 733.4,145.4 735.5,144.8 737.5,144.2 739.6,143.4 741.6,142.6 743.7,141.7 745.7,140.7 747.8,139.5 749.8,138.3 751.9,136.9 753.9,135.4 756.0,133.7 758.0,131.9 760.1,129.9 762.1,127.7 764.2,125.4 766.2,122.8 768.3,120.0 770.3,117.0 772.4,113.8 774.4,110.4 776.5,106.7 778.5,102.8 780.5,98.7 782.6,94.4 784.7,89.9 786.7,85.3 788.8,80.5 790.8,75.7 792.9,70.8 794.9,65.9 797.0,61.2 799.0,56.6 801.0,52.4 803.1,48.5 805.1,45.2 807.2,42.6 809.2,40.8 811.3,40.0 813.4,40.4 815.4,42.1 817.5,45.2 819.5,50.0 821.6,56.5 823.6,64.8 825.6,74.8 827.7,86.3 829.8,99.0 831.8,112.4 833.9,125.6 835.9,137.5 838.0,146.4 840,150 Z" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="2"/>
-    <line x1="20" y1="150" x2="840" y2="150" stroke="#111111"/>
-    <g font-size="14" fill="#4A4A4A" font-family="IBM Plex Mono, monospace" text-anchor="middle"><text x="20" y="174">0%</text><text x="430" y="174">50%</text><text x="840" y="174" text-anchor="end">100%</text></g>
-    <text x="430" y="200" font-size="15" text-anchor="middle" fill="#111111">Chance of a clear answer</text>
-    <line x1="85.6" y1="40" x2="85.6" y2="150" stroke="#A23B1E" stroke-width="2" stroke-dasharray="5 4"/>
-    <text x="96" y="60" font-size="16" fill="#A23B1E">needs 8% to break even</text>
-    <text x="660" y="60" font-size="16" text-anchor="end" font-weight="600" fill="#1B3F8B">designer's confidence: ~95%</text>
-  </svg>
-  <p class="lead" style="font-size: 32px">Confident enough to cover the cost → <b style="color: var(--accent)">bid</b>. Not confident enough → walk away.</p>
-  <p class="page-num">4</p>
+  <p class="pg">4</p>
 </section>
-
-<!-- 5 · Step 3 -->
-<section class="slide" style="gap: 32px">
-  <div class="head">
-    <p class="eyebrow">STEP 3 OF 5</p>
-    <h2>Run it in a lab</h2>
+<section class="slide">
+  <header><p class="label">Step 2 · Design the experiment</p><h2>The plate</h2></header>
+  <div class="body">
+    <figure style="width: 1000px; margin: 0 auto"><svg width="1000" height="544" viewBox="0 0 680 370" role="img" aria-label="96-well plate map. Columns 1 to 6 hold DM-17 at 0, 1, 10 and 100 micrograms per millilitre, ampicillin and vehicle, in triplicate rows A to C. Shading shows expected growth.">
+<text x="92" y="18" font-size="13.6" fill="#6B6B67">DM-17, µg/mL</text>
+<line x1="80" y1="24" x2="242" y2="24" stroke="#1B3F8B"/>
+<rect x="40" y="56" width="620" height="270" rx="18" fill="#F2F1EC" stroke="#1B3F8B" stroke-width="1.5"/>
+<text x="92" y="46" font-size="13.6" font-weight="600" fill="#1B3F8B" text-anchor="middle">0</text>
+<text x="138" y="46" font-size="13.6" font-weight="600" fill="#1B3F8B" text-anchor="middle">1</text>
+<text x="184" y="46" font-size="13.6" font-weight="600" fill="#1B3F8B" text-anchor="middle">10</text>
+<text x="230" y="46" font-size="13.6" font-weight="600" fill="#1B3F8B" text-anchor="middle">100</text>
+<text x="276" y="46" font-size="13.6" font-weight="600" fill="#1B3F8B" text-anchor="middle">Amp</text>
+<text x="322" y="46" font-size="13.6" font-weight="600" fill="#1B3F8B" text-anchor="middle">Veh</text>
+<text x="368" y="46" font-size="13.6" font-weight="400" fill="#6B6B67" text-anchor="middle">7</text>
+<text x="414" y="46" font-size="13.6" font-weight="400" fill="#6B6B67" text-anchor="middle">8</text>
+<text x="460" y="46" font-size="13.6" font-weight="400" fill="#6B6B67" text-anchor="middle">9</text>
+<text x="506" y="46" font-size="13.6" font-weight="400" fill="#6B6B67" text-anchor="middle">10</text>
+<text x="552" y="46" font-size="13.6" font-weight="400" fill="#6B6B67" text-anchor="middle">11</text>
+<text x="598" y="46" font-size="13.6" font-weight="400" fill="#6B6B67" text-anchor="middle">12</text>
+<text x="62" y="90" font-size="13.6" fill="#6B6B67" text-anchor="middle">A</text>
+<circle cx="92" cy="86" r="12" fill="#24488F" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="138" cy="86" r="12" fill="#34579A" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="184" cy="86" r="12" fill="#A9BAD8" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="230" cy="86" r="12" fill="#D3DCEC" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="276" cy="86" r="12" fill="#DFE6F1" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="322" cy="86" r="12" fill="#1B3F8B" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="368" cy="86" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="86" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="86" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="86" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="86" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="86" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="120" font-size="13.6" fill="#6B6B67" text-anchor="middle">B</text>
+<circle cx="92" cy="116" r="12" fill="#24488F" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="138" cy="116" r="12" fill="#34579A" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="184" cy="116" r="12" fill="#A9BAD8" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="230" cy="116" r="12" fill="#D3DCEC" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="276" cy="116" r="12" fill="#DFE6F1" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="322" cy="116" r="12" fill="#1B3F8B" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="368" cy="116" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="116" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="116" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="116" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="116" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="116" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="150" font-size="13.6" fill="#6B6B67" text-anchor="middle">C</text>
+<circle cx="92" cy="146" r="12" fill="#24488F" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="138" cy="146" r="12" fill="#34579A" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="184" cy="146" r="12" fill="#A9BAD8" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="230" cy="146" r="12" fill="#D3DCEC" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="276" cy="146" r="12" fill="#DFE6F1" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="322" cy="146" r="12" fill="#1B3F8B" stroke="#1B3F8B" stroke-width="1"/>
+<circle cx="368" cy="146" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="146" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="146" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="146" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="146" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="146" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="180" font-size="13.6" fill="#6B6B67" text-anchor="middle">D</text>
+<circle cx="92" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="138" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="184" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="230" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="276" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="322" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="368" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="176" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="210" font-size="13.6" fill="#6B6B67" text-anchor="middle">E</text>
+<circle cx="92" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="138" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="184" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="230" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="276" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="322" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="368" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="206" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="240" font-size="13.6" fill="#6B6B67" text-anchor="middle">F</text>
+<circle cx="92" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="138" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="184" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="230" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="276" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="322" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="368" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="236" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="270" font-size="13.6" fill="#6B6B67" text-anchor="middle">G</text>
+<circle cx="92" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="138" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="184" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="230" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="276" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="322" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="368" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="266" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<text x="62" y="300" font-size="13.6" fill="#6B6B67" text-anchor="middle">H</text>
+<circle cx="92" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="138" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="184" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="230" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="276" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="322" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="368" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="414" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="460" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="506" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="552" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<circle cx="598" cy="296" r="12" fill="#FFFFFF" stroke="#DADAD6" stroke-width="1"/>
+<g transform="translate(48,352)"><circle cx="8" cy="-4" r="8" fill="#1B3F8B" stroke="#1B3F8B"/><text x="22" y="0" font-size="13.6" fill="#6B6B67">dense growth</text><circle cx="128" cy="-4" r="8" fill="#DFE6F1" stroke="#1B3F8B"/><text x="142" y="0" font-size="13.6" fill="#6B6B67">clear</text><text x="210" y="0" font-size="13.6" fill="#6B6B67">Rows A–C are replicates. Amp = ampicillin, Veh = vehicle control.</text></g>
+</svg><figcaption>The proposed layout, shaded by the growth expected after 12 hours from an effective compound.</figcaption></figure>
   </div>
-  <p class="lead" style="width: 1040px">Labs publish prices. The run is safety-checked and paid upfront.</p>
-  <div class="prices" style="grid-template-columns: 1fr; gap: 16px; width: 1040px">
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v18"/><path d="M17 3v18"/><path d="M7 7h10"/><path d="M7 11h10"/><path d="M7 15h10"/><path d="M7 19h10"/></svg><p><b>Ladder</b><span>£0.50</span></p></div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7.5c-1.5-1-5.2-1.3-6.2 2.2-1 3.6 1 9.3 3.4 9.8 1.2.3 1.8-.4 2.8-.4s1.6.7 2.8.4c2.4-.5 4.4-6.2 3.4-9.8-1-3.5-4.7-3.2-6.2-2.2z"/><path d="M12 7.5V5"/><path d="M12 5.5c.8-1.6 2.3-2.4 4-2.5"/></svg><p><b>Apple</b><span>£0.50</span></p></div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="6" r="3"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/><path d="M12 13v8"/><path d="M9.5 13l2.5 4 2.5-4"/></svg><p><b>Technician, 15 min</b><span>£3.00</span></p></div>
-  </div>
-  <div class="total">
-    <span class="sum">Total £4.00</span>
-    <span class="safety"><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Safety check passed</span>
-  </div>
-  <svg class="illus" viewBox="0 0 420 640" style="right: 128px; top: 170px; width: 500px; height: 762px; color: #1B3F8B" role="img" aria-label="A technician on a ladder drops an apple onto a marked spot next to a measuring tape"><use href="#drop"/></svg>
-  <p class="page-num">5</p>
+  <p class="pg">5</p>
 </section>
-
-<!-- 6 · Step 4 -->
-<section class="slide" style="gap: 40px">
-  <div class="head">
-    <p class="eyebrow">STEP 4 OF 5</p>
-    <h2>The result pays out</h2>
+<section class="slide">
+  <header><p class="label">Step 2 · Bid, or walk away</p><h2>The bid</h2></header>
+  <div class="body">
+    <figure><svg width="1664" height="445" viewBox="0 0 860 230" role="img" aria-label="The AI scientist estimates about 60 percent; break-even is 30 percent, so it bids.">
+      <rect x="20" y="40" width="246.0" height="110" fill="#F3E3DD"/>
+      <path d="M20.0,150 L20.0,150.0 24.1,150.0 28.2,150.0 32.3,150.0 36.4,150.0 40.5,150.0 44.6,150.0 48.7,150.0 52.8,150.0 56.9,150.0 61.0,150.0 65.1,150.0 69.2,150.0 73.3,150.0 77.4,150.0 81.5,150.0 85.6,150.0 89.7,150.0 93.8,150.0 97.9,150.0 102.0,150.0 106.1,150.0 110.2,150.0 114.3,150.0 118.4,150.0 122.5,150.0 126.6,150.0 130.7,150.0 134.8,150.0 138.9,150.0 143.0,150.0 147.1,150.0 151.2,150.0 155.3,150.0 159.4,150.0 163.5,150.0 167.6,150.0 171.7,150.0 175.8,150.0 179.9,150.0 184.0,150.0 188.1,150.0 192.2,150.0 196.3,149.9 200.4,149.9 204.5,149.9 208.6,149.9 212.7,149.9 216.8,149.8 220.9,149.8 225.0,149.8 229.1,149.7 233.2,149.7 237.3,149.6 241.4,149.6 245.5,149.5 249.6,149.4 253.7,149.3 257.8,149.2 261.9,149.0 266.0,148.9 270.1,148.7 274.2,148.5 278.3,148.3 282.4,148.0 286.5,147.7 290.6,147.4 294.7,147.0 298.8,146.6 302.9,146.1 307.0,145.6 311.1,145.0 315.2,144.4 319.3,143.7 323.4,142.9 327.5,142.0 331.6,141.1 335.7,140.1 339.8,139.0 343.9,137.8 348.0,136.5 352.1,135.1 356.2,133.6 360.3,131.9 364.4,130.2 368.5,128.4 372.6,126.4 376.7,124.4 380.8,122.2 384.9,119.9 389.0,117.5 393.1,115.0 397.2,112.5 401.3,109.8 405.4,107.0 409.5,104.2 413.6,101.3 417.7,98.4 421.8,95.4 425.9,92.4 430.0,89.3 434.1,86.3 438.2,83.3 442.3,80.3 446.4,77.4 450.5,74.5 454.6,71.7 458.7,69.0 462.8,66.5 466.9,64.0 471.0,61.8 475.1,59.6 479.2,57.7 483.3,55.9 487.4,54.4 491.5,53.1 495.6,52.0 499.7,51.1 503.8,50.5 507.9,50.1 512.0,50.0 516.1,50.1 520.2,50.5 524.3,51.1 528.4,52.0 532.5,53.1 536.6,54.4 540.7,55.9 544.8,57.7 548.9,59.6 553.0,61.8 557.1,64.0 561.2,66.5 565.3,69.0 569.4,71.7 573.5,74.5 577.6,77.4 581.7,80.3 585.8,83.3 589.9,86.3 594.0,89.3 598.1,92.4 602.2,95.4 606.3,98.4 610.4,101.3 614.5,104.2 618.6,107.0 622.7,109.8 626.8,112.5 630.9,115.0 635.0,117.5 639.1,119.9 643.2,122.2 647.3,124.4 651.4,126.4 655.5,128.4 659.6,130.2 663.7,131.9 667.8,133.6 671.9,135.1 676.0,136.5 680.1,137.8 684.2,139.0 688.3,140.1 692.4,141.1 696.5,142.0 700.6,142.9 704.7,143.7 708.8,144.4 712.9,145.0 717.0,145.6 721.1,146.1 725.2,146.6 729.3,147.0 733.4,147.4 737.5,147.7 741.6,148.0 745.7,148.3 749.8,148.5 753.9,148.7 758.0,148.9 762.1,149.0 766.2,149.2 770.3,149.3 774.4,149.4 778.5,149.5 782.6,149.6 786.7,149.6 790.8,149.7 794.9,149.7 799.0,149.8 803.1,149.8 807.2,149.8 811.3,149.9 815.4,149.9 819.5,149.9 823.6,149.9 827.7,149.9 831.8,150.0 835.9,150.0 840.0,150.0 840,150 Z" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="2"/>
+      <line x1="512.0" y1="50" x2="512.0" y2="150" stroke="#1B3F8B" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <line x1="20" y1="150" x2="840" y2="150" stroke="#161616" stroke-width="1.5"/>
+      <g font-size="11.4" fill="#6B6B67" text-anchor="middle"><text x="20" y="172">0%</text><text x="225" y="172">25%</text><text x="430" y="172">50%</text><text x="635" y="172">75%</text><text x="840" y="172" text-anchor="end">100%</text></g>
+      <text x="430" y="200" font-size="12.4" text-anchor="middle" fill="#161616">Chance this design gives a clear answer</text>
+      <line x1="266.0" y1="40" x2="266.0" y2="150" stroke="#A23B1E" stroke-width="2" stroke-dasharray="5 4"/>
+      <text x="256.0" y="60" font-size="12.4" font-weight="700" text-anchor="end" fill="#A23B1E">Break-even 30%</text>
+      <text x="256.0" y="78" font-size="11.4" text-anchor="end" fill="#A23B1E">£150 run ÷ £500 prize</text>
+      <text x="522.0" y="40" font-size="12.4" font-weight="700" fill="#1B3F8B">Its estimate: ~60%, so a bid</text>
+    </svg><figcaption>Blue: the AI scientist's estimate of its design's chance of success. Shaded: odds too low to cover a £150 run.</figcaption></figure>
   </div>
-  <div class="payouts">
-    <div class="win"><div class="txt"><b>Apple hits the ground</b><span class="big">+£46</span><small>£50 prize − £4 cost</small></div><svg class="art" viewBox="0 0 240 218" role="img" aria-label="The apple has landed on the mark, with a check badge">
-      <path d="M14 186h212" stroke="#1B3F8B" stroke-width="3" stroke-linecap="round"/>
-      <ellipse cx="120" cy="186" rx="40" ry="7" fill="none" stroke="#A23B1E" stroke-width="3" stroke-dasharray="6 5"/>
-      <path d="M72 176l-18-8M70 158l-20-2M168 176l18-8M170 158l20-2" stroke="#1B3F8B" stroke-width="3.5" stroke-linecap="round"/>
-      <use href="#apple" x="92" y="120" width="56" height="62"/>
-      <g fill="#F2C94C" stroke="#B8871B" stroke-width="2.5"><ellipse cx="36" cy="176" rx="22" ry="8"/><ellipse cx="36" cy="164" rx="22" ry="8"/><ellipse cx="36" cy="152" rx="22" ry="8"/></g>
-      <circle cx="190" cy="52" r="32" fill="#1B3F8B"/>
-      <path d="M174 52l11 11 21-22" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg></div>
-    <div class="lose"><div class="txt"><b>Nobody recorded the drop</b><span class="big">−£4</span><small>No answer, no prize</small></div><svg class="art" viewBox="0 0 240 218" role="img" aria-label="An empty clipboard with a question mark: nothing was recorded">
-      <path d="M14 196h212" stroke="#8A8A85" stroke-width="3" stroke-linecap="round"/>
-      <use href="#apple" x="180" y="152" width="38" height="42" opacity=".35"/>
-      <rect x="56" y="24" width="112" height="156" rx="10" fill="#FFFFFF" stroke="#8A8A85" stroke-width="4"/>
-      <rect x="86" y="14" width="52" height="20" rx="5" fill="#8A8A85"/>
-      <path d="M76 64h72M76 88h72M76 112h72M76 136h48" stroke="#D9D9D4" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 8"/>
-      <circle cx="112" cy="100" r="34" fill="#FBEDE8" stroke="#A23B1E" stroke-width="4"/>
-      <path d="M100 90q0-14 12-14t12 12q0 8-12 12v8" stroke="#A23B1E" stroke-width="6" fill="none" stroke-linecap="round"/>
-      <circle cx="112" cy="121" r="4" fill="#A23B1E"/>
-    </svg></div>
-  </div>
-  <p class="callout">Every run is logged, including negative results, so the next experiment learns from what didn't work.</p>
-  <p class="page-num">6</p>
+  <p class="pg">6</p>
 </section>
-
-<!-- 7 · Step 5 -->
-<section class="slide" style="gap: 24px">
-  <div class="head">
-    <p class="eyebrow">STEP 5 OF 5</p>
-    <h2>Everyone is scored on their predictions</h2>
+<section class="slide">
+  <header><p class="label">Step 3 · Run it in a lab</p><h2>The data</h2></header>
+  <div class="body two" style="grid-template-columns: 508px 1092px">
+    <figure><img src="https://upload.wikimedia.org/wikipedia/commons/0/0b/BioMek_FX_P200_96_liquid_handling_robot.jpg" alt="A liquid-handling robot pipetting into a 96-well plate" style="height: 479px"><figcaption>A liquid-handling robot fills a 96-well plate.<span class="credit">Photo: NIAID, public domain</span></figcaption></figure>
+    <figure><svg width="1092" height="479" viewBox="0 0 730 320" role="img" aria-label="Growth curves: OD600 over 12 hours. 0 and 1 microgram per millilitre grow to about 1.0; 10 and 100 stay below 0.25; ampicillin stays flat.">
+<line x1="80" y1="270" x2="640" y2="270" stroke="#1B3F8B"/><line x1="80" y1="40" x2="80" y2="270" stroke="#1B3F8B"/>
+<text x="80" y="290" font-size="14.7" fill="#6B6B67" text-anchor="middle">0</text>
+<text x="220" y="290" font-size="14.7" fill="#6B6B67" text-anchor="middle">3</text>
+<text x="360" y="290" font-size="14.7" fill="#6B6B67" text-anchor="middle">6</text>
+<text x="500" y="290" font-size="14.7" fill="#6B6B67" text-anchor="middle">9</text>
+<text x="640" y="290" font-size="14.7" fill="#6B6B67" text-anchor="middle">12</text>
+<text x="70" y="274" font-size="14.7" fill="#6B6B67" text-anchor="end">0.0</text>
+<text x="70" y="197" font-size="14.7" fill="#6B6B67" text-anchor="end">0.4</text>
+<line x1="80" y1="193" x2="640" y2="193" stroke="#DADAD6"/>
+<text x="70" y="121" font-size="14.7" fill="#6B6B67" text-anchor="end">0.8</text>
+<line x1="80" y1="117" x2="640" y2="117" stroke="#DADAD6"/>
+<text x="70" y="44" font-size="14.7" fill="#6B6B67" text-anchor="end">1.2</text>
+<line x1="80" y1="40" x2="640" y2="40" stroke="#DADAD6"/>
+<text x="360" y="314" font-size="14.7" fill="#161616" text-anchor="middle">Hours at 37 °C</text>
+<text x="22" y="155" font-size="14.7" fill="#161616" text-anchor="middle" transform="rotate(-90 22 155)">OD600</text>
+<polyline fill="none" stroke="#1B3F8B" stroke-width="2" points="80.0,258.3 91.7,257.8 103.3,257.1 115.0,256.3 126.7,255.3 138.3,254.1 150.0,252.5 161.7,250.7 173.3,248.3 185.0,245.5 196.7,242.1 208.3,238.1 220.0,233.2 231.7,227.5 243.3,221.0 255.0,213.4 266.7,205.0 278.3,195.8 290.0,185.8 301.7,175.3 313.3,164.6 325.0,153.8 336.7,143.4 348.3,133.4 360.0,124.2 371.7,115.7 383.3,108.2 395.0,101.6 406.7,95.9 418.3,91.1 430.0,87.0 441.7,83.6 453.3,80.8 465.0,78.5 476.7,76.6 488.3,75.1 500.0,73.8 511.7,72.8 523.3,72.0 535.0,71.4 546.7,70.9 558.3,70.4 570.0,70.1 581.7,69.8 593.3,69.6 605.0,69.4 616.7,69.3 628.3,69.2 640.0,69.1"/>
+<text x="646" y="61" font-size="14.7" fill="#1B3F8B">0 µg/mL</text>
+<polyline fill="none" stroke="#1B3F8B" stroke-width="2" stroke-dasharray="6 4" points="80.0,258.5 91.7,258.0 103.3,257.4 115.0,256.6 126.7,255.7 138.3,254.5 150.0,253.1 161.7,251.3 173.3,249.2 185.0,246.6 196.7,243.4 208.3,239.6 220.0,235.1 231.7,229.8 243.3,223.7 255.0,216.7 266.7,208.9 278.3,200.3 290.0,191.0 301.7,181.3 313.3,171.3 325.0,161.3 336.7,151.6 348.3,142.3 360.0,133.7 371.7,125.9 383.3,118.9 395.0,112.7 406.7,107.5 418.3,103.0 430.0,99.2 441.7,96.0 453.3,93.4 465.0,91.2 476.7,89.5 488.3,88.1 500.0,86.9 511.7,86.0 523.3,85.2 535.0,84.6 546.7,84.1 558.3,83.7 570.0,83.4 581.7,83.2 593.3,83.0 605.0,82.8 616.7,82.7 628.3,82.6 640.0,82.5"/>
+<text x="646" y="92" font-size="14.7" fill="#1B3F8B">1 µg/mL</text>
+<polyline fill="none" stroke="#A23B1E" stroke-width="2" points="80.0,260.0 91.7,259.9 103.3,259.8 115.0,259.7 126.7,259.5 138.3,259.3 150.0,259.0 161.7,258.7 173.3,258.2 185.0,257.7 196.7,257.1 208.3,256.4 220.0,255.5 231.7,254.5 243.3,253.3 255.0,252.0 266.7,250.4 278.3,248.8 290.0,247.0 301.7,245.1 313.3,243.2 325.0,241.2 336.7,239.3 348.3,237.6 360.0,235.9 371.7,234.4 383.3,233.0 395.0,231.8 406.7,230.8 418.3,229.9 430.0,229.2 441.7,228.6 453.3,228.1 465.0,227.7 476.7,227.3 488.3,227.1 500.0,226.8 511.7,226.7 523.3,226.5 535.0,226.4 546.7,226.3 558.3,226.2 570.0,226.2 581.7,226.1 593.3,226.1 605.0,226.0 616.7,226.0 628.3,226.0 640.0,226.0"/>
+<text x="646" y="220" font-size="14.7" fill="#A23B1E">10 µg/mL</text>
+<polyline fill="none" stroke="#A23B1E" stroke-width="2" stroke-dasharray="6 4" points="80.0,260.3 91.7,260.3 103.3,260.3 115.0,260.2 126.7,260.2 138.3,260.1 150.0,260.0 161.7,259.9 173.3,259.8 185.0,259.7 196.7,259.5 208.3,259.3 220.0,259.1 231.7,258.8 243.3,258.4 255.0,258.1 266.7,257.6 278.3,257.2 290.0,256.7 301.7,256.2 313.3,255.6 325.0,255.1 336.7,254.6 348.3,254.1 360.0,253.6 371.7,253.2 383.3,252.8 395.0,252.5 406.7,252.2 418.3,252.0 430.0,251.7 441.7,251.6 453.3,251.4 465.0,251.3 476.7,251.2 488.3,251.2 500.0,251.1 511.7,251.0 523.3,251.0 535.0,251.0 546.7,250.9 558.3,250.9 570.0,250.9 581.7,250.9 593.3,250.9 605.0,250.9 616.7,250.9 628.3,250.9 640.0,250.9"/>
+<text x="646" y="257" font-size="14.7" fill="#A23B1E">100 µg/mL</text>
+<polyline fill="none" stroke="#888" stroke-width="2" stroke-dasharray="2 4" points="80.0,260.4 91.7,260.4 103.3,260.4 115.0,260.4 126.7,260.4 138.3,260.4 150.0,260.3 161.7,260.3 173.3,260.3 185.0,260.3 196.7,260.2 208.3,260.2 220.0,260.1 231.7,260.1 243.3,260.0 255.0,259.9 266.7,259.9 278.3,259.8 290.0,259.7 301.7,259.6 313.3,259.5 325.0,259.4 336.7,259.2 348.3,259.1 360.0,259.1 371.7,259.0 383.3,258.9 395.0,258.8 406.7,258.8 418.3,258.7 430.0,258.7 441.7,258.6 453.3,258.6 465.0,258.6 476.7,258.6 488.3,258.6 500.0,258.6 511.7,258.5 523.3,258.5 535.0,258.5 546.7,258.5 558.3,258.5 570.0,258.5 581.7,258.5 593.3,258.5 605.0,258.5 616.7,258.5 628.3,258.5 640.0,258.5"/>
+<text x="646" y="275" font-size="14.7" fill="#888">Ampicillin</text>
+</svg><figcaption>The shape of a clear yes: at 10 µg/mL and above, growth stays flat. Illustrative data.</figcaption></figure>
   </div>
-  <p class="lead" style="font-size: 32px">When you say 20%, does it happen 20% of the time? On the line: honest. Below it: overconfident.</p>
-  <div class="charts">
-    <figure>
-      <h3>Hypothesis: “it's true”</h3>
-      <svg viewBox="-20 20 410 390" role="img" aria-label="Institute A sits on the diagonal; Institute B says 90% but is right 45% of the time">
-        <line x1="50" y1="350" x2="370" y2="30" stroke="#8A8A85" stroke-dasharray="4 4"/>
-        <line x1="50" y1="350" x2="370" y2="350" stroke="#111111"/>
-        <line x1="50" y1="30" x2="50" y2="350" stroke="#111111"/>
-        <g font-size="16" fill="#4A4A4A" font-family="IBM Plex Mono, monospace">
+  <p class="pg">7</p>
+</section>
+<section class="slide">
+  <header><p class="label">Step 4 · The result pays out</p><h2>The flow of money</h2></header>
+  <div class="body stack">
+    <div class="two">
+      <div class="card outcome">
+        <p class="label">Clear result</p>
+        <div class="row"><p><span>Researcher</span><em>pays the prize, gets the answer</em></p><b>−£500</b></div>
+        <div class="row"><p><span>AI scientist</span><em>£500 prize − £150 run</em></p><b class="navy">+£350</b></div>
+        <div class="row"><p><span>Lab</span><em>fee for the run</em></p><b>+£150</b></div>
+      </div>
+      <div class="card outcome">
+        <p class="label rust">No clear result</p>
+        <div class="row"><p><span>Researcher</span><em>prize comes back</em></p><b>£0</b></div>
+        <div class="row"><p><span>AI scientist</span><em>pays for the run, no prize</em></p><b class="rust">−£150</b></div>
+        <div class="row"><p><span>Lab</span><em>keeps its fee</em></p><b>+£150</b></div>
+      </div>
+    </div>
+    <p class="text">Either way, the run goes into the public record.</p>
+  </div>
+  <p class="pg">8</p>
+</section>
+<section class="slide">
+  <header><p class="label">Step 5 · After 200 bounties</p><h2>Everyone is scored on their predictions</h2></header>
+  <div class="body two">
+    <figure><p class="fig-title">Researchers: “my hypothesis is true”</p><svg width="560" height="533" viewBox="-20 20 410 390" role="img" aria-label="Institute A sits on the diagonal; Institute B says 90% but is right 45% of the time">
+        <line x1="50" y1="350" x2="370" y2="30" stroke="#9A9A96" stroke-dasharray="4 4"/>
+        <line x1="50" y1="350" x2="370" y2="350" stroke="#161616"/>
+        <line x1="50" y1="30" x2="50" y2="350" stroke="#161616"/>
+        <g font-size="16.1" fill="#6B6B67">
           <text x="50" y="372" text-anchor="middle">0%</text><text x="210" y="372" text-anchor="middle">50%</text><text x="370" y="372" text-anchor="end">100%</text>
           <text x="42" y="355" text-anchor="end">0%</text><text x="42" y="195" text-anchor="end">50%</text><text x="42" y="40" text-anchor="end">100%</text>
         </g>
-        <text x="210" y="400" font-size="18" text-anchor="middle" fill="#111111">Said</text>
-        <text x="-6" y="190" font-size="18" text-anchor="middle" fill="#111111" transform="rotate(-90 -6 190)">Happened</text>
+        <text x="210" y="400" font-size="17.6" text-anchor="middle" fill="#161616">Stated odds</text>
+        <text x="-6" y="190" font-size="17.6" text-anchor="middle" fill="#161616" transform="rotate(-90 -6 190)">Success rate</text>
         <polyline fill="none" stroke="#1B3F8B" stroke-width="2.5" points="82,324.4 114,279.6 146,263.6 178,212.4 210,196.4 242,151.6 274,138.8 306,87.6 338,68.4"/>
         <g fill="#1B3F8B"><circle cx="82" cy="324.4" r="5"/><circle cx="114" cy="279.6" r="5"/><circle cx="146" cy="263.6" r="5"/><circle cx="178" cy="212.4" r="5"/><circle cx="210" cy="196.4" r="5"/><circle cx="242" cy="151.6" r="5"/><circle cx="274" cy="138.8" r="5"/><circle cx="306" cy="87.6" r="5"/><circle cx="338" cy="68.4" r="5"/></g>
         <polyline fill="none" stroke="#A23B1E" stroke-width="2.5" points="82,311.6 114,292.4 146,279.6 178,266.8 210,254 242,244.4 274,228.4 306,215.6 338,206"/>
         <g fill="#A23B1E"><circle cx="82" cy="311.6" r="5"/><circle cx="114" cy="292.4" r="5"/><circle cx="146" cy="279.6" r="5"/><circle cx="178" cy="266.8" r="5"/><circle cx="210" cy="254" r="5"/><circle cx="242" cy="244.4" r="5"/><circle cx="274" cy="228.4" r="5"/><circle cx="306" cy="215.6" r="5"/><circle cx="338" cy="206" r="5"/></g>
-        <text x="296" y="58" font-size="18" font-weight="600" fill="#1B3F8B" text-anchor="end">Institute A</text>
-        <text x="370" y="254" font-size="18" font-weight="600" fill="#A23B1E" text-anchor="end">Institute B</text>
-      </svg>
-    </figure>
-    <figure>
-      <h3>Experiment Design: “we'll get a clear answer”</h3>
-      <svg viewBox="-20 20 410 390" role="img" aria-label="AI Lab A sits on the diagonal; Startup C says 90% but succeeds 30% of the time">
-        <line x1="50" y1="350" x2="370" y2="30" stroke="#8A8A85" stroke-dasharray="4 4"/>
-        <line x1="50" y1="350" x2="370" y2="350" stroke="#111111"/>
-        <line x1="50" y1="30" x2="50" y2="350" stroke="#111111"/>
-        <g font-size="16" fill="#4A4A4A" font-family="IBM Plex Mono, monospace">
+        <text x="296" y="58" font-size="17.6" font-weight="600" fill="#1B3F8B" text-anchor="end">Institute A</text>
+        <text x="370" y="254" font-size="17.6" font-weight="600" fill="#A23B1E" text-anchor="end">Institute B</text>
+      </svg></figure>
+    <figure><p class="fig-title">AI scientists: “my design will give a clear answer”</p><svg width="560" height="533" viewBox="-20 20 410 390" role="img" aria-label="AI Lab A sits on the diagonal; Startup C says 90% but succeeds 30% of the time">
+        <line x1="50" y1="350" x2="370" y2="30" stroke="#9A9A96" stroke-dasharray="4 4"/>
+        <line x1="50" y1="350" x2="370" y2="350" stroke="#161616"/>
+        <line x1="50" y1="30" x2="50" y2="350" stroke="#161616"/>
+        <g font-size="16.1" fill="#6B6B67">
           <text x="50" y="372" text-anchor="middle">0%</text><text x="210" y="372" text-anchor="middle">50%</text><text x="370" y="372" text-anchor="end">100%</text>
           <text x="42" y="355" text-anchor="end">0%</text><text x="42" y="195" text-anchor="end">50%</text><text x="42" y="40" text-anchor="end">100%</text>
         </g>
-        <text x="210" y="400" font-size="18" text-anchor="middle" fill="#111111">Said</text>
-        <text x="-6" y="190" font-size="18" text-anchor="middle" fill="#111111" transform="rotate(-90 -6 190)">Happened</text>
+        <text x="210" y="400" font-size="17.6" text-anchor="middle" fill="#161616">Stated odds</text>
+        <text x="-6" y="190" font-size="17.6" text-anchor="middle" fill="#161616" transform="rotate(-90 -6 190)">Success rate</text>
         <polyline fill="none" stroke="#1B3F8B" stroke-width="2.5" points="82,311.6 114,292.4 146,244.4 178,228.4 210,183.6 242,167.6 274,122.8 306,103.6 338,74.8"/>
         <g fill="#1B3F8B"><circle cx="82" cy="311.6" r="5"/><circle cx="114" cy="292.4" r="5"/><circle cx="146" cy="244.4" r="5"/><circle cx="178" cy="228.4" r="5"/><circle cx="210" cy="183.6" r="5"/><circle cx="242" cy="167.6" r="5"/><circle cx="274" cy="122.8" r="5"/><circle cx="306" cy="103.6" r="5"/><circle cx="338" cy="74.8" r="5"/></g>
         <polyline fill="none" stroke="#A23B1E" stroke-width="2.5" points="82,334 114,324.4 146,318 178,311.6 210,302 242,286 274,279.6 306,270 338,254"/>
         <g fill="#A23B1E"><circle cx="82" cy="334" r="5"/><circle cx="114" cy="324.4" r="5"/><circle cx="146" cy="318" r="5"/><circle cx="178" cy="311.6" r="5"/><circle cx="210" cy="302" r="5"/><circle cx="242" cy="286" r="5"/><circle cx="274" cy="279.6" r="5"/><circle cx="306" cy="270" r="5"/><circle cx="338" cy="254" r="5"/></g>
-        <text x="296" y="64" font-size="18" font-weight="600" fill="#1B3F8B" text-anchor="end">AI Lab A</text>
-        <text x="350" y="244" font-size="18" font-weight="600" fill="#A23B1E" text-anchor="end">Startup C</text>
-      </svg>
-    </figure>
+        <text x="296" y="64" font-size="17.6" font-weight="600" fill="#1B3F8B" text-anchor="end">AI Lab A</text>
+        <text x="350" y="244" font-size="17.6" font-weight="600" fill="#A23B1E" text-anchor="end">Startup C</text>
+      </svg></figure>
   </div>
-  <p class="page-num">7</p>
+  <p class="foot">Dashed line: stated odds match results. Below it: overconfident. Illustrative data.</p>
+  <p class="pg">9</p>
 </section>
-
-<!-- 8 · Proof of concept: setup -->
-<section class="slide" style="gap: 64px">
-  <div class="head">
-    <p class="eyebrow">PROOF OF CONCEPT</p>
-    <h2>The setup</h2>
+<section class="slide">
+  <header><p class="label">Why it works</p><h2>A win for every participant</h2></header>
+  <div class="body three">
+    <div class="card"><p class="label">Researchers</p><p class="card-title">De-risked grant money</p><p class="text">The prize is only paid out for a clear result. No answer, the money comes back.</p></div>
+    <div class="card"><p class="label">Labs</p><p class="card-title">Higher utilization</p><p class="text">Every accepted bid is a run on their machines, paid up front.</p></div>
+    <div class="card"><p class="label">AI scientist startups</p><p class="card-title">Real tasks, public track record</p><p class="text">Real-life experiments instead of benchmarks, with every prediction scored in public.</p></div>
   </div>
-  <div class="card" style="display: flex; align-items: center; gap: 64px; padding: 56px 64px">
-    <svg viewBox="0 0 120 100" style="width: 360px; height: 300px; flex: none" aria-hidden="true">
-      <circle cx="54" cy="54" r="28" fill="#C9D3E6" stroke="#1B3F8B" stroke-width="3"/>
-      <path d="M38 44q10 6 22 0M44 66q8-4 18 2" stroke="#1B3F8B" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".6"/>
-      <ellipse cx="54" cy="54" rx="50" ry="13" transform="rotate(-18 54 54)" fill="none" stroke="#1B3F8B" stroke-width="3"/>
-      <circle cx="104" cy="18" r="8" fill="#F2B84B" stroke="#1B3F8B" stroke-width="2.5"/>
-      <use href="#apple" x="2" y="2" width="22" height="24"/>
-    </svg>
-    <p style="font-family: var(--serif); font-size: 48px; line-height: 1.3">The full market running on DiscoverPhysics: 11 simulated physics worlds where the true answer is known, so every payout can be checked.</p>
-  </div>
-  <p class="page-num">8</p>
+  <p class="pg">10</p>
 </section>
-
-<!-- 9 · Hand-off to the demo -->
-<section class="slide statement" style="gap: 40px">
-  <p class="eyebrow">DEMO</p>
-  <h2>The run and the results.</h2>
-  <svg class="illus" viewBox="0 0 420 640" style="right: 160px; top: 170px; width: 480px; height: 731px; color: #E4E9F3; --illus-soft: #2A4F9C" aria-hidden="true"><use href="#drop"/></svg>
-  <p class="page-num">9</p>
+<section class="slide">
+  <header><p class="label">Proof of concept</p><h2>The prototype</h2></header>
+  <div class="body stack">
+    <p class="lead">Lab results take weeks, so for the hackathon we ran the market on DiscoverPhysics, where the right answer is known and payouts can be checked by code.</p>
+    <div class="three">
+      <div class="card"><p class="num">11</p><p class="text">simulated worlds with a known right answer</p></div>
+      <div class="card"><p class="num">4</p><p class="text">models compete: Claude Opus 4.7, GPT-5.5, Claude Sonnet 4.6, Qwen3.5</p></div>
+      <div class="card"><p class="num">1</p><p class="text">credit per experimental round, with odds from the paper's published results</p></div>
+    </div>
+  </div>
+  <p class="foot">Reference: Wiemann, Smith et al., DiscoverPhysics: Benchmarking LLMs for Out-of-the-Box Scientific Thinking, 2026. DM-17 is a hypothetical compound; costs are illustrative.</p>
+  <p class="pg">11</p>
+</section>
+<section class="slide demo">
+  <img class="side" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/E._coli_Bacteria_%287316101966%29.jpg/1920px-E._coli_Bacteria_%287316101966%29.jpg" alt="">
+  <div class="demo-body"><p class="label">Demo</p><h1>The run and the results.</h1></div>
 </section>
 
 </div>
 
 <nav class="controls" aria-label="Slide controls">
   <button id="prev" aria-label="Previous slide">←</button>
-  <span id="count">1 / 9</span>
+  <span id="count">1 / 12</span>
   <button id="next" aria-label="Next slide">→</button>
 </nav>
 
