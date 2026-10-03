@@ -16,7 +16,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from dm.importers.ara import PASS_THRESHOLD, WORLD_VARS, count_experiments, write_store
+from dm.importers.ara import (PASS_THRESHOLD, WORLD_VARS, count_experiments,
+                               finite_or_none, json_safe, write_store)
 from dm.store import ATTEMPTS_DIR
 from dm.types import AttemptRecord
 
@@ -33,7 +34,7 @@ def attempt_id(model: str, world: str, seed: int, path: str) -> str:
 def _explanation_score(d: dict) -> float | None:
     for e in (d.get("explanation"), (d.get("evaluation") or {}).get("explanation")):
         if isinstance(e, dict) and isinstance(e.get("score"), (int, float)):
-            return float(e["score"])
+            return finite_or_none(float(e["score"]))
     return None
 
 
@@ -78,7 +79,7 @@ def build_record(d: dict, path: str) -> AttemptRecord | None:
                  "prereg_commitment": None, "public_tests": True,
                  "explanation_score": _explanation_score(d)},
         created_at=str(d.get("timestamp", "")),
-        extra=extra,
+        extra=json_safe(extra),
     )
 
 

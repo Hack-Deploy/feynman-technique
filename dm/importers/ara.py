@@ -193,6 +193,24 @@ def parse_number(s: str | None) -> float | None:
     return None
 
 
+def json_safe(obj: Any) -> Any:
+    """Non-finite floats → their string form ('inf', '-inf', 'nan'), recursively.
+
+    ``AttemptRecord`` canonicalises ``extra``/``llm_usage`` with allow_nan=False."""
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [json_safe(v) for v in obj]
+    return obj
+
+
+def finite_or_none(x: Any) -> float | None:
+    ok = isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+    return x if ok else None
+
+
 def sig_digits(s: str) -> int:
     """Significant digits shown in a numeric string ('0.0105' → 3, '469' → 3, '0.15' → 2)."""
     mant = re.split(r"[eE]", s.strip())[0].lstrip("+-").replace(".", "").lstrip("0")
@@ -349,14 +367,14 @@ def build_record(model: str, world: str, row: dict[str, str],
         source="published_replay", protocol=PROTOCOL, venue=VENUE, world=world,
         solver=f"ara:{model}", seed=0, stated_p_success=None,
         rounds=rounds, experiments=experiments, lab_cost=float(rounds) * 1.0,
-        llm_usage=llm_usage,
+        llm_usage=json_safe(llm_usage),
         submitted_law=result.get("law") if result else None,
         verdict={"normalised_mse": normalised_mse, "passed": passed,
                  "prereg_commitment": None, "public_tests": True,
-                 "explanation_score": expl},
+                 "explanation_score": finite_or_none(expl)},
         transcript_path=f"attempts/cache/ara/{model}/{world}/episode.json" if episode else None,
         created_at=(meta or {}).get("archived_at", ""),
-        extra=extra,
+        extra=json_safe(extra),
     )
     return rec, issues
 

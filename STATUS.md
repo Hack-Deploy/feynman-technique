@@ -291,3 +291,13 @@
     after 1–2 launches because no menu launch separates these models by more than the noise.
     random_menu's picks are spread across families (p̄ 0.25).
 ||||||| cdff8ad
+
+## Phase 4 fix: ARA import under the hardened `AttemptRecord` (2026-10-03)
+- **Built**: `dm/importers/ara.json_safe` turns non-finite floats into strings (`"inf"`, `"nan"`)
+  in `extra` and `llm_usage` (both importers). `finite_or_none` keeps `verdict.explanation_score`
+  finite or `None`. `verdict.normalised_mse` was already `None` for non-finite values.
+- **Check**: every imported record survives strict `canonical_json` and `from_dict`.
+  `uv run python -m dm.importers.ara --offline && uv run python -m dm.replay ara` (plus
+  `--verdict ara`) reproduce PR #6's `summary.json` exactly, including clearing prizes.
+  A store written by PR #6 holds `Infinity` and no longer loads; regenerate it.
+- **Result**: ✅ PASS
