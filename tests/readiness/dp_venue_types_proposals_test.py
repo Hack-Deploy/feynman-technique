@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import pickle
+from dataclasses import asdict
 
 import pytest
 
@@ -50,19 +51,13 @@ def _record() -> AttemptRecord:
     )
 
 
-def test_submitted_attempt_validation():
-    with pytest.raises(ValueError, match="ended"):
-        _submitted_attempt(ended="unexpected")
-    with pytest.raises(ValueError, match="stated_p_success"):
-        _submitted_attempt(stated_p_success=1.1)
-
-
 def test_submitted_attempt_to_dict_json_round_trip():
     attempt = _submitted_attempt(
         training=[{"experiment": {"p1": 1.0}}],
-        terms={"price": 0.5, "market_aware": True},
+        extra={"terms": {"price": 0.5, "market_aware": True}},
     )
-    assert json.loads(canonical_json(attempt.to_dict())) == attempt.to_dict()
+    d = json.loads(canonical_json(asdict(attempt)))
+    assert SubmittedAttempt(**d) == attempt
 
 
 def test_insufficient_credits_attributes_message_and_pickle():

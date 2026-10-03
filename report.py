@@ -21,8 +21,22 @@ OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 AGENTS = ["opus-4.7", "gpt-5.5", "sonnet-4.6", "qwen3.5-397b"]
 PRIZES = [5, 20, 50, 100, 200]
 SEEDS = [0, 1, 2, 3, 4]
-# Worlds the DiscoverPhysics paper describes as needing hidden structure.
-HIDDEN_STRUCTURE = ["circle", "extra_dimensions", "dark_matter", "three_species"]
+# Worlds the DiscoverPhysics paper names as needing hidden structure.
+HIDDEN_STRUCTURE = ["extra_dimensions", "dark_matter", "three_species"]
+# One-line physics of each world, from the paper's Appendix C.
+WORLD_NOTES = {
+    "gravity": "1/r attraction in 2D",
+    "yukawa": "short-range, screened force",
+    "hubble": "attraction plus outward expansion",
+    "ether": "attraction plus a steady sideways drift",
+    "oscillator": "force strength that flips sign over time",
+    "coulomb": "1/r² attraction",
+    "circle": "fractional-power force, ring of particles",
+    "extra_dimensions": "force law that changes with distance",
+    "fractional": "fractional-power force, two particles",
+    "dark_matter": "an invisible mass pulling on everything",
+    "three_species": "three hidden particle types, one repulsive",
+}
 
 
 def load_outputs() -> tuple[list, list, dict]:
@@ -105,6 +119,7 @@ def build_data(events: list, ledger: list, summary: dict) -> dict:
         "prizes": PRIZES,
         "seeds": SEEDS,
         "hidden": HIDDEN_STRUCTURE,
+        "notes": WORLD_NOTES,
         "balances": balance_series(events),
         "ledger": ledger_rows(ledger),
         "clearing": {s: summary["h2_clearing_prizes"][s] for s in PROB_SOURCES},
