@@ -153,28 +153,94 @@
   **`main`'s own code** at 85b6090 (including the new `power` odds source), and this branch's
   engine reproduces those three files exactly.
 
-## Phase 2: the oracle — IN PROGRESS (not yet checked)
-- **Built so far**: `dm/oracle/` (`make_prereg`, `score`, `explain_score`), `dm/oracle/cases.py`
-  (hidden cases + normalising variance), `dm/oracle/_worker.py` (scoring subprocess: timeout,
-  network disabled, API keys stripped from env), `dm/settle.py` (only caller of the oracle),
-  `dm.types.SubmittedAttempt`.
-- **Verified**: the normalising variance convention reproduces all 11 vendor `_WORLD_VARS` on the
-  default cases (two-particle: `pos2`; multi-particle: every agent-facing particle, even where only
-  probes are scored). Hidden layouts use fixed seeds (42/123), so the oracle can rebuild worlds.
-- **Hidden-case design**: compared three designs over test seeds 0–2 against true laws and wrong
-  laws. Chose V1 (base launch r0 ∈ U[3, 6], tangential 0.2–0.5, all cases measured at t = 1..10):
-  true laws score nMSE ≤ 5e-6 on gravity/yukawa/fractional/oscillator/coulomb_easy; the 1/r law
-  fails yukawa on all three seeds (0.80, 0.25, 0.63). The earlier design let 1/r pass yukawa (0.077).
-- **Open issues (need a decision before Phase 2 is checked)**:
-  - yukawa (λ = 2) and fractional (1/r²) are indistinguishable on every design tried: each world's
-    true law passes the other (nMSE ≈ 0.000–0.002).
-  - extra_dimensions: 1/r passes (the crossover only shows within r ≈ 0.5, which the cases exclude
-    to avoid near-singular passes). The vendor's own default cases have the same blind spot.
+## Phase 2: the oracle (2026-10-03)
+- **Built**: `dm/oracle/` (`make_prereg`, `score`, `explain_score`), `dm/oracle/cases.py`
+  (hidden cases + normalising variance), `dm/settle.py` (the only caller of the oracle),
+  `dm.types.SubmittedAttempt`. Review agents added a hidden `test_seed`, the `salt` field,
+  `Preregistration.verify`, and an engine guard that refuses replayed verdicts not scored
+  against the posted preregistration.
+  - **Two-process scoring.** `dm/oracle/_worker.py` (trusted) builds the world, computes the
+    noise-free ground truth on the hidden cases, and never runs submitted code.
+    `dm/oracle/_sandbox.py` runs the law through the vendor evaluator against a stand-in
+    executor whose trajectories are zeros, and returns only predictions; the worker computes
+    the errors exactly as the vendor evaluators do. The simulator is never imported in the
+    sandbox, and an audit hook refuses imports of `scienceagent`/`physchool`/`jax`, reading
+    the vendor tree or `/proc`, subprocesses and network. No API keys or `DM_ORACLE_SECRET`
+    reach either subprocess. Best effort: Python in-process restrictions are not a security
+    boundary; a determined attacker with arbitrary code could still find a way out (e.g. via
+    ctypes into a fresh interpreter). Running the sandbox in a container would close this.
+  - **Salt (decision 2026-10-03: secret key in env).** `salt = HMAC-SHA256(DM_ORACLE_SECRET,
+    oracle_version|venue|world|test_seed)`, mixed into the case generator and the commitment.
+    Same secret → same cases and commitments on every rerun; without the secret, someone
+    cannot regenerate candidate cases from the public code and match the published commitment.
+    Revealing the salt at close does not reveal the secret. Without `DM_ORACLE_SECRET` the
+    cases are exactly as before (unsalted) and a warning is raised. **To use it: set
+    `DM_ORACLE_SECRET` to a long random string, keep it out of git, and keep it fixed for the
+    life of a market** (changing it changes every hidden case and commitment).
+- **Check** (`tests/test_phase2_oracle.py`, 39 tests, about 100 s):
+  - 1/r fixture passes gravity (nMSE < 1e-4) and fails yukawa; no law → fail; verdict carries
+    the prereg commitment.
+  - Hostile laws all fail: infinite loop (timeout), reading the evaluator's stack (was nMSE 0,
+    now 4.8), importing and running the true simulator (was nMSE 0, now refused), reading
+    vendor source, spawning a process, opening a socket, `sys.exit`, NaN; no secret or API key
+    is visible to the law.
+  - Sandbox scoring equals the vendor's in-process `mean_pos_error` exactly on all 11 worlds
+    (checked by script; 3 worlds in the test suite).
+  - Same seed → same commitment; different seeds and different secrets → different cases;
+    public view hides cases, seed and salt; reveal verifies; all 5 multi-particle worlds get
+    generated (not public) cases; ForceBench refuses multi-particle worlds; normalising
+    variance reproduces all 11 vendor `_WORLD_VARS`.
+  - Earlier: 60 ForceBench attempts settled through `dm.settle` (Phase 5) with no errors.
+- **Result**: ✅ PASS. Full suite 453 passed (490 after Phase 3), 14 xfailed, 4 skipped.
+- **Accepted limits of the pass rule (decision 2026-10-03: accept and report).** The rule
+  stays nMSE < 0.1 (as in the paper). On these worlds a pass does not prove the right law,
+  so "right law" is reported next to "pass" (the `/real` page does this):
+  - yukawa (λ = 2) and fractional (1/r²) cannot be told apart on any design tried;
+  - extra_dimensions: 1/r passes (the crossover only shows within r ≈ 0.5, excluded to avoid
+    near-singular passes; the vendor's defaults have the same blind spot);
+  - oscillator: a fitted 1/r passes 10/10 in the Phase 5 settle check.
 - **Vendor bug found**: `coulomb_easy` (nbody) is *repulsive* with a = |p1|/r², and p2 has no
-  effect: the probe's force charge is fixed at 1, so its source charge −|p2| is never used.
-  The docstring and mission describe an attractive F = k·p1·p2/r². The oracle scores against the
-  simulator as it behaves; vendor code is not edited.
-- **Result**: ⏳ not yet checked; no Phase 2 tests committed yet.
+  effect; its docstring and mission describe an attractive F = k·p1·p2/r². The oracle scores
+  against the simulator as it behaves; vendor code is not edited.
+- **Not done**: `explain_score` (live only, needs `ENABLE_LIVE=1`) is untested.
+
+## Phase 3: DiscoverPhysics venue (2026-10-03)
+- **Built**:
+  - `dm/venues/discoverphysics.py`: `run_attempt(solver_model, world, seed, wallet, price,
+    market_aware=True, llm=None, *, prize, max_rounds=16, noise_std=0.075, ask_p, cap)`
+    runs the vendor `DiscoveryAgent` unchanged (vendor system prompt, mission, 16 rounds,
+    mid-round MSE fit with a per-attempt trajectory CSV in a temp dir) and returns a
+    `SubmittedAttempt` for `dm.settle`. All 11 public worlds.
+  - `MeteredExecutor`: refuses a batch that is not a list of objects (uncharged); charges
+    `len × price` before the simulator runs; `InsufficientCredits` never runs and reaches the
+    solver as an experiment error, so it can still submit; if the simulator rejects a paid
+    batch (missing key), the charge is refunded (`Wallet.refund`, event
+    `experiment_refunded`, lab → agent). Charge events carry the agent's round number.
+  - `market_aware` appends the market terms (price, balance, prize) to the mission; the
+    system prompt is identical either way.
+  - Stated p: after a law is submitted, one more call in the same conversation asks for
+    the probability that the law passes (`<p_success>`); unparseable or out of [0, 1] → None.
+    Not asked when no law was submitted.
+  - `dm/llm.py`: `UsageMeter` (per-attempt calls, tokens, USD; plain-string replies are
+    estimated at 4 chars/token and marked `estimated`), `anthropic_llm` (real token counts,
+    no server-side fallback so the attempt stays attributed to one model), price table
+    (Anthropic first-party, checked 2026-10-03), `SpendCap` (refuses any call whose worst
+    case, estimated input + `max_tokens` output, would take the total over `DM_MAX_USD`;
+    refuses unpriced models), `live_llm` (needs `ENABLE_LIVE=1` and `DM_MAX_USD`).
+  - The meter replaces `scienceagent.llm_client.complete` for the attempt under a lock and
+    always restores it (one attempt at a time per process).
+  - `dm/testing/fake_llm.py`: scripted LLM (one experiment, then the 1/r law, then p = 0.6).
+- **Check** (`tests/test_dm_dp_venue.py`, 37 tests, about 25 s, no API calls): metering
+  (charge before run, exact fractional balance 0.3 = 3 × 0.1, non-list uncharged, failed
+  batch refunded, noise controls forwarded); fake attempt end to end (2 rounds, 1
+  experiment, 0.5 credits, p = 0.6, 3 LLM calls) settles as pass on gravity and fail on
+  yukawa; no submission → no law, no p call, settles as fail; insufficient credits shown and
+  attempt still submits; market note changes only the mission; deterministic per seed;
+  vendor client restored even on provider error; live guard refuses without both variables
+  and the cap refuses before calling; vendor tree clean.
+- **Result**: ✅ PASS. Full suite 490 passed, 4 skipped, 14 xfailed.
+- **Not done**: the cost preflight (projected spend per model × world × seed, printed before
+  a live command) is STOP 1 work; no live call has been made.
 
 ## Phase 4: ARA import and first real-data replay market (2026-10-03)
 - **Built**:
@@ -224,6 +290,16 @@
   - gemini3.1-pro used 17 rounds on hubble and oscillator (cap is 16).
   - ARA verdict vs numeric-only: 19 records pass numerically but fail ARA's explanation
     threshold (none the other way); listed in `output/ara_import_report.json`.
+
+## Phase 4 fix: ARA import under the hardened `AttemptRecord` (2026-10-03)
+- **Built**: on top of PR #13's `dm/importers/ara._json_safe` (non-finite floats in `extra` and
+  `llm_usage` → `"inf"`/`"-inf"`/`"nan"`), `finite_or_none` keeps `verdict.explanation_score`
+  finite or `None` (both importers). `verdict.normalised_mse` was already `None` for non-finite values.
+- **Check**: every imported record survives strict `canonical_json` and `from_dict`.
+  `uv run python -m dm.importers.ara --offline && uv run python -m dm.replay ara` (plus
+  `--verdict ara`) reproduce PR #6's `summary.json` exactly, including clearing prizes.
+  A store written by PR #6 holds `Infinity` and no longer loads; regenerate it.
+- **Result**: ✅ PASS
 
 ## Phase 5: ForceBench venue and offline solvers (branch `phase5/forcebench`)
 - **Built**:
@@ -329,3 +405,75 @@
   - fractional still passes with the wrong family: both solvers submit non-power-2 laws
     (mostly Yukawa λ ≈ 1.3–1.6) and pass 5/5. This is the yukawa–fractional degeneracy listed in
     the Phase 2 open issues.
+
+## Phase 8 (partial): "Real attempts" page in the results app (2026-10-03)
+
+- `real.html` at `/real`, fed by `real_data.py` via `GET /api/real`. The original page is now
+  labelled "Simulated (published pass rates)" and links to it.
+- Run an attempt: `POST /api/real/attempt` runs one ForceBench attempt (world, solver, seed),
+  settles it through `dm.settle` on the hidden cases and shows the charges, the purchased data,
+  the submitted law, the verdict, whether the law has the true form, and credit conservation.
+  Offline, no API key, about 20 s. Uses the existing `_BUSY` lock and host/origin checks.
+- ARA replay: reads `attempts/ara.jsonl` and `output/replay_ara/summary.json`. Shows clearing
+  prizes next to the simulated ones, profit and bids per model at each prize, lab revenue, and
+  all 88 attempts (filterable), with the one-attempt caveat and ARA attribution.
+- ForceBench grid: reads `output/forcebench_settle.json`. Shows pass, right-law and 1/r-baseline
+  counts per solver and world.
+- Missing outputs show a button that runs the generating command (`/api/real/replay`,
+  `/api/real/grid`).
+- "Right law" uses `identify_model` from `tests/forcebench_local.py` (local reporting only).
+- Check: `tests/test_real_app.py` 11 passed with `--runslow`; full suite 387 passed, 4 skipped,
+  14 xfailed.
+
+---
+
+# Current state and what is outstanding (2026-10-03, evening)
+
+Demo data: `/real` falls back to committed snapshots in `attempts/fixtures/demo/` (ARA
+attempts and replay, ForceBench grid), so it works offline on a fresh clone.
+Frontend: the results app now has a "Real attempts" page (`/real`, PR #16) that runs a live
+ForceBench attempt through `dm.settle` and shows the ARA replay and the settled ForceBench grid.
+`poc/` (bounty benchmark, PR by Stefan) is a separate prototype with its own agent loop.
+
+| Phase | State | Outstanding |
+|---|---|---|
+| 0 Hygiene and vendor | ✅ done | — |
+| 1 Engine generalisation | ✅ done, hardened by review agents | Merge `review/remaining-readiness` (fixes several engine xfails) |
+| 2 Oracle | ✅ done | Sandboxed scoring, salt from `DM_ORACLE_SECRET`, 39 tests; pass-rule blind spots accepted and reported; `explain_score` untested (live only) |
+| 3 DiscoverPhysics venue | ✅ done offline | No live call yet; `explain_score` at settle untested (live only) |
+| 4 ARA import + replay | ✅ done | Caveat: one attempt per (model, world), so H2 is near-deterministic; coulomb_easy nMSE in ARA uses Var ≈ 4.24, not 11.465 |
+| STOP 1 Cost preflight | ⏳ next | Preflight command (projected spend from the fake run's token counts × prices); then the user names the cheapest model and approves a budget |
+| 5 ForceBench + offline solvers | ✅ done offline and through `dm.settle` | `llm_menu` (live only); pass rates overstate identification on yukawa/fractional/oscillator/extra_dimensions (see Phase 5 findings) |
+| 6 Live grid | ⛔ blocked | STOP 1 budget |
+| 7 Markets on real attempts | 🟡 partly | ARA replay sweep exists (`dm/replay.py`). Missing: ForceBench and live pools, H1–H4 from the log, H3 on ForceBench, `dm/calibration.py` (Brier + reliability), `dm/live_market.py` |
+| 8 Dashboard, report, demo | 🟡 partly | `/real` page in the app (PR #16). Missing: calibration view, replay slider, failure-ledger view, `REPORT.md`, `DEMO.md`, README "three ways to run" |
+
+**Known bugs still marked xfail** (14): float credits in the DP venue spike (3 × 0.1 > 0.3),
+mutable verdict dicts inside frozen records, `analysis.compute_clearing_prizes` and
+`build_full_summary` assume Track A/C run ids, events can't be joined to ledger rows,
+`verdict_issued.commitment` copied rather than checked, cost model vs outcome source can
+disagree, negative `lab_cost` accepted, rounds charges have no `count`, dashboard loads
+non-cdnjs hosts and drops unknown solver names. Several are fixed on the unmerged
+`review/remaining-readiness` branch; rerun the suite after merging it (stale xfails will
+XPASS-fail and should be removed).
+
+**Loose ends**: `forcebench_demo.py` (repo root) runs one ForceBench attempt end to end.
+`hypothesis` is not installed, so 2 property tests skip.
+
+## App cleanup: three pages
+
+- Serve Vision, ForceBench simulation, and the live market at `/`, `/simulation`, and `/live`;
+  remove the legacy bounty UI/routes while retaining the report CLI and real-attempt APIs.
+- Add ForceBench attempt details, menu/venue/library metadata and snapshot fallback; add live
+  market info, runs, scripted demos, live spend guards, and round updates.
+- Checks: targeted suite 43 passed, 1 skipped; full suite 413 passed, 5 skipped, 14 xfailed.
+
+## ForceBench snapshot
+
+- Generated and committed the 60-cell ForceBench grid snapshot at code HEAD `7cbf98b`.
+- Check with the snapshot present: full suite 413 passed, 5 skipped, 14 xfailed.
+
+## ForceBench snapshot consolidation
+
+- Consolidated the rich 60-row ForceBench snapshot into `attempts/fixtures/demo/forcebench_settle.json`; removed the duplicate `web/data` copy and restored `real_data._source()` fallback.
+- Verification: targeted snapshot/app/live tests 20 passed, 1 skipped; full suite 455 passed, 5 skipped, 14 xfailed.

@@ -70,3 +70,26 @@ class Wallet:
                 "round": round_num,
             }
         )
+
+    def refund(self, count: int, price: float, *, world: str, round_num: int,
+               reason: str) -> None:
+        """Return a charge for experiments the lab could not run (lab → agent)."""
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise ValueError("count must be a non-negative integer")
+        cost_m = count * _milli_credits(price, "price")
+        if cost_m > self._lab_m:
+            raise ValueError("refund exceeds what the lab was paid")
+        self._lab_m -= cost_m
+        self._balance_m += cost_m
+        self.events.append(
+            {
+                "type": "experiment_refunded",
+                "from": "lab",
+                "to": f"agent:{self.owner}",
+                "amount": cost_m / 1000,
+                "count": count,
+                "world": world,
+                "round": round_num,
+                "reason": reason,
+            }
+        )

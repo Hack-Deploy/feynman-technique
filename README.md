@@ -25,7 +25,7 @@ git submodule update --init  # if you cloned without --recurse-submodules
 uv sync                      # install Python 3.12 + dependencies into .venv
 uv run python run.py         # run all sweeps → output/{events,ledger,summary}.json
 uv run pytest                # run the test suite
-uv run python app.py         # results app at http://localhost:8000
+uv run python app.py         # three-page app at http://localhost:8000
 uv run python report.py      # same dashboard as one file: output/report.html
 ```
 
@@ -34,29 +34,27 @@ submodule as editable path dependencies (see `[tool.uv.sources]` in `pyproject.t
 `requests`, which `scienceagent` imports but does not declare. Never edit files under
 `vendor/`; wrap them in `dm/` instead.
 
-If `uv sync` fails with `Distribution not found at: …/vendor/discovery-agents/PhysicsSchool`,
-the submodule is not initialised: run `git submodule update --init`.
+## Local app
 
-`app.py` opens a page with buttons for the simulation and the tests, and shows
-the results: the prize each world needs, agent balances payment by payment,
-mean profit per prize, the public ledger and the verdicts. It uses only the
-standard library and listens on localhost. `report.py` writes the same page
-with the data baked in, for sharing.
+The app has exactly three pages: `/` (Vision), `/simulation` (ForceBench, explained
+for a general audience), and `/live` (the live discovery market). Start it with:
 
-**Live bounties.** The app's "Post a bounty" form sends a biology hypothesis,
-success criterion and prize to Claude (`claude-opus-5-5`), which returns a
-protocol priced from a fixed lab price list, a stated probability of a clear
-answer and a biosafety level. `bounty.py` then applies the market rule in code:
-bid only if p × prize > cost, never above BSL-2. For live mode, put your key in
-a `.env` file in the repo root (git ignores it) and restart the app:
-
-```
-ANTHROPIC_API_KEY=sk-ant-...
+```bash
+uv run python app.py
 ```
 
-Without a key the form shows a saved, clearly labelled example.
+Live runs use the hypotheses and simulator in `poc/`. To enable paid API calls, copy
+the example environment file, add `ANTHROPIC_API_KEY` to `poc/.env`, then start the app:
 
-A full run takes about a second. `output/` is not committed; regenerate it.
+```bash
+cp poc/.env.example poc/.env
+# Add ANTHROPIC_API_KEY to poc/.env before starting.
+ENABLE_LIVE=1 DM_MAX_USD=5 uv run python app.py
+```
+
+`DM_LIVE_MODELS` optionally sets a comma-separated model allowlist, and
+`DM_USD_PER_CALL` sets the estimated cost per API call. Live runs are disabled unless
+the API key, `ENABLE_LIVE=1`, and a positive `DM_MAX_USD` are all present.
 
 ## How the simulation works
 
@@ -87,8 +85,7 @@ measured market outcomes.
 | `runner.py` | Builds Track A / Track C runs and sweeps, writes `output/` |
 | `analysis.py` | Recomputes everything from the event log; H1–H3 verdicts → `summary.json` |
 | `run.py` | Entry point: sweeps → save → analyse → print verdicts |
-| `app.py` | Local results app: bounty form, run buttons, dashboard |
-| `bounty.py` | Bounty → Claude experiment design → bid decision (rule applied in code) |
+| `app.py` | Local app: Vision, ForceBench simulation and live discovery market |
 | `report.py`, `report_template.html` | Dashboard data and page; `report.py` also exports `output/report.html` |
 | `dm/` | Real-attempt code: types, attempt store, outcome sources |
 | `vendor/discovery-agents/` | DiscoverPhysics, pinned submodule; never edit |
