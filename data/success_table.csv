@@ -1,0 +1,45 @@
+model,world,explanation_score,pass_prob,gamma
+Claude Opus 4.7,Gravity,0.94,0.7916,3.776
+Claude Opus 4.7,Yukawa,0.96,0.8571,3.776
+Claude Opus 4.7,Hubble,0.90,0.6717,3.776
+Claude Opus 4.7,Ether,0.76,0.3547,3.776
+Claude Opus 4.7,Oscillator,0.72,0.2892,3.776
+Claude Opus 4.7,Coulomb,0.70,0.2600,3.776
+Claude Opus 4.7,Circle,0.48,0.0626,3.776
+Claude Opus 4.7,Extra dims,0.54,0.0976,3.776
+Claude Opus 4.7,Fractional,0.48,0.0626,3.776
+Claude Opus 4.7,Dark matter,0.38,0.0259,3.776
+Claude Opus 4.7,Three species,0.40,0.0314,3.776
+GPT-5.5,Gravity,0.96,0.8385,4.313
+GPT-5.5,Yukawa,0.90,0.6348,4.313
+GPT-5.5,Hubble,0.64,0.1459,4.313
+GPT-5.5,Ether,0.76,0.3061,4.313
+GPT-5.5,Oscillator,0.90,0.6348,4.313
+GPT-5.5,Coulomb,0.74,0.2729,4.313
+GPT-5.5,Circle,0.54,0.0701,4.313
+GPT-5.5,Extra dims,0.36,0.0122,4.313
+GPT-5.5,Fractional,0.48,0.0422,4.313
+GPT-5.5,Dark matter,0.22,0.0015,4.313
+GPT-5.5,Three species,0.40,0.0192,4.313
+Claude Sonnet 4.6,Gravity,0.50,0.0927,3.432
+Claude Sonnet 4.6,Yukawa,0.28,0.0127,3.432
+Claude Sonnet 4.6,Hubble,0.24,0.0075,3.432
+Claude Sonnet 4.6,Ether,0.38,0.0361,3.432
+Claude Sonnet 4.6,Oscillator,0.38,0.0361,3.432
+Claude Sonnet 4.6,Coulomb,0.24,0.0075,3.432
+Claude Sonnet 4.6,Circle,0.36,0.0300,3.432
+Claude Sonnet 4.6,Extra dims,0.16,0.0019,3.432
+Claude Sonnet 4.6,Fractional,0.34,0.0247,3.432
+Claude Sonnet 4.6,Dark matter,0.22,0.0055,3.432
+Claude Sonnet 4.6,Three species,0.34,0.0247,3.432
+Qwen3.5-397B,Gravity,0.76,0.3576,3.747
+Qwen3.5-397B,Yukawa,0.40,0.0323,3.747
+Qwen3.5-397B,Hubble,0.20,0.0024,3.747
+Qwen3.5-397B,Ether,0.36,0.0218,3.747
+Qwen3.5-397B,Oscillator,0.26,0.0064,3.747
+Qwen3.5-397B,Coulomb,0.30,0.0110,3.747
+Qwen3.5-397B,Circle,0.46,0.0545,3.747
+Qwen3.5-397B,Extra dims,0.24,0.0048,3.747
+Qwen3.5-397B,Fractional,0.46,0.0545,3.747
+Qwen3.5-397B,Dark matter,0.30,0.0110,3.747
+Qwen3.5-397B,Three species,0.26,0.0064,3.747

@@ -20,3 +20,36 @@
   - Probability sources (raw, calibrated): 3 PASSED
   - Calibrated odds at prize 20 expect 0 bids: 1 PASSED
 - **Result**: ✅ PASS — all 40 tests passed in 1.08s.
+
+## P2/P3 Sweeps (runner.py)
+- **Built**: Track A (2 odds sources × 5 prizes × 5 seeds = 50 runs) and
+  Track C (4 prices × 3 prizes × 5 seeds = 60 runs). 8,545 events, 1,413 ledger rows.
+- **Result**: ✅ PASS
+
+## P4 Analysis (analysis.py, run.py)
+- **Built**: Every number recomputed from the event log; H1/H2/H3 verdicts in
+  `output/summary.json`.
+- **Result**: ✅ PASS
+
+## Fixes (2026-10-03)
+- **Profit double-count**: profits were 100 credits too low (starting credits
+  subtracted twice). Opening balances are now `account_funded` events at tick 0.
+- **Nondeterminism**: runs varied with `PYTHONHASHSEED` (worlds iterated from a
+  set). Now iterated in config order; cross-process determinism test added.
+- **H1 verdict**: agents ranked by pass@1; each prize classified SUPPORTED /
+  PARTIAL / NOT SUPPORTED. Weaker agents never bid at any prize (priced out by
+  their prior), so "stop bidding" is not yet tested dynamically.
+- **Checks**: 57 tests (42 engine, 15 analysis) — all PASSED.
+
+## Stage 0 Cleanup (2026-10-03)
+- `.gitignore` conflict markers resolved.
+- Merged `data/success-table`: `data/success_table.csv` regenerates identically
+  from `data/build_success_table.py`; each model's mean p matches its pass@1.
+- README written; this log brought up to date.
+
+## Open issues
+- `success_table.csv` not yet used by the runner (Stage 1).
+- `config.yaml` is not read by the runner/analysis; values are hard-coded.
+- H3 holds by construction: `llm_opus_unthrottled` reuses mda's pass rates.
+- Disclosed ledger rows don't update other agents' beliefs (Stage 3).
+- Ledger `outcome.metric` stores the hidden true probability.
