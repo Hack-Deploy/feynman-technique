@@ -12,6 +12,7 @@ Two sources, both real attempts rather than coin flips:
 
 from __future__ import annotations
 
+import ast
 import json
 import math
 from collections import defaultdict
@@ -57,6 +58,26 @@ def _finite(v) -> float | None:
     return v if isinstance(v, (int, float)) and math.isfinite(v) else None
 
 
+def _law_summary(code: str | None) -> str | None:
+    """First line of the docstring of the first top-level function in a submitted law."""
+    if not code:
+        return None
+    try:
+        module = ast.parse(code)
+    except (SyntaxError, ValueError):
+        return None
+    fn = next((node for node in module.body if isinstance(node, ast.FunctionDef)), None)
+    if fn is None:
+        return None
+    try:
+        docstring = ast.get_docstring(fn)
+    except ValueError:
+        return None
+    if not docstring:
+        return None
+    return next((line.strip() for line in docstring.splitlines() if line.strip()), None)
+
+
 def _relative(path: Path) -> str:
     try:
         return str(path.relative_to(ROOT))
@@ -81,6 +102,8 @@ def ara_attempts() -> list[dict]:
             "explanation": _finite(r.verdict.get("explanation_score")),
             "ara_verdict": extra.get("ara_verdict"),
             "ara_passed": extra.get("ara_passed"),
+            "law": r.submitted_law,
+            "law_summary": _law_summary(r.submitted_law),
             "rounds": r.rounds,
             "experiments": r.experiments,
             "usd": _finite((r.llm_usage or {}).get("usd")),
