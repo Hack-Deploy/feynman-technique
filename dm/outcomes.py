@@ -75,6 +75,8 @@ class ReplayPool:
             "stated_p": rec.stated_p_success,
             "normalised_mse": rec.verdict.get("normalised_mse"),
             "commitment": rec.verdict.get("prereg_commitment"),
+            "attempt_source": rec.source,
+            "protocol": rec.protocol,
         }
         return rec.passed, detail, rec.attempt_id
 
