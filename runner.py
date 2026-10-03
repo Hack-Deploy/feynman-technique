@@ -13,7 +13,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from data_loader import load_table1, load_table2, load_table3, load_config
+from data_loader import (
+    load_table1, load_table2, load_table3, load_config, load_success_table,
+)
 from market import (
     MarketRun, run_market, TrackACostModel, TrackCCostModel, Event, LedgerRow,
 )
@@ -21,15 +23,23 @@ from market import (
 OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 
+PROB_SOURCES = ["raw", "calibrated", "power"]
+
+
 def build_track_a_probs(
-    table1: pd.DataFrame, table2: pd.DataFrame, source: str
+    table1: pd.DataFrame, table2: pd.DataFrame, source: str,
+    success: pd.DataFrame | None = None,
 ) -> dict[str, dict[str, float]]:
     """Build true probability tables for Track A agents.
 
     Sources:
       - raw: p = explanation score (Table 1).
       - calibrated: p = min(1, score * pass_at_1 / mean_score).
+      - power: p = score ** gamma, gamma fit per model so the mean over all
+        22 worlds equals pass@1 (data/success_table.csv).
     """
+    if source == "power" and success is None:
+        success = load_success_table()
     agents = list(table1.columns)
     worlds = list(table1.index)
     probs: dict[str, dict[str, float]] = {}
@@ -40,6 +50,8 @@ def build_track_a_probs(
             score = table1.loc[world, agent]
             if source == "raw":
                 probs[agent][world] = float(score)
+            elif source == "power":
+                probs[agent][world] = float(success.loc[world, agent])
             elif source == "calibrated":
                 mean_score = float(table2.loc[agent, "mean_score"])
                 pass_at_1 = float(table2.loc[agent, "pass_at_1"])
@@ -205,7 +217,7 @@ def run_all_track_a(
     if prizes is None:
         prizes = [5, 20, 50, 100, 200]
     if prob_sources is None:
-        prob_sources = ["raw", "calibrated"]
+        prob_sources = PROB_SOURCES
 
     results: dict[str, tuple[list[Event], list[LedgerRow]]] = {}
 
