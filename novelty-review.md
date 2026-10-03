@@ -1,6 +1,6 @@
 # Discovery Market: literature and startup review
 
-Review done on 2026-10-03 to back up slide 2, "What's new, and why it matters". Every claim below links to its source. Things we could not verify are listed at the end.
+Review done on 2026-10-03 to back up the pitch deck. Every claim below links to its source. Things we could not verify are listed at the end.
 
 ## Bottom line
 
@@ -22,6 +22,18 @@ We found no platform that pays AI scientists only for clear answers from real la
 | Science prediction markets | [DARPA SCORE / Replication Markets](https://ar5iv.labs.arxiv.org/html/2005.04543), [AI betting agents](https://arxiv.org/pdf/2303.00866), Hanson's [idea futures](https://en.wikipedia.org/wiki/Robin_Hanson) | Forecast whether published claims will replicate. Markets beat surveys at this. | They forecast existing claims and don't fund or run new experiments. |
 | Science funding platforms | [Experiment.com](https://experiment.com/how-it-works) (all-or-nothing crowdfunding), [ResearchHub](https://www.insidephilanthropy.com/home/researchhub-an-answer-to-dysfunction-in-traditional-science-giving) (crypto rewards, including for negative results) | Fund human researchers up front or reward activity. | No AI agents and no calibration scoring. |
 | Agent marketplaces | [MarketBench](https://arxiv.org/abs/2604.23897) (benchmark), [Agent Exchange](https://open-experiments.github.io/agent-exchange/) (open source, enterprise tasks) | Success-contingent pay for agent tasks: software and enterprise workflows. | Not science and not real labs. |
+
+## Comparison table (removed from the deck): reasons for each mark
+
+✓ = yes, half mark = partly, ✗ = not found in this review.
+
+- **AI scientists:** AI agents ✓. Real lab experiments: partly, because Sakana runs computational experiments and Co-Scientist ["doesn't run experiments"](https://labcritics.com/blog/2026/05/21/google-deepminds-co-scientist-graduates-from-research-demo-to-nature-paper/). Paid only for an answer ✗. Predictions scored ✗.
+- **AI-run lab startups (Lila, Periodic):** AI agents ✓. Real labs ✓ (autonomous labs). Paid only for an answer ✗: they are investor-funded. Predictions scored ✗.
+- **Cloud labs and lab marketplaces:** AI agents ✗: researchers order the experiments. Real labs ✓. Paid only for an answer ✗: subscription or fee per service. Predictions scored ✗.
+- **Science prediction markets (SCORE, Replication Markets):** AI agents partly: there was a [prototype with AI betting agents](https://arxiv.org/pdf/2303.00866). Real labs partly: forecasts were checked against independent replications on a subsample. Paid only for an answer ✗. Predictions scored ✓.
+- **Science funding and bounties:** AI agents ✗. Real labs ✓: human researchers run the experiments. Paid only for an answer partly: ResearchHub pays bounties for specific tasks, while Experiment.com funds projects up front. Predictions scored ✗.
+- **Agent marketplaces (MarketBench, Agent Exchange):** AI agents ✓. Real labs ✗: they cover software and enterprise tasks. Paid only for an answer ✓: success-contingent pay. Predictions scored partly: MarketBench measures calibration as a benchmark, not as part of a live market.
+- **Us:** real labs is the concept. The proof of concept runs in simulated worlds (DiscoverPhysics).
 
 ## Evidence for "why it matters"
 
