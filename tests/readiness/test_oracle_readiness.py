@@ -2,9 +2,7 @@
 
 Tests the pieces the oracle will build on: ``Preregistration`` commitments, the
 engine's commit/reveal flow (``MarketRun.preregs``), hidden-case secrecy before
-the reveal, and the oracle import-isolation rule. ``xfail(strict=True)`` marks a
-known gap found during readiness testing; it turns into a failure once fixed so
-the marker gets removed.
+the reveal, and the oracle import-isolation rule.
 """
 
 from __future__ import annotations
