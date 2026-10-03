@@ -21,6 +21,8 @@ output/
 # Attempt store: generated, except small committed test fixtures
 attempts/*
 !attempts/fixtures/
+attempts/live_spend.jsonl
+attempts/live_spend.jsonl.lock
 
 # Vendor run results
 vendor/**/results/

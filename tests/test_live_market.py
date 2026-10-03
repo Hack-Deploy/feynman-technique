@@ -13,13 +13,12 @@ import app
 import live_market
 from dm.store import AttemptStore
 from dm.types import SubmittedAttempt
-from poc import bench, config as C
+from poc import bench, config as C, live_cache, spend
 
 
 @pytest.fixture(autouse=True)
 def isolated_live_market(monkeypatch, tmp_path):
-    for name in ("ANTHROPIC_API_KEY", "ENABLE_LIVE", "DM_MAX_USD", "DM_USD_PER_CALL",
-                 "DM_LIVE_MODELS"):
+    for name in ("ANTHROPIC_API_KEY", "ENABLE_LIVE", "DM_MAX_USD", "DM_LIVE_MODELS"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(bench, "load_env", lambda: None)
     monkeypatch.setattr(
@@ -27,11 +26,21 @@ def isolated_live_market(monkeypatch, tmp_path):
         "complete",
         lambda **kwargs: pytest.fail("tests must never call a paid API"),
     )
+    monkeypatch.setattr(
+        "poc.llm.anthropic_transport",
+        lambda *args, **kwargs: pytest.fail("tests must not call Anthropic"),
+    )
+    monkeypatch.setattr(C, "ROOT", tmp_path)
     monkeypatch.setattr(C, "ATTEMPTS_PATH", tmp_path / "live.jsonl")
+    monkeypatch.setattr(C, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(C, "TRAJECTORIES_DIR", tmp_path / "trajectories")
     monkeypatch.setattr(live_market, "DEMO_PATH", tmp_path / "demo.jsonl")
     monkeypatch.setattr(live_market, "_JOBS", {})
     monkeypatch.setattr(live_market, "_ACTIVE_JOB", None)
-    monkeypatch.setattr(live_market, "_PROJECTED_USD_SPENT", 0.0)
+    monkeypatch.setattr(live_market, "_PROMPT_CHARS_CACHE", {})
+    monkeypatch.setattr(spend, "LEDGER_PATH", tmp_path / "live_spend.jsonl")
+    monkeypatch.setattr(live_cache, "RUNS_PATH", tmp_path / "runs.jsonl")
+    monkeypatch.setattr(live_cache, "SCRIPTED_PATH", tmp_path / "scripted.jsonl")
 
 
 @pytest.fixture
@@ -92,16 +101,21 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
     monkeypatch.setenv("ENABLE_LIVE", "1")
     monkeypatch.setenv("DM_MAX_USD", "5")
-    monkeypatch.setenv("DM_LIVE_MODELS", "claude-sonnet-4-6, claude-opus-4-1")
+    monkeypatch.setenv("DM_LIVE_MODELS", "claude-sonnet-5-5, claude-opus-5-5, custom-model")
     enabled = live_market.info()
     serialized = json.dumps(enabled)
     assert enabled["live"]["enabled"] is True
-    assert enabled["models"] == ["claude-sonnet-4-6", "claude-opus-4-1"]
+    assert enabled["models"] == [
+        "claude-sonnet-5-5",
+        "claude-opus-5-5",
+        "custom-model",
+    ]
     assert secret not in serialized
     assert '"answer":' not in serialized
-    assert enabled["live"]["projected_usd_per_run"] == pytest.approx(
-        (2 * C.load().max_rounds + 1) * enabled["live"]["usd_per_call"]
-    )
+    assert enabled["live"]["hard_cap_usd"] == 5
+    assert enabled["live"]["max_usd"] == 5
+    assert enabled["live"]["projected_usd_per_run"]["claude-sonnet-5-5"] > 0
+    assert len(enabled["model_table"]) == 4
     status, headers, body = _request(f"{app_server}/api/live/info")
     assert status == 200
     assert "json" in headers.get("Content-Type", "").lower()
@@ -109,7 +123,7 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
 
 
 def test_live_start_refuses_disabled_and_over_budget_runs(app_server, monkeypatch):
-    status, _, body = _post_start(app_server, scripted=False, model="claude-sonnet-4-6")
+    status, _, body = _post_start(app_server, scripted=False, model="claude-sonnet-5-5")
     assert status == 403
     assert "ENABLE_LIVE" in json.loads(body)["error"]
 
@@ -120,10 +134,10 @@ def test_live_start_refuses_disabled_and_over_budget_runs(app_server, monkeypatc
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("ENABLE_LIVE", "1")
     monkeypatch.setenv("DM_MAX_USD", "0.1")
-    status, _, body = _post_start(app_server, scripted=False, model="claude-sonnet-4-6")
+    status, _, body = _post_start(app_server, scripted=False, model="claude-sonnet-5-5")
     assert status == 403
-    assert "Projected run spend exceeds DM_MAX_USD" in json.loads(body)["error"]
-    assert live_market.info()["live"]["projected_usd_spent"] == 0
+    assert "Projected run spend exceeds the spend cap" in json.loads(body)["error"]
+    assert live_market.info()["live"]["spent_usd"] == 0
 
 
 def test_live_start_tracks_projection_without_calling_provider(monkeypatch):
@@ -159,12 +173,12 @@ def test_live_start_tracks_projection_without_calling_provider(monkeypatch):
 
     monkeypatch.setattr(live_market, "run_attempt", fake_run)
     result = live_market.start(
-        "gravity-inverse-square", "claude-sonnet-4-6", scripted=False
+        "gravity-inverse-square", "claude-sonnet-5-5", scripted=False
     )
     assert entered.wait(timeout=5)
-    projection = live_market.info()["live"]["projected_usd_per_run"]
-    assert result["projected_usd"] == projection
-    assert live_market.info()["live"]["projected_usd_spent"] == projection
+    projection = live_market.info()["live"]["projected_usd_per_run"]["claude-sonnet-5-5"]
+    assert 0 < result["projected_usd"] <= projection
+    assert live_market.info()["live"]["spent_usd"] == 0
     current = live_market.job(result["job_id"])
     assert current["state"] == "running"
     assert current["run"] is None
@@ -179,6 +193,10 @@ def test_live_start_tracks_projection_without_calling_provider(monkeypatch):
         time.sleep(0.01)
     assert current["state"] == "done"
     assert current["run"]["answer"] in ("supported", "refuted")
+    recorded = live_cache.load(live_cache.RUNS_PATH)
+    assert len(recorded) == 1
+    assert recorded[0]["source"] == "real"
+    assert recorded[0]["key"]["model"] == "claude-sonnet-5-5"
 
 
 def test_scripted_http_run_and_seed_increment(app_server):

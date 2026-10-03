@@ -68,7 +68,8 @@ def runs(conversation_log: list[dict]) -> list[dict]:
 def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[dict],
                 cfg: C.Config | None = None, complete: Complete | None = None,
                 verbose: bool = False, world_spec: dict | None = None,
-                on_round: Callable[[dict], None] | None = None) -> SubmittedAttempt:
+                on_round: Callable[[dict], None] | None = None,
+                max_tokens: int = C.MAX_TOKENS) -> SubmittedAttempt:
     cfg = cfg or C.load()
     hyp = cfg.hypothesis(hypothesis_id)
     if world_spec is None:
@@ -91,7 +92,7 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
         cfg=cfg, hyp=hyp, account=account, ledger_entries=ledger_entries, complete=complete,
         on_round=on_round,
         model=model, executor=executor, mission=world_spec["mission"],
-        max_tokens=C.MAX_TOKENS, verbose=verbose,
+        max_tokens=max_tokens, verbose=verbose,
         system_prompt_path=_abs_vendor(world_spec["system_prompt"]),
         instructions_path=_abs_vendor(world_spec["instructions"]),
         law_stub=world_spec["law_stub"], experiment_format=world_spec["experiment_format"],
@@ -150,3 +151,35 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
             "account_events": account.events,
         },
     )
+
+
+def prompt_chars(hyp_id: str, cfg: C.Config, ledger_entries: list[dict]) -> int:
+    """Prompt-size basis for a run, without making an LLM call or creating a trajectory log."""
+    from scienceagent.worlds import get_world
+
+    hyp = cfg.hypothesis(hyp_id)
+    world_spec = get_world(
+        hyp.world,
+        engine=C.ENGINE,
+        noise_std=cfg.noise_std,
+        noise_seed=0,
+    )
+    account = Account(agent="projection", hypothesis=hyp.id, budget=cfg.budget)
+    agent = MarketAgent(
+        cfg=cfg,
+        hyp=hyp,
+        account=account,
+        ledger_entries=ledger_entries,
+        complete=lambda **kwargs: "",
+        model="projection",
+        executor=world_spec["executor"],
+        mission=world_spec["mission"],
+        max_tokens=C.MAX_TOKENS,
+        verbose=False,
+        system_prompt_path=_abs_vendor(world_spec["system_prompt"]),
+        instructions_path=_abs_vendor(world_spec["instructions"]),
+        law_stub=world_spec["law_stub"],
+        experiment_format=world_spec["experiment_format"],
+        trajectory_logger=None,
+    )
+    return len(agent._system) + len(world_spec["mission"])

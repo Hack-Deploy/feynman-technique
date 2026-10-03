@@ -483,6 +483,19 @@ Merged `review/remaining-readiness`: ForceBench readiness tests, replay cost val
 
 Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfailed, 27 warnings.
 
+## Multi-model live grid and recorded demo (2026-10-03)
+
+- Added the configured Anthropic model-price table, cumulative append-only spend ledger,
+  per-call metering and reservations, bounded run projections, and resumable multi-model grid.
+  The configured hard cap is $5; `DM_MAX_USD` can only lower it.
+- Added the deterministic scripted grid at `attempts/fixtures/live/scripted_demo.jsonl` and
+  its derived summary, plus real/scripted recorded-run APIs and documentation. The ledger and
+  lock remain git-ignored. No real API calls were made.
+- Preflight with an empty live cache: $4.661748 total worst-case across 8 runs; the largest
+  model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
+- Checks after merging `origin/real-attempts`: targeted live/POC suite 47 passed; full suite
+  657 passed, 5 skipped, 0 xfailed, no XPASS.
+
 ## Phase 7: calibration, ForceBench replay, H1–H4, ARA on /simulation
 
 - `dm/calibration.py`: Brier score, 10-bin reliability table, calibration-in-the-large; records without a stated p are excluded and counted.
