@@ -29,6 +29,9 @@ import report
 
 ROOT = Path(__file__).resolve().parent
 PORT = int(os.environ.get("PORT", "8000"))
+# Extra address to listen on besides loopback, e.g. a Tailscale IP
+# (HOST=100.64.50.64). Avoid 0.0.0.0: the app can run simulations and tests.
+HOST = os.environ.get("HOST", "127.0.0.1")
 COMMANDS = {
     "/api/run": [sys.executable, "run.py"],
     "/api/test": [sys.executable, "-m", "pytest", "-q", "--color=no"],
@@ -231,12 +234,28 @@ def _also_ipv6(port: int) -> None:
     threading.Thread(target=v6.serve_forever, daemon=True).start()
 
 
+def _also_host(host: str, port: int) -> str | None:
+    """Serve on ``host`` too (e.g. a Tailscale IP). Returns its URL, or None."""
+    if host in ("127.0.0.1", "localhost", "::1"):
+        return None
+    try:
+        extra = ThreadingHTTPServer((host, port), Handler)
+    except OSError as e:
+        print(f"Could not listen on {host}:{port} ({e}); serving on this machine only.")
+        return None
+    threading.Thread(target=extra.serve_forever, daemon=True).start()
+    return f"http://{host}:{port}"
+
+
 def main() -> None:
     server = _bind(PORT)
     port = server.server_address[1]
     _also_ipv6(port)
+    remote = _also_host(HOST, port)
     url = f"http://127.0.0.1:{port}"
     print(f"Discovery Market app running at {url}  (also http://localhost:{port})  (Ctrl+C to stop)")
+    if remote:
+        print(f"Also reachable at {remote}")
     if "--no-browser" not in sys.argv:
         webbrowser.open(url)
     try:

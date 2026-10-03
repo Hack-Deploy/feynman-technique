@@ -40,7 +40,8 @@ the submodule is not initialised: run `git submodule update --init`.
 `app.py` opens a page with buttons for the simulation and the tests, and shows
 the results: the prize each world needs, agent balances payment by payment,
 mean profit per prize, the public ledger and the verdicts. It uses only the
-standard library and listens on localhost. `report.py` writes the same page
+standard library and listens on localhost (set `HOST` to also listen on another
+address, e.g. `HOST=$(tailscale ip -4) uv run python app.py` for your tailnet). `report.py` writes the same page
 with the data baked in, for sharing.
 
 **Live bounties.** The app's "Post a bounty" form sends a biology hypothesis,
