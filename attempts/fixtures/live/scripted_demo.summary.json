@@ -1,0 +1,132 @@
+{
+  "comparison": [
+    {
+      "brier": 0.29,
+      "credits_spent": 54.0,
+      "label": "Scripted stand-in for Claude Sonnet 5.5",
+      "model": "claude-sonnet-5-5",
+      "points": [
+        {
+          "attempt_id": "f31e024d-3dad-53d2-97ce-975cad52f45e",
+          "hypothesis_id": "coulomb-source-strength",
+          "p": 0.7,
+          "passed": true
+        },
+        {
+          "attempt_id": "e0d7106a-e12e-5267-b0cd-5ccf1e62e5d1",
+          "hypothesis_id": "gravity-inverse-square",
+          "p": 0.7,
+          "passed": false
+        }
+      ],
+      "prize_paid": 100.0,
+      "profit": 46.0,
+      "runs": 2,
+      "usd_spent": 0.0,
+      "win_rate": 0.5,
+      "wins": 1
+    },
+    {
+      "brier": 0.2725,
+      "credits_spent": 54.0,
+      "label": "Scripted stand-in for Claude Sonnet 5",
+      "model": "claude-sonnet-5",
+      "points": [
+        {
+          "attempt_id": "ac6488be-2af1-5c28-ac7a-fdb5b12c1cc6",
+          "hypothesis_id": "coulomb-source-strength",
+          "p": 0.65,
+          "passed": false
+        },
+        {
+          "attempt_id": "ff82088a-ed34-54ef-b744-d725077149f2",
+          "hypothesis_id": "gravity-inverse-square",
+          "p": 0.65,
+          "passed": true
+        }
+      ],
+      "prize_paid": 100.0,
+      "profit": 46.0,
+      "runs": 2,
+      "usd_spent": 0.0,
+      "win_rate": 0.5,
+      "wins": 1
+    },
+    {
+      "brier": 0.34,
+      "credits_spent": 88.0,
+      "label": "Scripted stand-in for Claude Opus 5.5",
+      "model": "claude-opus-5-5",
+      "points": [
+        {
+          "attempt_id": "e320224c-f2fd-5558-bd80-a1a3f780bb0a",
+          "hypothesis_id": "coulomb-source-strength",
+          "p": 0.8,
+          "passed": true
+        },
+        {
+          "attempt_id": "fd2df278-1fca-5df6-a73d-d35e45ee4c99",
+          "hypothesis_id": "gravity-inverse-square",
+          "p": 0.8,
+          "passed": false
+        }
+      ],
+      "prize_paid": 100.0,
+      "profit": 12.0,
+      "runs": 2,
+      "usd_spent": 0.0,
+      "win_rate": 0.5,
+      "wins": 1
+    },
+    {
+      "brier": 0.09,
+      "credits_spent": 54.0,
+      "label": "Scripted stand-in for Claude Haiku 4.5",
+      "model": "claude-haiku-4-5-20251001",
+      "points": [
+        {
+          "attempt_id": "7b811927-f6e2-5465-9b1d-6bf1df7304df",
+          "hypothesis_id": "coulomb-source-strength",
+          "p": 0.3,
+          "passed": false
+        },
+        {
+          "attempt_id": "b5b3936c-06df-586d-bbf4-bc352f71d5ea",
+          "hypothesis_id": "gravity-inverse-square",
+          "p": 0.3,
+          "passed": false
+        }
+      ],
+      "prize_paid": 0.0,
+      "profit": -54.0,
+      "runs": 2,
+      "usd_spent": 0.0,
+      "win_rate": 0.0,
+      "wins": 0
+    }
+  ],
+  "generated_from": "/home/ubuntu/repos/feynman-technique/attempts/fixtures/live/scripted_demo.jsonl",
+  "models_checked": "2026-10-03",
+  "models_source": {
+    "checked": "2026-10-03",
+    "models": "https://platform.claude.com/docs/en/about-claude/models/overview",
+    "pricing": "https://platform.claude.com/docs/en/about-claude/pricing"
+  },
+  "settings": {
+    "chars_per_token": 3.0,
+    "data_chars_per_round": 8000,
+    "hypotheses": [
+      "coulomb-source-strength",
+      "gravity-inverse-square"
+    ],
+    "max_rounds": 3,
+    "max_tokens": 3072,
+    "max_usd": 5.0,
+    "seeds": [
+      0
+    ]
+  },
+  "source": [
+    "scripted"
+  ]
+}
