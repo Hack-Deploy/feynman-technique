@@ -141,6 +141,46 @@ Lab revenue is the total charged for rounds. It stops growing above prize 100 un
 numeric rule because every world is already being attempted and solved early; under the ARA
 rule worlds stay open longer, so more failed attempts are paid for.
 
+## Phase 7: H1–H4 from the replay event log
+
+`dm/hypotheses.py` derives each hypothesis from the replay events (`summary.json` →
+`hypotheses`); calibration is in `summary.json` → `calibration` (`dm/calibration.py`).
+A hypothesis that the pool cannot answer is `UNAVAILABLE` with its reason.
+
+```
+uv run python -m dm.replay ara           # ARA pool  → output/replay_ara/
+uv run python -m dm.replay forcebench    # ForceBench pool → output/replay_forcebench/
+```
+
+`dm.replay forcebench` reads `output/forcebench_settle.json` if present (regenerate with
+`uv run python -m tests.forcebench_settle`), else the committed snapshot
+`attempts/fixtures/demo/forcebench_settle.json`. The two pools are never mixed: each run
+rejects records from another venue. ForceBench setup: 60 settled attempts (6 worlds ×
+2 solvers × 5 seeds), `experiments_cost(1.0)` (`experiment_charged`; the first launch is free,
+each paid launch costs 1 credit), prizes 2, 5, 10, 20, 50, otherwise as above (seeds 0–4,
+200 ticks, 100 credits, leave-one-out beliefs). Credits are conserved in every run of both
+sweeps (max |sum| = 0).
+
+Rules: H1 splits solvers at the largest gap in pool pass rate (≥ 0.10 needed) and applies the
+Track A rule per prize (strong agents profit, weak agents don't); H2 is the ≥ 3-of-5-seeds
+clearing prize; H3 compares pairs whose pass rates differ by ≤ 0.10 and whose paid experiments
+per attempt differ by ≥ 0.5, at prizes where both bid; H4 pairs each solver-stated
+`confidence_stated` p with its verdict (each source attempt once) and calls the chances
+calibrated if |mean p − pass rate| ≤ 0.10.
+
+| | ARA (88 published attempts) | ForceBench (60 settled attempts) |
+|---|---|---|
+| H1 strong profit, weak stop | **NOT SUPPORTED**. Strong = gpt5.6-sol (10/11), fable, grok4.5 (9/11); gap 0.36 to the rest. At every prize with bids a weak model profits or a strong one doesn't (prize 20: kimi-k2.7 +12.0; prize 50: glm5.2 +17.0, gpt5.5 +18.2) | **UNAVAILABLE**: pass rates 0.967 (bayes_lite) vs 1.0 (random_menu), no strong/weak split |
+| H2 clearing prize | **MEASURED**: 20 on every world except extra_dimensions (5); near-deterministic (one attempt per cell) | **MEASURED**: 2 on fractional and oscillator, 5 on the other four worlds |
+| H3 fewer experiments earn more | **UNAVAILABLE**: the pool charges rounds; ARA experiment counts are not exact (PLAN C7) | **PARTIAL**: bayes_lite (1.71 paid launches/attempt, pass 0.958) vs random_menu (4.33, 1.0). bayes_lite earns more at prize 5 (11.2 vs 1.6) and 10 (21.4 vs 17.6), not at 20 (49.4 vs 49.6) or 50 (133.4 vs 145.6) |
+| H4 calibrated stated chances | **UNAVAILABLE**: no stated p in ARA (88 records excluded); models state their chances on `/live` | **NOT SUPPORTED**: underconfident. Event log: mean p − pass rate = −0.356. All 60 records: mean stated p 0.609, pass rate 0.983, Brier 0.248, calibration-in-the-large −0.374 |
+
+Caveats: the ForceBench pass rates overstate identification on yukawa, fractional, oscillator
+and extra_dimensions (lenient hidden tests, Phase 5 findings), so H2/H3 there measure the
+current judge; a stricter judge's snapshot can be replayed with the commands above. H3 counts
+each source attempt once (24 bayes_lite and 18 random_menu records were drawn across the
+sweep). The ARA verdicts are on the numeric rule.
+
 ## Data notes
 
 - **Counts**: all eight models present with 11 worlds each (fable, gpt5.6-sol, gpt5.5,

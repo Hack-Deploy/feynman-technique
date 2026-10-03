@@ -4,7 +4,7 @@ import real_data
 
 
 def _missing(monkeypatch, tmp_path):
-    gen = {name: tmp_path / f"{name}.missing" for name in ("ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID")}
+    gen = {name: tmp_path / f"{name}.missing" for name in ("ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID", "FORCEBENCH_REPLAY_SUMMARY")}
     snaps = {gen[name]: real_data.SNAPSHOTS[getattr(real_data, name)] for name in gen}
     for name, path in gen.items():
         monkeypatch.setattr(real_data, name, path)
@@ -25,6 +25,12 @@ def test_page_data_falls_back_to_snapshots(monkeypatch, tmp_path):
     assert fb["available"] and fb["snapshot"] and len(fb["table"]) == 12
     assert len(fb["attempts"]) == 60
     assert all(attempt["top_model"] is not None for attempt in fb["attempts"])
+    assert set(ara["hypotheses"]) == {"H1", "H2", "H3", "H4"}
+    assert ara["hypotheses"]["H4"]["verdict"] == "UNAVAILABLE"
+    assert ara["calibration"]["n"] == 0 and ara["calibration"]["n_excluded_no_stated_p"] == 88
+    fbr = data["forcebench_replay"]
+    assert fbr["available"] and fbr["snapshot"]
+    assert fbr["calibration"]["n"] == 60 and fbr["calibration"]["mean_stated_p"] is not None
 
 
 def test_generated_outputs_take_precedence(monkeypatch, tmp_path):

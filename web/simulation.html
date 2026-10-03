@@ -61,6 +61,17 @@
   .buckets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
   @media (max-width: 860px) { .buckets { grid-template-columns: 1fr; } }
   .buckets .n { font: 700 54px/1 var(--narrow); }
+  .scroll { overflow-x: auto; }
+  .dots.ara th { font: 700 12px var(--narrow); letter-spacing: .04em; vertical-align: bottom; text-align: center; padding: 4px 2px; }
+  .dots.ara th:first-child { text-align: left; }
+  .dots.ara td { text-align: center; padding: 3px 2px; }
+  .dots.ara td:first-child { text-align: left; white-space: nowrap; }
+  .dots.ara .dot { width: 22px; height: 22px; }
+  @media (max-width: 500px) { .dots.ara .dot { width: 18px; height: 18px; margin: 1px; } .dots.ara th { font-size: 9px; letter-spacing: 0; word-break: break-all; } .dots.ara td { padding: 2px 1px; } .dots.ara td:first-child { white-space: normal; font-size: 13px; } }
+  .chart { margin-top: 14px; }
+  .chart text { font-family: var(--sans); }
+  .caveats { margin-top: 18px; padding-left: 18px; font-size: 14px; color: var(--body); }
+  .caveats li { margin: 4px 0; }
 </style>
 </head>
 <body>
@@ -295,6 +306,33 @@
   <div class="detail card plain" id="detail"><p class="wait">Click a dot to see what was proposed and why it passed or failed.</p></div>
 </section>
 
+<!-- ============================================================ REAL AI SCIENTISTS -->
+<section id="real">
+  <p class="label">6 · Now with real AI scientists</p>
+  <h2>The same market, run on 88 published attempts by 8 frontier AI models.</h2>
+  <p class="sub" id="araIntro">Here the AI scientists are chatbots, not small programs. Each of 8 frontier models had one go at each of the 11 public DiscoverPhysics worlds, designing its own experiments. We replay those attempts through the market: each round of experiments costs 1 credit, and the prize is paid only if the judge's hidden tests pass (error under 0.1).</p>
+  <h3 style="margin-top:26px">Who solved what</h3>
+  <p class="note">Green: passed the hidden tests. Red: failed. One attempt per model per world. Click any dot.</p>
+  <div class="scroll" id="araGrid"><p class="wait">Loading published attempts…</p></div>
+  <div class="detail card plain" id="araDetail" style="min-height:0"><p class="wait">Click a dot to see that attempt.</p></div>
+  <div class="grid2" style="margin-top:26px">
+    <div><h3>Clearing prize per world</h3>
+      <p class="note">The smallest prize at which some AI scientist bids and solves the world (in at least 3 of 5 replays). Lower means cheaper to buy the answer.</p>
+      <div class="chart" id="araClearing"></div></div>
+    <div><h3>Profit or loss per model</h3>
+      <p class="note">Average credits won minus credits spent over 5 replays, at the prize you pick.</p>
+      <div class="steps" id="araPrizes"></div>
+      <div class="chart" id="araProfit"></div></div>
+  </div>
+  <div class="card plain" style="margin-top:22px" id="araCalib"><h3>Did they know their chances?</h3>
+    <p>The published attempts don't record how likely each model thought it was to succeed, so we can't check calibration here.</p></div>
+  <ul class="caveats">
+    <li>One attempt per model per world: these are single results, not success rates.</li>
+    <li>For the "Push" world (<span class="mono">coulomb_easy</span>), the published runs normalise the error differently from our simulator, so its pass line is not directly comparable.</li>
+    <li>Data: <a href="https://huggingface.co/AgentNativeResearchLab" target="_blank" rel="noopener">ARA Labs (AgentNativeResearchLab), CC BY 4.0</a>.</li>
+  </ul>
+</section>
+
 <section id="lessons">
   <p class="label rust">What the failures teach</p>
   <h2>A market is only as good as its judge.</h2>
@@ -443,7 +481,7 @@ function why(a) {
   return `Its predictions drifted from the real paths on the hidden tests (error ${num(a.nmse, 3)}, above 0.1). It bought ${a.experiments} launch${a.experiments === 1 ? "" : "es"}${a.experiments <= 2 ? ", too few to pin the law down" : ""}.`;
 }
 function showDetail(i) {
-  document.querySelectorAll(".dot").forEach(d => d.classList.toggle("sel", +d.dataset.i === i));
+  document.querySelectorAll("#grid .dot").forEach(d => d.classList.toggle("sel", +d.dataset.i === i));
   const a = ATTEMPTS[i], k = kind(a);
   const pill = {closest: '<span class="pill info">passed · closest guess</span>', right: '<span class="pill pass">passed · right law</span>', lucky: '<span class="pill warn">passed · wrong law</span>', fail: '<span class="pill fail">failed</span>'}[k];
   $("#detail").innerHTML = `<p class="label" style="margin:0">${esc(WORLD[a.world]?.name || a.world)} · ${SOLVER[a.solver] || a.solver} · run ${a.seed}</p>
@@ -474,7 +512,7 @@ function renderGrid(fb) {
     h += "</tr>";
   }
   $("#grid").innerHTML = h + "</table>";
-  document.querySelectorAll(".dot").forEach(d => d.addEventListener("click", () => showDetail(+d.dataset.i)));
+  document.querySelectorAll("#grid .dot").forEach(d => d.addEventListener("click", () => showDetail(+d.dataset.i)));
   const first = ATTEMPTS.findIndex(a => kind(a) === "lucky");
   showDetail(first >= 0 ? first : 0);
 }
@@ -532,6 +570,89 @@ $("#aRun").addEventListener("click", async () => {
   btn.disabled = false;
 });
 
+/* ---------- real AI scientists (ARA replay) ---------- */
+const worldName = w => WORLD[w]?.name || w.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+const model = s => s.replace(/^ara:/, "");
+let ARA = [];
+function showAra(i) {
+  document.querySelectorAll("#araGrid .dot").forEach(d => d.classList.toggle("sel", +d.dataset.a === i));
+  const a = ARA[i];
+  const own = a.ara_passed == null ? "" : ` ARA's own verdict, which also grades the explanation: ${a.ara_passed ? "pass" : "fail"}${a.ara_verdict ? " (" + esc(a.ara_verdict) + ")" : ""}.`;
+  $("#araDetail").innerHTML = `<p class="label" style="margin:0">${esc(worldName(a.world))} · ${esc(a.model)}</p>
+    <h3>${a.passed ? '<span class="pill pass">passed</span>' : '<span class="pill fail">failed</span>'}</h3>
+    <div class="kv"><div><span>Rounds of experiments</span><b>${a.rounds ?? "–"}</b></div>
+    <div><span>Experiments</span><b>${a.experiments ?? "–"}</b></div>
+    <div><span>Error (pass &lt; 0.1)</span><b style="color:${a.passed ? "var(--green)" : "var(--rust)"}">${num(a.nmse, 3)}</b></div>
+    <div><span>Model cost</span><b>${a.usd == null ? "–" : "$" + num(a.usd, 2)}</b></div></div>
+    <p class="note" style="margin-top:10px">Market charge: 1 credit per round.${own}${a.dataset_url ? ` <a href="${esc(a.dataset_url)}" target="_blank" rel="noopener">Source</a>.` : ""}</p>`;
+}
+function hbars(el, rows, opts) {
+  const W = Math.max(300, Math.min(520, el.clientWidth || 420)), rowH = 26, left = W < 400 ? 112 : 130, right = 112, h = rows.length * rowH + 8;
+  const span = W - left - right, x0 = left + span * (opts.zero || 0);
+  let svg = `<svg viewBox="0 0 ${W} ${h}" width="100%" role="img" aria-label="${esc(opts.aria)}">`;
+  if (opts.zero) svg += `<line x1="${x0}" y1="0" x2="${x0}" y2="${h}" stroke="#D9D9D3"/>`;
+  rows.forEach((r, i) => {
+    const y = i * rowH + 4, len = Math.abs(r.frac) * span * (opts.zero ? (r.frac < 0 ? opts.zero : 1 - opts.zero) : 1);
+    const bx = r.frac < 0 ? x0 - len : x0;
+    svg += `<text x="${left - 8}" y="${y + 15}" font-size="12" text-anchor="end" fill="#161616">${esc(r.label)}</text>`;
+    svg += `<rect x="${bx}" y="${y + 3}" width="${Math.max(len, r.frac === 0 ? 0 : 2)}" height="16" rx="4" fill="${r.color}"/>`;
+    svg += `<text x="${(r.frac < 0 ? x0 : bx + len) + 6}" y="${y + 15}" font-size="12" fill="${r.textColor || "#161616"}">${esc(r.value)}</text>`;
+  });
+  return svg + "</svg>";
+}
+function renderAraProfit(ara, prize) {
+  document.querySelectorAll("#araPrizes button").forEach(b => b.classList.toggle("on", +b.dataset.p === prize));
+  const pb = ara.profit_and_bids[String(prize)] || {};
+  const rows = ara.solvers.map(s => ({s, p: pb[s]?.profit?.mean ?? 0, bids: pb[s]?.bids?.mean ?? 0, wins: pb[s]?.wins ?? 0}))
+    .sort((a, b) => b.p - a.p || a.s.localeCompare(b.s));
+  const max = Math.max(1, ...rows.map(r => Math.abs(r.p)));
+  const neg = rows.some(r => r.p < 0), pos = rows.some(r => r.p > 0);
+  const zero = neg && pos ? Math.min(0.5, Math.max(0.15, Math.max(...rows.map(r => r.p < 0 ? -r.p : 0)) / (max * 2))) : (neg ? 1 : 0);
+  $("#araProfit").innerHTML = hbars($("#araProfit"), rows.map(r => ({
+    label: model(r.s), frac: r.p / max, color: r.p >= 0 ? "#2E7D4F" : "#A23B1E",
+    value: `${r.p >= 0 ? "+" : ""}${num(r.p, 1)} · ${num(r.bids, 1)} bids`, textColor: r.p >= 0 ? "#2E7D4F" : "#A23B1E",
+  })), {aria: `Mean profit per model at prize ${prize}`, zero: zero === 1 ? 0.999 : zero}) +
+    `<p class="note">The lab earned ${num(ara.lab_revenue?.[String(prize)]?.mean, 0)} credits on average from experiment fees. Credits are conserved: every credit won or lost moves between scientists, lab and prize pool.</p>`;
+}
+function renderAra(ara, fbr) {
+  if (!ara || !ara.available || !(ara.attempts || []).length) {
+    $("#araGrid").innerHTML = '<p class="wait">No published attempts found. Run <code>uv run python -m dm.importers.ara</code> and <code>uv run python -m dm.replay ara</code>.</p>';
+    return;
+  }
+  ARA = ara.attempts;
+  const models = [...new Set(ARA.map(a => a.model))].sort(), worlds = ara.worlds;
+  $("#araIntro").textContent = `Here the AI scientists are chatbots, not small programs. Each of ${models.length} frontier models had one go at each of the ${worlds.length} public DiscoverPhysics worlds, designing its own experiments. We replay those ${ARA.length} attempts through the market: each round of experiments costs 1 credit, and the prize is paid only if the judge's hidden tests pass (error under 0.1).`;
+  let h = `<table class="dots ara"><tr><th>World</th>${models.map(m => `<th>${esc(m).replace(/-/g, "-<wbr>")}</th>`).join("")}</tr>`;
+  for (const w of worlds) {
+    h += `<tr><td><b>${esc(worldName(w))}</b></td>`;
+    for (const m of models) {
+      const i = ARA.findIndex(a => a.world === w && a.model === m);
+      h += "<td>" + (i < 0 ? "" : `<span class="dot ${ARA[i].passed ? "right" : "fail"}" data-a="${i}" title="${esc(m)} · ${esc(w)}"></span>`) + "</td>";
+    }
+    h += "</tr>";
+  }
+  h += `<tr><td class="note">passed</td>${models.map(m => `<td class="note"><b>${ARA.filter(a => a.model === m && a.passed).length}</b>/${ARA.filter(a => a.model === m).length}</td>`).join("")}</tr>`;
+  $("#araGrid").innerHTML = h + "</table>";
+  document.querySelectorAll("#araGrid .dot").forEach(d => d.addEventListener("click", () => showAra(+d.dataset.a)));
+  showAra(Math.max(0, ARA.findIndex(a => a.passed)));
+
+  const prizes = ara.prizes;
+  $("#araClearing").innerHTML = hbars($("#araClearing"), worlds.map(w => {
+    const v = ara.clearing[w], solved = ARA.filter(a => a.world === w && a.passed).length;
+    return v == null
+      ? {label: worldName(w), frac: 0, color: "#A23B1E", value: `never · ${solved} of ${models.length} solved`, textColor: "#A23B1E"}
+      : {label: worldName(w), frac: (prizes.indexOf(v) + 1) / prizes.length, color: "#3D63B5", value: `${v} credits · ${solved} of ${models.length}`};
+  }), {aria: "Clearing prize per world"}) + `<p class="note">Bar length steps through the prizes tried: ${prizes.join(", ")} credits. The text gives how many of the ${models.length} models solved that world.</p>`;
+
+  $("#araPrizes").innerHTML = prizes.map(p => `<button data-p="${p}">${p} credits</button>`).join("");
+  document.querySelectorAll("#araPrizes button").forEach(b => b.addEventListener("click", () => renderAraProfit(ara, +b.dataset.p)));
+  renderAraProfit(ara, prizes.includes(20) ? 20 : prizes[0]);
+
+  const c = fbr?.available ? fbr.calibration : null;
+  const fbLine = c && c.n ? ` The two programs above do state a chance: on average they said ${Math.round(c.mean_stated_p * 100)}% and passed ${Math.round(c.pass_rate * 100)}% of the time, so they were ${c.calibration_in_the_large < -0.1 ? "too cautious" : c.calibration_in_the_large > 0.1 ? "overconfident" : "about right"}.` : "";
+  $("#araCalib").innerHTML = `<h3>Did they know their chances?</h3><p>The published attempts don't record how likely each model thought it was to succeed, so we can't check calibration here.${fbLine} On <a href="/live">the live market</a>, real models state their chance before every bid.</p>`;
+}
+
 fetch("/api/real").then(r => r.json()).then(d => {
   const fb = d.forcebench; FB = fb;
   $("#in-wallet").textContent = `${fb.wallet} credits to spend`;
@@ -539,6 +660,7 @@ fetch("/api/real").then(r => r.json()).then(d => {
   if (fb.venue) $("#times").textContent = `${fb.venue.measurement_times.length} times (t = ${fb.venue.measurement_times.join(", ")})`;
   $("#aWorld").innerHTML = fb.worlds.map(w => `<option value="${w}">${esc(WORLD[w]?.name || w)}</option>`).join("");
   renderMenu(fb); renderWorlds(fb); renderGrid(fb);
+  renderAra(d.ara, d.forcebench_replay);
 }).catch(e => { $("#grid").innerHTML = `<p class="pill fail">Could not load results: ${esc(e.message)}</p>`; });
 </script>
 </body>

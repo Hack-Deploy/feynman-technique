@@ -5,7 +5,9 @@ Two sources, both real attempts rather than coin flips:
   the market (output/replay_ara/summary.json, from `python -m dm.replay ara`).
 - ForceBench: offline solvers that pay per launch, scored by the oracle on hidden
   cases (output/forcebench_settle.json, from `python -m tests.forcebench_settle`),
-  plus single attempts run on demand by `run_forcebench_attempt`.
+  plus single attempts run on demand by `run_forcebench_attempt`, and the same
+  settled attempts replayed through the market (output/replay_forcebench/summary.json,
+  from `python -m dm.replay forcebench`).
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ OUTPUT_DIR = ROOT / "output"
 ARA_STORE = ROOT / "attempts" / "ara.jsonl"
 ARA_SUMMARY = OUTPUT_DIR / "replay_ara" / "summary.json"
 FORCEBENCH_GRID = OUTPUT_DIR / "forcebench_settle.json"
+FORCEBENCH_REPLAY_SUMMARY = OUTPUT_DIR / "replay_forcebench" / "summary.json"
 SIM_SUMMARY = OUTPUT_DIR / "summary.json"
 # Committed snapshots, used when the generated files above are missing (fresh clone,
 # offline demo). See attempts/fixtures/demo/README.md.
@@ -28,6 +31,7 @@ SNAPSHOTS = {
     ARA_STORE: SNAPSHOT_DIR / "ara.jsonl",
     ARA_SUMMARY: SNAPSHOT_DIR / "replay_ara_summary.json",
     FORCEBENCH_GRID: SNAPSHOT_DIR / "forcebench_settle.json",
+    FORCEBENCH_REPLAY_SUMMARY: SNAPSHOT_DIR / "replay_forcebench_summary.json",
 }
 LIVE_WALLET = 10.0
 LIVE_PRICE = 1.0
@@ -115,6 +119,24 @@ def ara_data() -> dict:
         "lab_revenue": summary["lab_revenue"],
         "sim_clearing": sim_clearing,
         "attempts": attempts,
+        "calibration": summary.get("calibration"),
+        "hypotheses": summary.get("hypotheses"),
+    }
+
+
+def forcebench_replay_data() -> dict:
+    """The settled ForceBench attempts replayed through the market (`dm.replay forcebench`)."""
+    path, snapshot = _source(FORCEBENCH_REPLAY_SUMMARY)
+    summary = _read_json(path)
+    if summary is None:
+        return {"available": False}
+    return {
+        "available": True,
+        "snapshot": snapshot,
+        "prizes": summary["config"]["prizes"],
+        "clearing": summary["clearing_prizes"],
+        "calibration": summary.get("calibration"),
+        "hypotheses": summary.get("hypotheses"),
     }
 
 
@@ -182,7 +204,8 @@ def forcebench_data() -> dict:
 
 
 def build_real_data() -> dict:
-    return {"ara": ara_data(), "forcebench": forcebench_data()}
+    return {"ara": ara_data(), "forcebench": forcebench_data(),
+            "forcebench_replay": forcebench_replay_data()}
 
 
 def _model_label(m: dict | None) -> str | None:
