@@ -59,7 +59,7 @@
   .card { display: flex; flex-direction: column; gap: 20px; padding: 40px; background: var(--soft); border-top: 6px solid var(--navy); }
   .two > .card { height: 480px; justify-content: center; }
   .three > .card { min-height: 300px; }
-  .quote { font-size: 46px; line-height: 1.25; }
+  .quote { font-size: 30px; font-weight: 600; line-height: 1.45; color: var(--ink); }
   .num { font: 700 88px/1 var(--narrow); color: var(--navy); }
   .callout { font-size: 28px; line-height: 1.45; color: var(--body); padding: 24px 32px; background: var(--soft); border-top: 6px solid var(--navy); }
   .callout b { color: var(--ink); }
@@ -90,6 +90,17 @@
   .record .rec { width: 40px; height: 40px; flex: none; }
   .record b { font: 700 22px var(--narrow); letter-spacing: 0.16em; text-transform: uppercase; color: var(--navy); white-space: nowrap; }
   .record span { font-size: 28px; color: var(--ink); }
+
+  /* Fact list */
+  .facts { display: flex; flex-direction: column; }
+  .facts > div { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; border-top: 1px solid var(--line); }
+  .facts > div:first-child { border-top: 3px solid var(--navy); }
+  .facts .text { color: var(--ink); }
+  .hyps { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 30px; line-height: 1.4; color: var(--ink); }
+
+  /* Mock data tag */
+  figure { position: relative; }
+  .mock { position: absolute; right: 0; top: 0; font: 700 22px var(--narrow); letter-spacing: 0.16em; text-transform: uppercase; color: #FFFFFF; background: var(--rust); padding: 8px 16px; }
 
   /* Outcome cards */
   .outcome { gap: 0; padding: 36px 40px 16px; }
@@ -439,16 +450,30 @@
   <p class="pg">10</p>
 </section>
 <section class="slide">
-  <header><p class="label">Proof of concept</p><h2>The prototype</h2></header>
-  <div class="body stack">
-    <p class="lead">Lab results take weeks, so for the hackathon we ran the market on DiscoverPhysics, where the right answer is known and payouts can be checked by code.</p>
-    <div class="three">
-      <div class="card"><p class="num">11</p><p class="text">simulated worlds with a known right answer</p></div>
-      <div class="card"><p class="num">4</p><p class="text">models compete: Claude Opus 4.7, GPT-5.5, Claude Sonnet 4.6, Qwen3.5</p></div>
-      <div class="card"><p class="num">1</p><p class="text">credit per experimental round, with odds from the paper's published results</p></div>
+  <header><p class="label">Proof of concept</p><h2>The market on DiscoverPhysics</h2></header>
+  <div class="body two" style="grid-template-columns: 1fr 760px">
+    <div class="facts">
+      <div><p class="label">Environment</p><p class="text">DiscoverPhysics: 11 simulated worlds whose laws of motion deliberately deviate from real physics. AI scientists run experiments on particle trajectories to infer the law. The true law is known, so every result is verifiable.</p></div>
+      <div><p class="label">Hypothesis examples</p><ul class="hyps">
+        <li>“In this simulated world, gravity between particles falls off as 1/r², as in Newtonian physics.”</li>
+        <li>“In this simulated world, the strength of gravity between particles changes over time.”</li>
+        <li>“In this simulated world, unseen particles exert a gravitational pull on the visible particles.”</li>
+      </ul></div>
+      <div><p class="label">Prize</p><p class="text">20 credits, at 1 credit per experimental round.</p></div>
     </div>
+    <figure><div class="mock">Mock data</div><p class="fig-title">Calibration of Claude models</p><svg width="760" height="540" viewBox="0 0 760 540" role="img" aria-label="Mock calibration plot: both Claude Opus 4.7 and Claude Sonnet 4.6 sit below the diagonal, Sonnet further below">
+      <line x1="96" y1="452" x2="700" y2="24" stroke="#9A9A96" stroke-width="2" stroke-dasharray="6 6"/>
+      <line x1="96" y1="452" x2="700" y2="452" stroke="#161616" stroke-width="2"/>
+      <line x1="96" y1="24" x2="96" y2="452" stroke="#161616" stroke-width="2"/>
+      <g font-size="22" fill="#6B6B67"><text x="96" y="486" text-anchor="middle">0%</text><text x="82" y="460" text-anchor="end">0%</text><text x="398" y="486" text-anchor="middle">50%</text><text x="82" y="246" text-anchor="end">50%</text><text x="700" y="486" text-anchor="middle">100%</text><text x="82" y="32" text-anchor="end">100%</text></g>
+      <text x="398" y="528" font-size="24" text-anchor="middle" fill="#161616">Stated odds</text>
+      <text x="26" y="238" font-size="24" text-anchor="middle" fill="#161616" transform="rotate(-90 26 238)">Success rate</text>
+      <polyline fill="none" stroke="#1B3F8B" stroke-width="3.5" points="156,418 217,388 277,362 338,336 398,306 458,277 519,251 579,221 640,191"/><circle cx="156" cy="418" r="7" fill="#1B3F8B"/><circle cx="217" cy="388" r="7" fill="#1B3F8B"/><circle cx="277" cy="362" r="7" fill="#1B3F8B"/><circle cx="338" cy="336" r="7" fill="#1B3F8B"/><circle cx="398" cy="306" r="7" fill="#1B3F8B"/><circle cx="458" cy="277" r="7" fill="#1B3F8B"/><circle cx="519" cy="251" r="7" fill="#1B3F8B"/><circle cx="579" cy="221" r="7" fill="#1B3F8B"/><circle cx="640" cy="191" r="7" fill="#1B3F8B"/><polyline fill="none" stroke="#A23B1E" stroke-width="3.5" points="156,431 217,413 277,396 338,379 398,362 458,345 519,328 579,311 640,294"/><circle cx="156" cy="431" r="7" fill="#A23B1E"/><circle cx="217" cy="413" r="7" fill="#A23B1E"/><circle cx="277" cy="396" r="7" fill="#A23B1E"/><circle cx="338" cy="379" r="7" fill="#A23B1E"/><circle cx="398" cy="362" r="7" fill="#A23B1E"/><circle cx="458" cy="345" r="7" fill="#A23B1E"/><circle cx="519" cy="328" r="7" fill="#A23B1E"/><circle cx="579" cy="311" r="7" fill="#A23B1E"/><circle cx="640" cy="294" r="7" fill="#A23B1E"/>
+      <text x="315" y="235" font-size="24" font-weight="700" fill="#1B3F8B" text-anchor="end">Claude Opus 4.7</text>
+      <text x="690" y="420" font-size="24" font-weight="700" fill="#A23B1E" text-anchor="end">Claude Sonnet 4.6</text>
+    </svg></figure>
   </div>
-  <p class="foot">Reference: Wiemann, Smith et al., DiscoverPhysics: Benchmarking LLMs for Out-of-the-Box Scientific Thinking, 2026. DM-17 is a hypothetical compound; costs are illustrative.</p>
+  <p class="foot">Environment and world types (time-varying interactions, hidden dark-matter-like particles): Wiemann, Smith et al., DiscoverPhysics, 2026. Prize and cost from our prototype config. Calibration curves are mock data.</p>
   <p class="pg">11</p>
 </section>
 <section class="slide demo">
