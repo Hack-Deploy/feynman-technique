@@ -311,6 +311,7 @@ def test_report_data_carries_provenance(sim_copy, monkeypatch):
 
 def test_dashboard_clearing_caption_matches_analysis():
     template = (REPO_ROOT / "report_template.html").read_text()
+    assert "at least 3 of 5 seeds" in template
     assert "in at least one seed" not in template
 
 

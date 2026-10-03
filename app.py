@@ -21,6 +21,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import bounty
 import report
 
 ROOT = Path(__file__).resolve().parent
@@ -103,6 +104,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": f"could not read outputs: {exc}"}, 503)
                 return
             self._json(data)
+        elif path == "/api/bounty/info":
+            self._json({"example": bounty.EXAMPLE_REQUEST, "live": bounty.api_key() is not None,
+                        "model": bounty.MODEL, "max_bsl": bounty.MAX_BSL})
         elif path in STATIC:
             self._send((ROOT / STATIC[path]).read_bytes(), "text/html; charset=utf-8")
         else:
@@ -113,7 +117,16 @@ class Handler(BaseHTTPRequestHandler):
         if not self._local_request():
             self._json({"error": "forbidden"}, 403)
             return
-        if path in COMMANDS:
+        if path == "/api/bounty":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length) or b"{}")
+                prize = float(body.get("prize", 0))
+            except (ValueError, TypeError):
+                self._json({"ok": False, "error": "Could not read the form."}, 400)
+                return
+            self._json(bounty.post_bounty(str(body.get("hypothesis", "")), str(body.get("criterion", "")), prize))
+        elif path in COMMANDS:
             if not _BUSY.acquire(blocking=False):
                 self._json(
                     {

@@ -13,7 +13,7 @@ true answer is known, so every payout can be checked.
 
 - **[slides.pdf](slides.pdf)**: view the deck right here on GitHub.
 - **[slides.html](slides.html)**: the presentable version. Download it and open it in a browser, then use ← → to move through the slides. It can also be served with GitHub Pages.
-- **[novelty-review.md](novelty-review.md)**: the literature and startup review behind slide 2, with sources.
+- **[novelty-review.md](novelty-review.md)**: literature and startup review with sources, backing the claims on slide 1.
 
 ## Quick start
 
@@ -42,6 +42,19 @@ the results: the prize each world needs, agent balances payment by payment,
 mean profit per prize, the public ledger and the verdicts. It uses only the
 standard library and listens on localhost. `report.py` writes the same page
 with the data baked in, for sharing.
+
+**Live bounties.** The app's "Post a bounty" form sends a biology hypothesis,
+success criterion and prize to Claude (`claude-opus-5-5`), which returns a
+protocol priced from a fixed lab price list, a stated probability of a clear
+answer and a biosafety level. `bounty.py` then applies the market rule in code:
+bid only if p × prize > cost, never above BSL-2. For live mode, put your key in
+a `.env` file in the repo root (git ignores it) and restart the app:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without a key the form shows a saved, clearly labelled example.
 
 A full run takes about a second. `output/` is not committed; regenerate it.
 
@@ -74,7 +87,8 @@ measured market outcomes.
 | `runner.py` | Builds Track A / Track C runs and sweeps, writes `output/` |
 | `analysis.py` | Recomputes everything from the event log; H1–H3 verdicts → `summary.json` |
 | `run.py` | Entry point: sweeps → save → analyse → print verdicts |
-| `app.py` | Local results app: run buttons + dashboard |
+| `app.py` | Local results app: bounty form, run buttons, dashboard |
+| `bounty.py` | Bounty → Claude experiment design → bid decision (rule applied in code) |
 | `report.py`, `report_template.html` | Dashboard data and page; `report.py` also exports `output/report.html` |
 | `dm/` | Real-attempt code: types, attempt store, outcome sources |
 | `vendor/discovery-agents/` | DiscoverPhysics, pinned submodule; never edit |
