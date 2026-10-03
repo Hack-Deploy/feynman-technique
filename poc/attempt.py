@@ -9,6 +9,7 @@ import datetime as _dt
 import json
 import math
 import re
+from typing import Callable
 
 from dm.types import SubmittedAttempt
 from poc import config as C
@@ -66,7 +67,8 @@ def runs(conversation_log: list[dict]) -> list[dict]:
 
 def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[dict],
                 cfg: C.Config | None = None, complete: Complete | None = None,
-                verbose: bool = False, world_spec: dict | None = None) -> SubmittedAttempt:
+                verbose: bool = False, world_spec: dict | None = None,
+                on_round: Callable[[dict], None] | None = None) -> SubmittedAttempt:
     cfg = cfg or C.load()
     hyp = cfg.hypothesis(hypothesis_id)
     if world_spec is None:
@@ -87,6 +89,7 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
     account = Account(agent=model, hypothesis=hyp.id, budget=cfg.budget)
     agent = MarketAgent(
         cfg=cfg, hyp=hyp, account=account, ledger_entries=ledger_entries, complete=complete,
+        on_round=on_round,
         model=model, executor=executor, mission=world_spec["mission"],
         max_tokens=C.MAX_TOKENS, verbose=verbose,
         system_prompt_path=_abs_vendor(world_spec["system_prompt"]),

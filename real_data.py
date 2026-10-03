@@ -1,4 +1,4 @@
-"""Discovery Market – data for the "Real attempts" page of the results app.
+"""Discovery Market – data for the simulation and live attempt APIs.
 
 Two sources, both real attempts rather than coin flips:
 - ARA replay: published DiscoverPhysics runs (attempts/ara.jsonl) replayed through
@@ -119,17 +119,38 @@ def ara_data() -> dict:
 
 
 def forcebench_data() -> dict:
-    from dm.venues.forcebench import WORLDS
+    from dm.venues.forcebench import (
+        BUDGET,
+        MENU,
+        MEASUREMENT_TIMES,
+        NOISE_STD,
+        SEED_ACTION,
+        WORLDS,
+    )
+    from dm.solvers._inference import MODEL_FAMILIES, ROLES
 
     grid_path, snapshot = _source(FORCEBENCH_GRID)
     grid = _read_json(grid_path)
+    source = ("snapshot" if snapshot else "output") if grid is not None else None
     out = {"worlds": list(WORLDS), "solvers": list(SOLVERS), "seeds": [0, 1, 2, 3, 4],
            "wallet": LIVE_WALLET, "price": LIVE_PRICE, "available": grid is not None,
-           "snapshot": snapshot}
+           "snapshot": bool(snapshot) if grid is not None else False,
+           "source": source if grid is not None else None, "table": [], "attempts": [],
+           "menu": [
+               {"action": launch.action, "r0": launch.r0, "vx": launch.v[0],
+                "vy": launch.v[1], "p1": launch.p1, "p2": launch.p2,
+                "seed": launch.action == SEED_ACTION}
+               for launch in MENU
+           ],
+           "venue": {"budget": BUDGET, "noise_std": NOISE_STD,
+                     "measurement_times": list(MEASUREMENT_TIMES),
+                     "seed_action": SEED_ACTION, "threshold": 0.1},
+           "library": {"families": list(MODEL_FAMILIES), "roles": list(ROLES)}}
     if grid is None:
         return out
     cells: dict[tuple[str, str], list[dict]] = defaultdict(list)
-    for r in grid["results"]:
+    results = grid.get("results") or []
+    for r in results:
         cells[(r["solver"], r["world"])].append(r)
     table = []
     for (solver, world), rows in sorted(cells.items()):
@@ -143,7 +164,20 @@ def forcebench_data() -> dict:
             "mean_stated_p": sum(r["stated_p"] or 0 for r in rows) / n,
             "nmse": [r["nmse"] for r in sorted(rows, key=lambda r: r["seed"])],
         })
+    world_order = {world: i for i, world in enumerate(WORLDS)}
+    attempt_fields = (
+        "solver", "world", "seed", "passed", "identified", "nmse", "baseline_passed",
+        "baseline_nmse", "experiments", "stated_p", "top_model", "top_params",
+        "stopped_reason",
+    )
+    attempts = [{key: row.get(key) for key in attempt_fields} for row in results]
+    attempts.sort(key=lambda row: (
+        world_order.get(row["world"], len(WORLDS)),
+        str(row["solver"] or ""),
+        row["seed"] if isinstance(row["seed"], int) else -1,
+    ))
     out.update(head=grid.get("head"), test_seed=grid.get("test_seed"), table=table)
+    out["attempts"] = attempts
     return out
 
 
