@@ -1,4 +1,532 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Discovery Market</title>
-<link rel="stylesheet" href="/web/style.css"></head>
-<body><main><h1>simulation</h1><p>Page under construction.</p></main></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · How it works</title>
+<link rel="stylesheet" href="/web/style.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; padding-top: 56px; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  .qa { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 26px; }
+  @media (max-width: 860px) { .qa { grid-template-columns: 1fr 1fr; } }
+  .qa a { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; }
+  .qa a:hover { border-color: var(--navy); color: var(--navy); }
+  .qa a span { display: block; font: 700 11px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 22px; }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 10px; background: #fff; }
+  .tile.free { border-color: var(--green); background: var(--green-soft); }
+  .tile.used { border-color: var(--navy); background: var(--soft); box-shadow: 0 0 0 2px var(--navy) inset; }
+  .tile .t { display: flex; justify-content: space-between; font: 700 12px var(--narrow); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .tile .t b { color: var(--ink); }
+  .tile .d { font-size: 13px; color: var(--body); margin-top: 4px; }
+  .bid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 34px; align-items: start; margin-top: 22px; }
+  @media (max-width: 860px) { .bid { grid-template-columns: 1fr; } }
+  .slider { margin: 14px 0 18px; }
+  .slider label { display: flex; justify-content: space-between; font-weight: 600; font-size: 15px; }
+  .slider label b { font: 700 18px var(--narrow); color: var(--navy); }
+  .slider input { width: 100%; accent-color: var(--navy); }
+  .decision { font: 700 34px/1.1 var(--narrow); margin-top: 8px; }
+  .worlds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 860px) { .worlds { grid-template-columns: 1fr; } }
+  .worlds .card h3 { margin-bottom: 2px; }
+  .worlds .truth { font-size: 14px; color: var(--body); min-height: 44px; }
+  .worlds .score { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .dots { width: 100%; border-collapse: collapse; margin-top: 18px; }
+  .dots td, .dots th { border: 0; padding: 6px 6px; }
+  .dots th { text-align: left; }
+  .dot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; margin: 2px; cursor: pointer; border: 3px solid transparent; vertical-align: middle; }
+  .dot.right { background: var(--green); }
+  .dot.lucky { background: var(--amber); }
+  .dot.fail { background: var(--rust); }
+  .dot.sel { border-color: var(--ink); }
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 14px; margin-top: 10px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 6px; }
+  .detail { margin-top: 18px; min-height: 120px; }
+  .kv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+  @media (max-width: 860px) { .kv { grid-template-columns: 1fr 1fr; } }
+  .kv div { background: var(--faint); border-radius: 8px; padding: 10px 12px; }
+  .kv span { display: block; font: 700 11px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .kv b { font: 700 20px var(--narrow); }
+  .steps { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+  .steps button { font: 600 14px var(--sans); padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  .steps button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .beliefs .row { display: grid; grid-template-columns: 190px 1fr 52px; gap: 10px; align-items: center; font-size: 14px; margin: 6px 0; }
+  .beliefs .bar { height: 14px; background: var(--faint); border-radius: 7px; overflow: hidden; }
+  .beliefs .bar i { display: block; height: 100%; background: var(--navy); border-radius: 7px; }
+  .runbox { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 10px; }
+  @media (max-width: 860px) { .runbox { grid-template-columns: 1fr; } }
+  .wait { color: var(--muted); font-size: 15px; }
+  .buckets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 860px) { .buckets { grid-template-columns: 1fr; } }
+  .buckets .n { font: 700 54px/1 var(--narrow); }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <a class="brand" href="/"><i></i>Discovery Market</a>
+  <nav class="tabs">
+    <a href="/"><span>01</span>Vision</a>
+    <a class="on" href="/simulation"><span>02</span>How it works</a>
+    <a href="/live"><span>03</span>Live market</a>
+  </nav>
+</div></div>
+
+<main>
+
+<!-- ============================================================ HERO -->
+<section class="hero">
+  <div>
+    <p class="label">The demo: ForceBench</p>
+    <h1>Find the hidden law of a toy universe.</h1>
+    <p class="lead">We built six small simulated universes. Each has a secret force law: a rule for how two particles push or pull on each other. The market asks one question: <b>what is the law?</b></p>
+    <p class="sub">An AI scientist pays to launch particles and watch where they go. Then it submits a formula. A judge tests that formula on launches the AI scientist never saw. If the formula predicts them well, it passes.</p>
+    <div class="qa">
+      <a href="#market"><span>1</span>What is the market?</a>
+      <a href="#menu"><span>2</span>What can it buy?</a>
+      <a href="#bid"><span>3</span>How does bidding work?</a>
+      <a href="#judge"><span>4</span>How is it judged?</a>
+      <a href="#results"><span>5</span>Why pass or fail?</a>
+    </div>
+  </div>
+  <div class="fig">
+    <svg viewBox="0 0 520 420" role="img" aria-label="A hidden world with a source particle and probe launches">
+      <defs>
+        <marker id="hv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#A23B1E"/></marker>
+      </defs>
+      <rect x="20" y="20" width="480" height="380" rx="14" fill="#F4F4F1" stroke="#DADAD6"/>
+      <text x="40" y="50" font-size="12" font-weight="700" letter-spacing="2" fill="#6B6B67">A HIDDEN WORLD</text>
+      <g fill="none" stroke="#DADAD6" stroke-dasharray="3 5"><circle cx="200" cy="220" r="60"/><circle cx="200" cy="220" r="120"/><circle cx="200" cy="220" r="180"/></g>
+      <circle cx="200" cy="220" r="22" fill="#1B3F8B"/>
+      <text x="200" y="225" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">source</text>
+      <path d="M320 220 C 300 222, 280 222, 252 221" stroke="#A23B1E" stroke-width="3" fill="none" marker-end="url(#hv)"/>
+      <circle cx="320" cy="220" r="10" fill="#A23B1E"/>
+      <path d="M350 130 C 320 150, 300 175, 270 188" stroke="#A23B1E" stroke-width="3" fill="none" marker-end="url(#hv)" opacity=".75"/>
+      <circle cx="350" cy="130" r="10" fill="#A23B1E" opacity=".75"/>
+      <path d="M380 300 C 345 300, 300 285, 268 262" stroke="#A23B1E" stroke-width="3" fill="none" marker-end="url(#hv)" opacity=".55"/>
+      <circle cx="380" cy="300" r="10" fill="#A23B1E" opacity=".55"/>
+      <rect x="340" y="40" width="140" height="64" rx="10" fill="#161616"/>
+      <text x="410" y="66" text-anchor="middle" fill="#fff" font-size="12" letter-spacing="1.5" font-weight="700">SECRET LAW</text>
+      <text x="410" y="90" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">F(r) = ?</text>
+      <text x="40" y="385" font-size="13" fill="#4D4D4D">Each launch: put a probe somewhere, let go, record its path.</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============================================================ MARKET -->
+<section id="market">
+  <p class="label">1 · What is the market?</p>
+  <h2>A question goes in. A formula comes out. A judge decides.</h2>
+  <p class="sub">Nobody is paid for trying. Experiments cost money up front. The prize moves only if the formula survives tests that were locked away before anyone started.</p>
+  <div class="fig">
+    <svg viewBox="0 0 1120 360" role="img" aria-label="Inputs, AI scientist, output, judge">
+      <defs>
+        <marker id="m1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#161616"/></marker>
+        <marker id="mg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2E7D4F"/></marker>
+        <marker id="mr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#A23B1E"/></marker>
+      </defs>
+      <g font-size="13" fill="#4D4D4D">
+        <rect x="10" y="40" width="250" height="250" rx="12" fill="#EEF2F9"/>
+        <text x="30" y="70" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">INPUT</text>
+        <text x="30" y="100" font-size="16" font-weight="700" fill="#161616">The question</text>
+        <text x="30" y="120">"What force law rules this world?"</text>
+        <text x="30" y="152" font-size="16" font-weight="700" fill="#161616">A wallet</text>
+        <text x="30" y="172" id="in-wallet">10 credits to spend</text>
+        <text x="30" y="204" font-size="16" font-weight="700" fill="#161616">A menu of experiments</text>
+        <text x="30" y="224" id="in-menu">13 launches, 1 credit each</text>
+        <text x="30" y="244">one launch is free, to start</text>
+        <text x="30" y="272" fill="#1B3F8B">It never sees the answer.</text>
+
+        <rect x="300" y="40" width="250" height="250" rx="12" fill="#fff" stroke="#1B3F8B" stroke-width="2"/>
+        <text x="320" y="70" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">AI SCIENTIST</text>
+        <text x="320" y="100" font-size="16" font-weight="700" fill="#161616">Loops, one launch a round</text>
+        <text x="320" y="128">1. holds 15 rival guesses</text>
+        <text x="320" y="150">2. buys the launch where the</text>
+        <text x="335" y="168">guesses disagree most</text>
+        <text x="320" y="192">3. re-weighs every guess</text>
+        <text x="320" y="216">4. stops when no launch left</text>
+        <text x="335" y="234">would change its mind</text>
+        <text x="320" y="272" fill="#1B3F8B">Every credit spent is logged.</text>
+
+        <rect x="590" y="40" width="230" height="250" rx="12" fill="#EEF2F9"/>
+        <text x="610" y="70" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">OUTPUT</text>
+        <text x="610" y="100" font-size="16" font-weight="700" fill="#161616">A proposal</text>
+        <text x="610" y="128">the formula it believes most,</text>
+        <text x="610" y="146">e.g.</text>
+        <text x="610" y="176" font-size="20" font-weight="700" fill="#161616" font-family="ui-monospace,monospace">F = 4.1 · p1/r</text>
+        <text x="610" y="214" font-size="16" font-weight="700" fill="#161616">A stated chance</text>
+        <text x="610" y="236">"I'm 62% sure this is right"</text>
+        <text x="610" y="272" fill="#1B3F8B">Recorded before judging.</text>
+
+        <rect x="860" y="40" width="250" height="250" rx="12" fill="#161616"/>
+        <text x="880" y="70" font-size="12" font-weight="700" letter-spacing="2" fill="#9DB3E0">JUDGE</text>
+        <text x="880" y="100" font-size="16" font-weight="700" fill="#fff">Hidden tests</text>
+        <text x="880" y="128" fill="#ddd">new launches, chosen and</text>
+        <text x="880" y="146" fill="#ddd">sealed before the start</text>
+        <text x="880" y="178" font-size="16" font-weight="700" fill="#fff">Score</text>
+        <text x="880" y="200" fill="#ddd">how far the formula's paths</text>
+        <text x="880" y="218" fill="#ddd">land from the real paths</text>
+        <text x="880" y="250" font-size="16" font-weight="700" fill="#fff">Pass if error &lt; 0.1</text>
+      </g>
+      <g stroke="#161616" stroke-width="2.5" fill="none"><path d="M262 165 H296" marker-end="url(#m1)"/><path d="M552 165 H586" marker-end="url(#m1)"/><path d="M822 165 H856" marker-end="url(#m1)"/></g>
+      <path d="M985 292 C 985 320, 900 330, 850 336" stroke="#2E7D4F" stroke-width="2.5" fill="none" marker-end="url(#mg)"/>
+      <text x="700" y="341" font-size="14" font-weight="700" fill="#2E7D4F">pass → prize paid</text>
+      <path d="M1040 292 C 1040 320, 1060 330, 1080 336" stroke="#A23B1E" stroke-width="2.5" fill="none"/>
+      <text x="990" y="356" font-size="14" font-weight="700" fill="#A23B1E" text-anchor="middle">fail → public record</text>
+    </svg>
+  </div>
+  <div class="grid3" style="margin-top:18px">
+    <div class="card"><h3>Who are the AI scientists here?</h3><p>Two small, fast programs, not chatbots. <b>Careful</b> picks the launch that best separates its rival guesses. <b>Random</b> picks launches at random. Same guesses, same budget.</p></div>
+    <div class="card"><h3>What are the 15 guesses?</h3><p>Five shapes of force (falls like 1/r<sup>p</sup>, like 1/r, fades out with distance, changes over time, switches at short range) times three ways the particles' properties could enter.</p></div>
+    <div class="card"><h3>Why simulate?</h3><p>Because the judge is exact. We know the true law, so we can see whether the market rewards the right answer, and catch it when it doesn't.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ MENU -->
+<section id="menu">
+  <p class="label">2 · What can it buy?</p>
+  <h2>Thirteen experiments on the menu.</h2>
+  <p class="sub">Each launch puts a <span style="color:var(--rust);font-weight:600">probe</span> at some distance from a <span class="navy" style="font-weight:600">source</span>, sometimes with a sideways push, sometimes with heavier particles, and records the probe's position <span id="times">six times</span>. Measurements carry a little noise. Bigger dots mean a stronger property (p1 for the source, p2 for the probe).</p>
+  <div class="menu" id="menuTiles"><p class="wait">Loading the menu…</p></div>
+</section>
+
+<!-- ============================================================ BID -->
+<section id="bid">
+  <p class="label">3 · How does bidding work?</p>
+  <h2>Bid only if your chance × the prize beats what you'll spend.</h2>
+  <p class="sub">An AI scientist that enters says out loud how likely it is to pass. That number is public and scored over time, so overconfidence costs reputation as well as money.</p>
+  <div class="bid">
+    <div>
+      <div class="slider"><label>Prize on offer <b id="vPrize"></b></label><input id="sPrize" type="range" min="1" max="40" value="12"></div>
+      <div class="slider"><label>Its stated chance of passing <b id="vP"></b></label><input id="sP" type="range" min="0" max="100" value="60"></div>
+      <div class="slider"><label>Launches it expects to buy <b id="vN"></b></label><input id="sN" type="range" min="0" max="8" value="3"></div>
+      <p class="note">One credit per launch, as in the demo. In the demo, the stated chance is the share of the AI scientist's belief that sits on the formula it submits.</p>
+    </div>
+    <div class="fig" style="margin:0">
+      <svg viewBox="0 0 520 300" id="bidSvg" role="img" aria-label="Expected value of the bid"></svg>
+      <div class="decision" id="decision"></div>
+      <p class="sub" id="decisionWhy"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ JUDGE -->
+<section id="judge">
+  <p class="label">4 · How is it judged?</p>
+  <h2>The tests are sealed before the first bid.</h2>
+  <div class="fig">
+    <svg viewBox="0 0 1120 300" role="img" aria-label="How judging works">
+      <defs><marker id="j1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#161616"/></marker></defs>
+      <g font-size="13" fill="#4D4D4D">
+        <rect x="10" y="30" width="240" height="200" rx="12" fill="#161616"/>
+        <text x="30" y="60" font-size="12" font-weight="700" letter-spacing="2" fill="#9DB3E0">BEFORE · SEAL</text>
+        <text x="30" y="92" font-size="16" font-weight="700" fill="#fff">Judge picks secret</text>
+        <text x="30" y="112" font-size="16" font-weight="700" fill="#fff">test launches</text>
+        <text x="30" y="142" fill="#ddd">and publishes a fingerprint</text>
+        <text x="30" y="160" fill="#ddd">of them (a hash)</text>
+        <rect x="30" y="178" width="200" height="30" rx="6" fill="#2a2a2a"/>
+        <text x="40" y="198" fill="#9DB3E0" font-family="ui-monospace,monospace" font-size="12" id="hashText">9f3c…e1a0</text>
+
+        <rect x="290" y="30" width="240" height="200" rx="12" fill="#EEF2F9"/>
+        <text x="310" y="60" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">DURING · SUBMIT</text>
+        <text x="310" y="92" font-size="16" font-weight="700" fill="#161616">AI scientist hands in</text>
+        <text x="310" y="112" font-size="16" font-weight="700" fill="#161616">its formula</text>
+        <text x="310" y="142">it can only use launches</text>
+        <text x="310" y="160">it paid for</text>
+
+        <rect x="570" y="30" width="250" height="200" rx="12" fill="#fff" stroke="#161616" stroke-width="2"/>
+        <text x="590" y="60" font-size="12" font-weight="700" letter-spacing="2" fill="#161616">AFTER · TEST</text>
+        <text x="590" y="92" font-size="16" font-weight="700" fill="#161616">Run both on the secret</text>
+        <text x="590" y="112" font-size="16" font-weight="700" fill="#161616">launches</text>
+        <circle cx="610" cy="180" r="9" fill="#1B3F8B"/>
+        <path d="M640 140 C 690 150, 730 180, 790 200" stroke="#161616" stroke-width="3" fill="none"/>
+        <path d="M640 140 C 690 156, 724 192, 780 214" stroke="#A23B1E" stroke-width="3" fill="none" stroke-dasharray="6 4"/>
+        <text x="700" y="140" font-size="12">real path</text>
+        <text x="690" y="222" font-size="12" fill="#A23B1E">formula's path</text>
+
+        <rect x="860" y="30" width="250" height="200" rx="12" fill="#E6F2EA"/>
+        <text x="880" y="60" font-size="12" font-weight="700" letter-spacing="2" fill="#2E7D4F">VERDICT</text>
+        <text x="880" y="92" font-size="16" font-weight="700" fill="#161616">Average gap,</text>
+        <text x="880" y="112" font-size="16" font-weight="700" fill="#161616">scaled to the world</text>
+        <text x="880" y="142">0 = perfect, 1 = no better</text>
+        <text x="880" y="160">than guessing the average</text>
+        <text x="880" y="198" font-size="18" font-weight="700" fill="#2E7D4F">below 0.1 → pass</text>
+      </g>
+      <g stroke="#161616" stroke-width="2.5" fill="none"><path d="M252 130 H286" marker-end="url(#j1)"/><path d="M532 130 H566" marker-end="url(#j1)"/><path d="M822 130 H856" marker-end="url(#j1)"/></g>
+      <text x="10" y="272" font-size="14" fill="#4D4D4D">The fingerprint is checked again at the end: if the tests were swapped after the bids, it would not match. Nobody, including us, can quietly move the goalposts.</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============================================================ WORLDS -->
+<section id="worlds">
+  <p class="label">The six hidden worlds</p>
+  <h2>Some laws are easy to tell apart. Some are not.</h2>
+  <p class="sub">Solid line: the true pull at each distance. Dashed line: the simplest guess, a plain 1/r pull fitted to the data. Where the two lines are close, a wrong formula can still pass.</p>
+  <div class="worlds" id="worldCards"></div>
+</section>
+
+<!-- ============================================================ ONE ATTEMPT -->
+<section id="try">
+  <p class="label">Watch one attempt</p>
+  <h2>Run a real attempt, then step through it.</h2>
+  <p class="sub">This runs on this machine, offline, through the same judge as the results below. It takes 5 to 60 seconds.</p>
+  <div class="controls">
+    <label>World <select id="aWorld"></select></label>
+    <label>AI scientist <select id="aSolver"><option value="bayes_lite">Careful (bayes_lite)</option><option value="random_menu">Random (random_menu)</option></select></label>
+    <label>Seed <select id="aSeed"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+    <button class="btn" id="aRun">Run attempt</button>
+  </div>
+  <div id="aOut" class="detail"></div>
+</section>
+
+<!-- ============================================================ RESULTS -->
+<section id="results">
+  <p class="label">5 · Why pass or fail?</p>
+  <h2>60 settled attempts: 6 worlds × 2 AI scientists × 5 runs.</h2>
+  <p class="sub">Green: passed with the right law. <b style="color:var(--amber)">Amber: passed with the wrong law</b>, because the judge's tests could not tell the difference. Red: failed. Click any dot.</p>
+  <div class="buckets" id="buckets"></div>
+  <div id="grid"><p class="wait">Loading results…</p></div>
+  <div class="legend"><span><i style="background:var(--green)"></i>right law, passed</span><span><i style="background:var(--amber)"></i>wrong law, passed anyway</span><span><i style="background:var(--rust)"></i>failed</span></div>
+  <div class="detail card plain" id="detail"><p class="wait">Click a dot to see what was proposed and why it passed or failed.</p></div>
+</section>
+
+<section id="lessons">
+  <p class="label rust">What the failures teach</p>
+  <h2>A market is only as good as its judge.</h2>
+  <div class="grid3" style="margin-top:20px">
+    <div class="card rust"><h3>Too-easy tests reward lucky guesses</h3><p>On fading, inertia and time-varying worlds, a plain 1/r formula passes. The tests sit where those laws look alike. That is the amber.</p></div>
+    <div class="card rust"><h3>Some laws look identical</h3><p>"Fades out beyond 2 units" and "falls as 1/r²" give almost the same paths on every launch on the menu. No amount of spending on this menu separates them.</p></div>
+    <div class="card"><h3>What we're fixing</h3><p>Harder hidden tests that probe where laws differ, a salted fingerprint so tests can't be guessed, and checks that reject a formula that cheats the simulator.</p></div>
+  </div>
+  <div class="cta"><a class="btn" href="/live">03 · Watch a live market with real AI models →</a></div>
+</section>
+
+</main>
+<footer>Discovery Market prototype. Worlds from DiscoverPhysics (Wiemann, Smith et al., 2026); menu from MDA (arXiv 2608.09696, Table 5).</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = (v, d = 2) => (v === null || v === undefined || !isFinite(v)) ? "–" : Number(v).toFixed(d);
+
+const WORLD = {
+  gravity:          {name: "Flat gravity",      truth: "Pulls, falling off as 1/r (this world is flat, so not 1/r²).", f: r => 1 / r},
+  yukawa:           {name: "Fading pull",       truth: "Pulls, but fades out beyond about 2 units, like a force with a short reach.", f: r => Math.exp(-r / 2) / Math.sqrt(r) * 1.3},
+  coulomb_easy:     {name: "Push",              truth: "Pushes away, falling as 1/r², set only by the source's charge.", f: r => 1 / (r * r), push: true},
+  oscillator:       {name: "Breathing gravity", truth: "Pulls as 1/r, but the strength swings up and down over time.", f: r => 1 / r, band: true},
+  fractional:       {name: "Heavy probe",       truth: "Pulls as 1/r², and heavier probes accelerate less.", f: r => 0.8 / (r * r)},
+  extra_dimensions: {name: "Hidden dimension",  truth: "Falls as 1/r² up close (under 0.5 units) and as 1/r further out.", f: r => r < 0.5 ? 0.5 / (r * r) : 1 / r},
+};
+const SOLVER = {bayes_lite: "Careful", random_menu: "Random"};
+const FAMILY = {power: "power law", log: "1/r", yukawa: "fading (Yukawa)", timemod: "time-varying", crossover: "short/long crossover"};
+const ROLE = {ratio: "p1/p2", p1: "p1", product: "p1·p2"};
+
+function law(label, params) {
+  if (!label) return "no formula";
+  const [fam, role] = label.split(" / ");
+  const p = params || [];
+  const k = num(p[0], 2), q = ROLE[role] || role;
+  if (fam === "power") return `F = ${k}·${q} / r^${num(p[1], 2)}`;
+  if (fam === "log") return `F = ${k}·${q} / r`;
+  if (fam === "yukawa") return `F = ${k}·${q}, fading beyond ${num(p[1], 1)}`;
+  if (fam === "timemod") return `F = ${k}·cos(${num(p[1], 2)}t)·${q} / r`;
+  if (fam === "crossover") return `F = ${q}·(${k}/r + ${num(p[1], 2)}/r²)`;
+  return label;
+}
+function plainLaw(label) {
+  if (!label) return "nothing";
+  const [fam, role] = label.split(" / ");
+  return `${FAMILY[fam] || fam}, strength ∝ ${ROLE[role] || role}`;
+}
+function kind(a) {
+  if (!a.passed) return "fail";
+  return a.identified ? "right" : "lucky";
+}
+
+/* ---------- menu tiles ---------- */
+function launchSvg(l, w = 130, h = 54) {
+  const scale = (w - 30) / 10;
+  const sx = 12, sy = h / 2, px = sx + l.r0 * scale;
+  const rs = 4 + 2.5 * l.p1, rp = 3 + 2 * l.p2;
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="100%"><line x1="${sx}" y1="${sy}" x2="${w - 6}" y2="${sy}" stroke="#DADAD6" stroke-dasharray="2 3"/>`;
+  s += `<circle cx="${sx}" cy="${sy}" r="${rs}" fill="#1B3F8B"/><circle cx="${px}" cy="${sy}" r="${rp}" fill="#A23B1E"/>`;
+  if (l.vy) s += `<path d="M${px} ${sy - rp - 2} v-14" stroke="#A23B1E" stroke-width="2"/><path d="M${px - 4} ${sy - rp - 12} l4 -6 l4 6z" fill="#A23B1E"/>`;
+  return s + "</svg>";
+}
+function describe(l) {
+  const bits = [`probe at r = ${l.r0}`];
+  if (l.vy) bits.push(`sideways push ${l.vy}`);
+  if (l.p1 !== 1) bits.push(`source ×${l.p1}`);
+  if (l.p2 !== 1) bits.push(`probe ×${l.p2}`);
+  return bits.join(", ");
+}
+function renderMenu(fb, used = new Set()) {
+  $("#menuTiles").innerHTML = fb.menu.map(l => `
+    <div class="tile ${l.seed ? "free" : ""} ${used.has(l.action) ? "used" : ""}">
+      <div class="t"><b>Launch ${l.action}</b><span>${l.seed ? "free" : fb.price + " credit"}</span></div>
+      ${launchSvg(l)}<div class="d">${describe(l)}</div></div>`).join("");
+}
+
+/* ---------- bid ---------- */
+function renderBid() {
+  const prize = +$("#sPrize").value, p = +$("#sP").value / 100, n = +$("#sN").value;
+  $("#vPrize").textContent = prize + " credits"; $("#vP").textContent = Math.round(p * 100) + "%"; $("#vN").textContent = n;
+  const ev = p * prize, cost = n, profit = ev - cost, max = Math.max(prize, 8, 1);
+  const W = 520, base = 250, sc = 200 / max;
+  const bar = (x, v, color, lab, sub) => `<rect x="${x}" y="${base - v * sc}" width="110" height="${v * sc}" rx="6" fill="${color}"/>
+    <text x="${x + 55}" y="${base - v * sc - 10}" text-anchor="middle" font-size="22" font-weight="700" fill="#161616">${v.toFixed(1)}</text>
+    <text x="${x + 55}" y="${base + 22}" text-anchor="middle" font-size="14" font-weight="700" fill="#161616">${lab}</text>
+    <text x="${x + 55}" y="${base + 40}" text-anchor="middle" font-size="12" fill="#6B6B67">${sub}</text>`;
+  $("#bidSvg").innerHTML = `<line x1="20" y1="${base}" x2="${W - 20}" y2="${base}" stroke="#161616"/>` +
+    bar(40, prize, "#DADAD6", "Prize", "if it passes") +
+    bar(205, ev, "#1B3F8B", "Expected win", `${Math.round(p * 100)}% × ${prize}`) +
+    bar(370, cost, "#A23B1E", "Cost", `${n} launch${n === 1 ? "" : "es"}, paid either way`);
+  const go = profit > 0;
+  $("#decision").innerHTML = go ? `<span style="color:var(--green)">Bid.</span> Expected profit +${profit.toFixed(1)}` : `<span style="color:var(--rust)">Walk away.</span> Expected loss ${profit.toFixed(1)}`;
+  $("#decisionWhy").textContent = go
+    ? "If the stated chance is honest, this pays on average. If it is inflated, the AI scientist loses money and its track record shows it."
+    : "Not worth it at these odds. Walking away costs nothing, and the question stays open for someone more confident.";
+}
+["#sPrize", "#sP", "#sN"].forEach(id => $(id).addEventListener("input", renderBid));
+renderBid();
+
+/* ---------- worlds ---------- */
+function curveSvg(key) {
+  const w = WORLD[key], W = 300, H = 130, x0 = 34, y0 = 108;
+  const rs = Array.from({length: 60}, (_, i) => 0.6 + i * (7.4 / 59));
+  const ys = rs.map(w.f), max = Math.max(...ys.slice(0));
+  const sx = r => x0 + (r - 0.6) / 7.4 * (W - x0 - 10), sy = v => y0 - Math.min(v / max, 1) * 90;
+  // fitted 1/r baseline: least squares k for k/r over the sampled range
+  const k = rs.reduce((a, r, i) => a + ys[i] / r, 0) / rs.reduce((a, r) => a + 1 / (r * r), 0);
+  const path = f => rs.map((r, i) => `${i ? "L" : "M"}${sx(r).toFixed(1)} ${sy(f(r)).toFixed(1)}`).join(" ");
+  let band = "";
+  if (w.band) band = `<path d="${path(r => 1.5 / r)} L${sx(8)} ${sy(0)} L${sx(0.6)} ${sy(0)}Z" fill="#EEF2F9"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${band}
+    <line x1="${x0}" y1="${y0}" x2="${W - 8}" y2="${y0}" stroke="#DADAD6"/><line x1="${x0}" y1="12" x2="${x0}" y2="${y0}" stroke="#DADAD6"/>
+    <path d="${path(r => k / r)}" stroke="#A23B1E" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+    <path d="${path(w.f)}" stroke="#1B3F8B" stroke-width="3" fill="none"/>
+    <text x="${W - 8}" y="${y0 + 16}" text-anchor="end" font-size="11" fill="#6B6B67">distance →</text>
+    <text x="${x0 - 6}" y="20" text-anchor="end" font-size="11" fill="#6B6B67">${w.push ? "push" : "pull"}</text></svg>`;
+}
+function renderWorlds(fb) {
+  const by = {};
+  for (const a of fb.attempts || []) (by[a.world] ||= []).push(a);
+  $("#worldCards").innerHTML = fb.worlds.map(key => {
+    const w = WORLD[key] || {name: key, truth: ""}, rows = by[key] || [];
+    const c = {right: 0, lucky: 0, fail: 0}; rows.forEach(a => c[kind(a)]++);
+    const base = rows.filter(a => a.baseline_passed).length;
+    const score = rows.length ? `<div class="score"><span class="pill pass">${c.right} right</span><span class="pill warn">${c.lucky} lucky</span><span class="pill fail">${c.fail} failed</span><span class="pill info">plain 1/r passes ${base}/${rows.length}</span></div>` : "";
+    return `<div class="card plain"><p class="label" style="margin:0">${esc(key)}</p><h3>${esc(w.name)}</h3><p class="truth">${esc(w.truth)}</p>${WORLD[key] ? curveSvg(key) : ""}${score}</div>`;
+  }).join("");
+}
+
+/* ---------- results grid ---------- */
+let ATTEMPTS = [];
+function why(a) {
+  const w = WORLD[a.world]?.name || a.world;
+  if (a.passed && a.identified) return `It found the right kind of law, so its predictions matched the hidden tests (error ${num(a.nmse, 3)}, under 0.1).`;
+  if (a.passed) return `Its formula is the wrong kind of law for “${w}”, but on the hidden tests the two give nearly the same paths (error ${num(a.nmse, 3)}). The judge can't tell, so it pays.${a.baseline_passed ? " Even a plain 1/r guess passes here." : ""}`;
+  if (a.world === "extra_dimensions") return `None of its 15 guesses has this world's exact shape, and the closest fit missed on the hidden tests (error ${num(a.nmse, 3)}).`;
+  return `Its predictions drifted from the real paths on the hidden tests (error ${num(a.nmse, 3)}, above 0.1). It bought ${a.experiments} launch${a.experiments === 1 ? "" : "es"}${a.experiments <= 2 ? ", too few to pin the law down" : ""}.`;
+}
+function showDetail(i) {
+  document.querySelectorAll(".dot").forEach(d => d.classList.toggle("sel", +d.dataset.i === i));
+  const a = ATTEMPTS[i], k = kind(a);
+  const pill = {right: '<span class="pill pass">passed · right law</span>', lucky: '<span class="pill warn">passed · wrong law</span>', fail: '<span class="pill fail">failed</span>'}[k];
+  $("#detail").innerHTML = `<p class="label" style="margin:0">${esc(WORLD[a.world]?.name || a.world)} · ${SOLVER[a.solver] || a.solver} · run ${a.seed}</p>
+    <h3>${pill} &nbsp;<span class="mono">${esc(law(a.top_model, a.top_params))}</span></h3>
+    <p class="sub" style="margin-top:6px">${esc(why(a))}</p>
+    <div class="kv"><div><span>Proposal</span><b style="font-size:15px">${esc(plainLaw(a.top_model))}</b></div>
+    <div><span>Launches bought</span><b>${a.experiments ?? "–"}</b></div>
+    <div><span>Stated chance</span><b>${a.stated_p == null ? "–" : Math.round(a.stated_p * 100) + "%"}</b></div>
+    <div><span>Error (pass &lt; 0.1)</span><b style="color:${a.passed ? "var(--green)" : "var(--rust)"}">${num(a.nmse, 3)}</b></div></div>
+    <p class="note" style="margin-top:10px">True law: ${esc(WORLD[a.world]?.truth || "")} Plain 1/r on the same data: ${a.baseline_passed ? "passes" : "fails"} (error ${num(a.baseline_nmse, 3)}).${a.stopped_reason ? " Stopped: " + esc(a.stopped_reason) + "." : ""}</p>`;
+}
+function renderGrid(fb) {
+  ATTEMPTS = fb.attempts || [];
+  if (!ATTEMPTS.length) { $("#grid").innerHTML = '<p class="wait">No settled results yet. Run <code>uv run python -m tests.forcebench_settle</code>.</p>'; return; }
+  const c = {right: 0, lucky: 0, fail: 0}; ATTEMPTS.forEach(a => c[kind(a)]++);
+  $("#buckets").innerHTML = `
+    <div class="card green"><div class="n" style="color:var(--green)">${c.right}</div><h3>Right law, passed</h3><p>The market worked: the prize went to a correct answer.</p></div>
+    <div class="card" style="background:var(--amber-soft)"><div class="n" style="color:var(--amber)">${c.lucky}</div><h3>Wrong law, passed</h3><p>The judge was too lenient. These are the bugs a real market must not have.</p></div>
+    <div class="card rust"><div class="n" style="color:var(--rust)">${c.fail}</div><h3>Failed</h3><p>No prize. The attempt and its data go into the public record.</p></div>`;
+  const solvers = fb.solvers;
+  let h = `<table class="dots"><tr><th>World</th>${solvers.map(s => `<th>${SOLVER[s] || s}</th>`).join("")}</tr>`;
+  for (const w of fb.worlds) {
+    h += `<tr><td><b>${esc(WORLD[w]?.name || w)}</b><br><span class="note">${esc(w)}</span></td>`;
+    for (const s of solvers) {
+      h += "<td>" + ATTEMPTS.map((a, i) => a.world === w && a.solver === s ? `<span class="dot ${kind(a)}" data-i="${i}" title="run ${a.seed}"></span>` : "").join("") + "</td>";
+    }
+    h += "</tr>";
+  }
+  $("#grid").innerHTML = h + "</table>";
+  document.querySelectorAll(".dot").forEach(d => d.addEventListener("click", () => showDetail(+d.dataset.i)));
+  const first = ATTEMPTS.findIndex(a => kind(a) === "lucky");
+  showDetail(first >= 0 ? first : 0);
+}
+
+/* ---------- one attempt ---------- */
+let FB = null;
+function renderAttempt(r) {
+  const steps = [{title: "Free launch", launch: r.seed_launch, models: [], spent: 0}];
+  let spent = 0;
+  r.rounds.forEach((rd, i) => { spent += (r.charges.find(c => c.round === rd.round) || {}).amount || 0; steps.push({title: `Round ${i + 1}`, launch: rd.launch, models: rd.top_models, spent}); });
+  steps.push({title: "Verdict"});
+  const used = new Set([r.seed_launch.action, ...r.rounds.map(x => x.launch.action)]);
+  let cur = 0;
+  const draw = () => {
+    const s = steps[cur];
+    let body;
+    if (s.title === "Verdict") {
+      const v = r.verdict, pass = v.passed;
+      const pct = Math.min(1, (v.nmse ?? 1) / 0.3);
+      body = `<div class="runbox"><div>
+        <p class="label" style="margin:0">Proposal</p><h3 class="mono">${esc(law(r.top_model, r.top_params))}</h3>
+        <p class="sub">${esc(plainLaw(r.top_model))}. Stated chance ${r.stated_p == null ? "–" : Math.round(r.stated_p * 100) + "%"}, after ${r.experiments} paid launch${r.experiments === 1 ? "" : "es"}.</p>
+        <p class="note">Fingerprint ${v.commitment_match ? "matches" : "does NOT match"}: the hidden tests are the ones sealed before the start.</p></div>
+        <div><p class="label" style="margin:0">Judge</p><h3>${pass ? '<span class="pill pass">passed</span>' : '<span class="pill fail">failed</span>'} ${r.identified ? '<span class="pill pass">right law</span>' : '<span class="pill warn">not the true law</span>'}</h3>
+        <svg viewBox="0 0 400 70" width="100%"><rect x="0" y="20" width="400" height="16" rx="8" fill="#F4F4F1"/><rect x="0" y="20" width="${400 * 0.1 / 0.3}" height="16" rx="8" fill="#E6F2EA"/>
+        <line x1="${400 * 0.1 / 0.3}" y1="12" x2="${400 * 0.1 / 0.3}" y2="44" stroke="#2E7D4F" stroke-width="2"/><text x="${400 * 0.1 / 0.3 + 4}" y="60" font-size="12" fill="#2E7D4F">0.1 pass line</text>
+        <circle cx="${Math.max(8, 400 * pct)}" cy="28" r="9" fill="${pass ? "#2E7D4F" : "#A23B1E"}"/><text x="${Math.min(360, 400 * pct)}" y="10" font-size="12" fill="#161616">error ${num(v.nmse, 3)}</text></svg>
+        <p class="note">Wallet: ${num(r.wallet.start, 0)} → ${num(r.wallet.end, 0)} credits. The lab earned ${num(r.wallet.lab_revenue, 0)}.</p></div></div>`;
+    } else {
+      const l = s.launch, menuL = (FB.menu.find(m => m.action === l.action)) || {r0: l.r0, vy: l.velocity?.[1], p1: l.p1, p2: l.p2};
+      body = `<div class="runbox"><div><p class="label" style="margin:0">${s.title === "Free launch" ? "Starting data, free" : "Bought"}</p>
+        <h3>Launch ${l.action ?? "–"}: ${esc(describe(menuL))}</h3>${launchSvg(menuL, 300, 80)}
+        <p class="note">Probe distance over time: ${(l.radii || []).map(x => num(x, 2)).join(" → ") || "–"}</p>
+        <p class="note">Credits spent so far: ${num(s.spent, 0)} of ${num(r.wallet.start, 0)}</p></div>
+        <div class="beliefs"><p class="label" style="margin:0">What it believes now</p>
+        ${s.models.length ? s.models.map(m => `<div class="row"><span>${esc(plainLaw(m.label))}</span><div class="bar"><i style="width:${Math.round((m.weight || 0) * 100)}%"></i></div><b>${Math.round((m.weight || 0) * 100)}%</b></div>`).join("") : '<p class="note">No beliefs yet: it sees the free launch, then picks what to buy.</p>'}</div></div>`;
+    }
+    $("#aOut").innerHTML = `<div class="steps">${steps.map((x, i) => `<button class="${i === cur ? "on" : ""}" data-s="${i}">${x.title}</button>`).join("")}</div>${body}`;
+    document.querySelectorAll(".steps button").forEach(b => b.addEventListener("click", () => { cur = +b.dataset.s; draw(); }));
+  };
+  draw();
+  renderMenu(FB, used);
+  if (r.stopped_reason) $("#aOut").insertAdjacentHTML("beforeend", "");
+}
+$("#aRun").addEventListener("click", async () => {
+  const btn = $("#aRun"); btn.disabled = true;
+  $("#aOut").innerHTML = '<p class="wait">Running: buying launches, fitting 15 guesses, then judging on the sealed tests…</p>';
+  try {
+    const res = await fetch("/api/real/attempt", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({world: $("#aWorld").value, solver: $("#aSolver").value, seed: +$("#aSeed").value})});
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || "failed");
+    renderAttempt(r);
+  } catch (e) { $("#aOut").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
+  btn.disabled = false;
+});
+
+fetch("/api/real").then(r => r.json()).then(d => {
+  const fb = d.forcebench; FB = fb;
+  $("#in-wallet").textContent = `${fb.wallet} credits to spend`;
+  $("#in-menu").textContent = `${fb.menu.length} launches, ${fb.price} credit each`;
+  if (fb.venue) $("#times").textContent = `${fb.venue.measurement_times.length} times (t = ${fb.venue.measurement_times.join(", ")})`;
+  $("#aWorld").innerHTML = fb.worlds.map(w => `<option value="${w}">${esc(WORLD[w]?.name || w)}</option>`).join("");
+  renderMenu(fb); renderWorlds(fb); renderGrid(fb);
+}).catch(e => { $("#grid").innerHTML = `<p class="pill fail">Could not load results: ${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>

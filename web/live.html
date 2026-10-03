@@ -1,4 +1,270 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Discovery Market</title>
-<link rel="stylesheet" href="/web/style.css"></head>
-<body><main><h1>live</h1><p>Page under construction.</p></main></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · Live market</title>
+<link rel="stylesheet" href="/web/style.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; padding-top: 56px; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  .status { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; margin-top: 20px; font-size: 15px; }
+  .status.on { background: var(--green-soft); }
+  .status.off { background: var(--amber-soft); }
+  .status ul { margin: 6px 0 0 18px; }
+  .q { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-top: 16px; }
+  .q .h { font: 600 20px/1.35 var(--sans); }
+  .q .crit { font-size: 14px; color: var(--body); margin-top: 8px; }
+  .q .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .mode { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .mode button { font: 600 14px var(--sans); padding: 8px 14px; border: 0; background: #fff; cursor: pointer; }
+  .mode button.on { background: var(--navy); color: #fff; }
+  .mode button:disabled { color: #aaa; cursor: not-allowed; }
+  .board { display: grid; grid-template-columns: 1.3fr 1fr; gap: 26px; margin-top: 22px; }
+  @media (max-width: 860px) { .board { grid-template-columns: 1fr; } }
+  .round { border-left: 4px solid var(--line); padding: 10px 0 10px 16px; margin-bottom: 10px; }
+  .round.experiment, .round.mse_fit { border-left-color: var(--navy); }
+  .round.verdict { border-left-color: var(--green); }
+  .round.walk_away, .round.withdraw, .round.no_tag { border-left-color: var(--rust); }
+  .round .t { display: flex; gap: 10px; align-items: center; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .round p { font-size: 15px; margin-top: 4px; }
+  .round details { margin-top: 6px; font-size: 13px; }
+  .round details pre { max-height: 260px; overflow: auto; white-space: pre-wrap; }
+  .big { font: 700 44px/1 var(--narrow); }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kv div { background: var(--faint); border-radius: 8px; padding: 10px 12px; }
+  .kv span { display: block; font: 700 11px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .kv b { font: 700 22px var(--narrow); }
+  .result { margin-top: 14px; padding: 16px; border-radius: 10px; }
+  .result.win { background: var(--green-soft); }
+  .result.lose { background: var(--rust-soft); }
+  .wait { color: var(--muted); font-size: 15px; }
+  .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--rust); animation: p 1s infinite alternate; }
+  @keyframes p { from { opacity: .25 } to { opacity: 1 } }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <a class="brand" href="/"><i></i>Discovery Market</a>
+  <nav class="tabs">
+    <a href="/"><span>01</span>Vision</a>
+    <a href="/simulation"><span>02</span>How it works</a>
+    <a class="on" href="/live"><span>03</span>Live market</a>
+  </nav>
+</div></div>
+
+<main>
+
+<section class="hero">
+  <div>
+    <p class="label">Live market</p>
+    <h1>A real AI model bets on a real question.</h1>
+    <p class="lead">Pick a claim about a hidden world. A frontier model reads it, the prize and the record of everyone who failed before. Each round it pays a fee, may buy an experiment, and says how likely it is to get the answer right.</p>
+    <p class="sub">It ends with a verdict (supported, refuted or inconclusive), or it walks away. Only a correct, clear verdict wins the prize. The answer is hidden from the model and revealed here only at the end.</p>
+  </div>
+  <div class="fig">
+    <svg viewBox="0 0 520 380" role="img" aria-label="One round of the live market">
+      <defs><marker id="lv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1B3F8B"/></marker></defs>
+      <g font-size="13" fill="#4D4D4D">
+        <rect x="20" y="20" width="200" height="90" rx="10" fill="#EEF2F9"/>
+        <text x="36" y="46" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">MODEL SEES</text>
+        <text x="36" y="70">claim · how it's judged</text><text x="36" y="90">prize · prices · past failures</text>
+        <rect x="300" y="20" width="200" height="90" rx="10" fill="#161616"/>
+        <text x="316" y="46" font-size="12" font-weight="700" letter-spacing="2" fill="#9DB3E0">HIDDEN</text>
+        <text x="316" y="70" fill="#ddd">the true answer</text><text x="316" y="90" fill="#ddd">(supported or refuted)</text>
+        <rect x="110" y="150" width="300" height="110" rx="12" fill="#fff" stroke="#1B3F8B" stroke-width="2"/>
+        <text x="260" y="178" text-anchor="middle" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">EACH ROUND</text>
+        <text x="130" y="206">① pay the round fee</text><text x="130" y="228">② say “I'm p% likely to be right”</text><text x="130" y="250">③ buy an experiment, or answer</text>
+        <rect x="20" y="300" width="150" height="60" rx="10" fill="#E6F2EA"/><text x="95" y="326" text-anchor="middle" font-weight="700" fill="#2E7D4F">correct verdict</text><text x="95" y="345" text-anchor="middle">wins the prize</text>
+        <rect x="185" y="300" width="150" height="60" rx="10" fill="#F7ECE8"/><text x="260" y="326" text-anchor="middle" font-weight="700" fill="#A23B1E">wrong / unclear</text><text x="260" y="345" text-anchor="middle">into the record</text>
+        <rect x="350" y="300" width="150" height="60" rx="10" fill="#F4F4F1"/><text x="425" y="326" text-anchor="middle" font-weight="700" fill="#161616">walk away</text><text x="425" y="345" text-anchor="middle">keeps what's left</text>
+      </g>
+      <g stroke="#1B3F8B" stroke-width="2.5" fill="none"><path d="M120 112 L200 148" marker-end="url(#lv)"/><path d="M260 262 V296" marker-end="url(#lv)"/><path d="M180 262 L110 296" marker-end="url(#lv)"/><path d="M340 262 L420 296" marker-end="url(#lv)"/></g>
+      <path d="M400 112 L330 148" stroke="#161616" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+      <text x="380" y="140" font-size="11" fill="#6B6B67">used only by the judge</text>
+    </svg>
+  </div>
+</section>
+
+<section id="start">
+  <p class="label">1 · Post a question</p>
+  <h2>Choose a claim and an AI scientist.</h2>
+  <div id="status"></div>
+  <div class="controls" style="margin-top:18px">
+    <label>Claim <select id="hyp"></select></label>
+    <label>Model <select id="model"></select></label>
+    <span class="mode" id="mode"><button data-m="demo" class="on">Scripted demo · free</button><button data-m="live">Real model · paid</button></span>
+    <button class="btn" id="go">Start the market</button>
+  </div>
+  <div id="hypCard"></div>
+  <p class="note" id="costNote" style="margin-top:10px"></p>
+</section>
+
+<section id="watch">
+  <p class="label">2 · Watch it play out</p>
+  <h2 id="watchTitle">Round by round.</h2>
+  <div class="board">
+    <div id="feed"><p class="wait">Start a market above. Each round appears here as it happens.</p></div>
+    <div>
+      <div class="kv">
+        <div><span>Round</span><b id="kRound">–</b></div>
+        <div><span>Spent</span><b id="kSpent">–</b></div>
+        <div><span>Experiments</span><b id="kExp">–</b></div>
+        <div><span>Stated chance</span><b id="kP">–</b></div>
+      </div>
+      <div class="fig" style="margin-top:14px"><svg viewBox="0 0 420 220" id="pChart" role="img" aria-label="Stated chance and spend by round"></svg>
+        <p class="cap">Navy: the model's stated chance of a correct verdict. Rust: credits spent.</p></div>
+      <div id="result"></div>
+    </div>
+  </div>
+</section>
+
+<section id="record">
+  <p class="label rust">3 · The public record</p>
+  <h2>Every run is kept, especially the failures.</h2>
+  <p class="sub">The next model sees the failed runs for its claim before it bids. Below: live runs with real models, then scripted demo runs.</p>
+  <div id="leader"></div>
+  <div id="runs"><p class="wait">Loading…</p></div>
+</section>
+
+</main>
+<footer>Discovery Market prototype. Worlds from DiscoverPhysics (Wiemann, Smith et al., 2026). Live runs call the model's API only when enabled on this machine.</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = v => v == null ? "–" : Math.round(v * 100) + "%";
+const n0 = v => v == null ? "–" : (Math.round(v * 10) / 10).toString();
+const ACTION = {experiment: "bought an experiment", mse_fit: "fitted a formula to its data", verdict: "gave its verdict",
+  walk_away: "walked away", withdraw: "withdrew", no_tag: "reply had no action"};
+const OUTCOME = {verdict: "verdict", walked_away: "walked away", withdrawn: "withdrew", out_of_rounds: "ran out of rounds"};
+let INFO = null, MODE = "demo", POLL = null;
+
+function renderStatus() {
+  const l = INFO.live;
+  $("#status").innerHTML = l.enabled
+    ? `<div class="status on"><span class="pill pass">real models on</span><div>Spend cap $${l.max_usd}. A run is projected at up to $${(l.projected_usd_per_run ?? 0).toFixed(2)}; $${(l.projected_usd_spent ?? 0).toFixed(2)} projected so far.</div></div>`
+    : `<div class="status off"><span class="pill warn">real models off</span><div>The scripted demo runs the full market with a pre-written AI scientist, free. To use a real model on this machine:<ul>${(l.reasons || []).map(r => `<li>${esc(r)}</li>`).join("")}</ul></div></div>`;
+  const liveBtn = document.querySelector('#mode [data-m="live"]');
+  liveBtn.disabled = !l.enabled;
+  if (!l.enabled) setMode("demo");
+}
+function setMode(m) {
+  MODE = m;
+  document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  $("#model").disabled = m === "demo";
+  costNote();
+}
+function costNote() {
+  const ec = INFO.experiment_costs || {};
+  const parts = Object.entries(ec).map(([k, v]) => `${v} ${k.replace("per_", "per ").replace(/_/g, " ")}`).join(", ");
+  $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}. Up to ${INFO.max_rounds} rounds.` +
+    (MODE === "live" && INFO.live.usd_per_call ? ` Real-money cap for one run ≈ $${(INFO.live.projected_usd_per_run ?? 0).toFixed(2)}.` : "");
+}
+function renderHyp() {
+  const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
+  if (!h) return;
+  $("#hypCard").innerHTML = `<div class="q"><div class="h">“${esc(h.hypothesis)}”</div>
+    <div class="crit"><b>How it will be judged:</b> ${esc(h.resolution_criteria)}</div>
+    <div class="meta"><span class="pill info">world: ${esc(h.world)}</span><span class="pill pass">prize ${h.prize} credits</span><span class="pill">answer hidden</span></div></div>`;
+}
+
+function chart(rounds) {
+  const W = 420, H = 220, x0 = 36, y0 = 190, w = W - x0 - 14, h = 160;
+  const n = Math.max(rounds.length, 4);
+  const sx = i => x0 + (n === 1 ? 0 : i / (n - 1) * w);
+  const maxS = Math.max(1, ...rounds.map(r => r.spent_so_far || 0));
+  const pts = rounds.map((r, i) => r.p_success == null ? null : [sx(i), y0 - r.p_success * h]).filter(Boolean);
+  const sp = rounds.map((r, i) => [sx(i), y0 - (r.spent_so_far || 0) / maxS * h]);
+  const line = (a, c, dash) => a.length ? `<path d="${a.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ")}" stroke="${c}" stroke-width="3" fill="none" ${dash ? 'stroke-dasharray="5 4"' : ""}/>` + a.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c}"/>`).join("") : "";
+  $("#pChart").innerHTML = `<line x1="${x0}" y1="${y0}" x2="${W - 10}" y2="${y0}" stroke="#DADAD6"/><line x1="${x0}" y1="${y0 - h}" x2="${x0}" y2="${y0}" stroke="#DADAD6"/>
+    <text x="${x0 - 6}" y="${y0 - h + 4}" text-anchor="end" font-size="11" fill="#6B6B67">100%</text><text x="${x0 - 6}" y="${y0 + 4}" text-anchor="end" font-size="11" fill="#6B6B67">0</text>
+    <text x="${W - 10}" y="${y0 + 18}" text-anchor="end" font-size="11" fill="#6B6B67">round →</text>
+    <text x="${W - 10}" y="${y0 - h - 6}" text-anchor="end" font-size="11" fill="#A23B1E">max ${n0(maxS)} credits</text>
+    ${line(sp, "#A23B1E", true)}${line(pts, "#1B3F8B")}`;
+}
+function roundCard(r) {
+  const cost = (r.experiments_cost || 0) + (r.round_fee || 0);
+  let what = "";
+  if (r.assessment) what += `<p>${esc(r.assessment)}</p>`;
+  if (r.verdict) what += `<p><b>Verdict: ${esc(r.verdict)}</b>${r.evidence ? " · " + esc(r.evidence) : ""}</p>`;
+  if (r.withdraw_reason) what += `<p><b>Reason:</b> ${esc(r.withdraw_reason)}</p>`;
+  if (r.experiment_error) what += `<p class="pill fail">${esc(r.experiment_error)}</p>`;
+  const exp = r.experiment_input && r.experiment_input.length ? `<details><summary>Experiment it ordered (${r.n_experiments})</summary><pre>${esc(JSON.stringify(r.experiment_input, null, 1))}</pre></details>` : "";
+  const fit = r.mse_fit ? `<details><summary>Formula it fitted</summary><pre>${esc(r.mse_fit)}</pre></details>` : "";
+  const reply = r.reply ? `<details><summary>Full reply</summary><pre>${esc(r.reply)}</pre></details>` : "";
+  return `<div class="round ${esc(r.action)}"><div class="t">Round ${r.round} · ${esc(ACTION[r.action] || r.action || "")}<span class="pill info">${pct(r.p_success)} sure</span><span class="pill">−${n0(cost)} credits</span></div>${what}${exp}${fit}${reply}</div>`;
+}
+function renderJob(j) {
+  const rs = j.rounds || [];
+  $("#feed").innerHTML = (rs.length ? rs.map(roundCard).join("") : "") +
+    (j.state === "running" ? `<p class="wait"><span class="pulse"></span> ${j.scripted ? "Scripted AI scientist" : esc(j.model)} is thinking…</p>` : "");
+  const last = rs[rs.length - 1] || {};
+  $("#kRound").textContent = rs.length || "–";
+  $("#kSpent").textContent = n0(last.spent_so_far ?? 0);
+  $("#kExp").textContent = rs.reduce((a, r) => a + (r.n_experiments || 0), 0);
+  const lastP = [...rs].reverse().find(r => r.p_success != null);
+  $("#kP").textContent = pct(lastP?.p_success);
+  chart(rs);
+  if (j.state === "error") $("#result").innerHTML = `<div class="result lose"><b>The run stopped with an error.</b><p class="note">${esc(j.error)}</p></div>`;
+  if (j.state === "done" && j.run) {
+    const r = j.run, win = r.passed;
+    $("#result").innerHTML = `<div class="result ${win ? "win" : "lose"}"><p class="label" style="margin:0">${win ? "Prize paid" : "No prize"}</p>
+      <div class="big" style="color:${win ? "var(--green)" : "var(--rust)"}">${r.profit >= 0 ? "+" : ""}${n0(r.profit)} credits</div>
+      <p style="margin-top:8px">Outcome: <b>${esc(OUTCOME[r.outcome] || r.outcome)}</b>${r.agent_verdict ? `, it said <b>${esc(r.agent_verdict)}</b>` : ""}. The hidden answer was <b>${esc(r.answer)}</b>.</p>
+      <p class="note">Spent ${n0(r.spent)} on ${r.rounds} rounds and ${r.experiments} experiments; prize ${n0(r.prize_paid)} of ${n0(r.prize)}. ${win ? "" : "This run is now in the public record."}</p></div>`;
+    loadRuns();
+  }
+}
+async function poll(id) {
+  try {
+    const j = await (await fetch("/api/live/job?id=" + encodeURIComponent(id))).json();
+    renderJob(j);
+    if (j.state === "running") { POLL = setTimeout(() => poll(id), 1200); return; }
+  } catch (e) { $("#result").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
+  $("#go").disabled = false;
+}
+$("#go").addEventListener("click", async () => {
+  clearTimeout(POLL);
+  $("#go").disabled = true; $("#result").innerHTML = ""; $("#feed").innerHTML = '<p class="wait"><span class="pulse"></span> Posting the question…</p>';
+  const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
+  $("#watchTitle").textContent = `“${h.hypothesis}”`;
+  try {
+    const res = await fetch("/api/live/start", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({hypothesis_id: h.id, model: $("#model").value, scripted: MODE === "demo"})});
+    const s = await res.json();
+    if (!s.ok) throw new Error(s.error || "could not start");
+    location.hash = "watch";
+    poll(s.job_id);
+  } catch (e) { $("#feed").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; $("#go").disabled = false; }
+});
+
+function runsTable(rows, title) {
+  if (!rows.length) return `<h3 style="margin-top:22px">${title}</h3><p class="wait">None yet.</p>`;
+  return `<h3 style="margin-top:22px">${title}</h3><table><tr><th>Claim</th><th>Model</th><th>Outcome</th><th>Said / truth</th><th class="num">Bid chance</th><th class="num">Final chance</th><th class="num">Exp.</th><th class="num">Spent</th><th class="num">Profit</th></tr>` +
+    rows.slice().reverse().map(r => `<tr><td>${esc(r.hypothesis_id)}</td><td>${esc(r.model)}</td>
+      <td>${r.passed ? '<span class="pill pass">won</span>' : `<span class="pill fail">${esc(OUTCOME[r.outcome] || r.outcome)}</span>`}</td>
+      <td>${esc(r.agent_verdict || "–")} / ${esc(r.answer)}</td><td class="num">${pct(r.first_p)}</td><td class="num">${pct(r.final_p)}</td>
+      <td class="num">${r.experiments}</td><td class="num">${n0(r.spent)}</td><td class="num" style="color:${r.profit >= 0 ? "var(--green)" : "var(--rust)"}">${n0(r.profit)}</td></tr>`).join("") + "</table>";
+}
+async function loadRuns() {
+  const d = await (await fetch("/api/live/runs")).json();
+  const m = (d.summary && d.summary.models) || {};
+  const names = Object.keys(m);
+  $("#leader").innerHTML = names.length ? `<h3 style="margin-top:18px">Leaderboard (real models)</h3><table><tr><th>Model</th><th class="num">Runs</th><th class="num">Correct</th><th class="num">Calibration error (Brier, lower is better)</th><th class="num">Spent</th><th class="num">Profit</th></tr>` +
+    names.map(k => `<tr><td>${esc(k)}</td><td class="num">${m[k].runs}</td><td class="num">${m[k].correct_verdicts}</td><td class="num">${m[k].brier_final_p ?? "–"}</td><td class="num">${n0(m[k].spent)}</td><td class="num">${n0(m[k].profit)}</td></tr>`).join("") + "</table>" : "";
+  $("#runs").innerHTML = runsTable(d.live || [], "Real-model runs") + runsTable(d.demo || [], "Scripted demo runs");
+}
+
+fetch("/api/live/info").then(r => r.json()).then(info => {
+  INFO = info;
+  $("#hyp").innerHTML = info.hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}</option>`).join("");
+  $("#model").innerHTML = info.models.map(m => `<option>${esc(m)}</option>`).join("");
+  $("#hyp").addEventListener("change", renderHyp);
+  document.querySelectorAll("#mode button").forEach(b => b.addEventListener("click", () => !b.disabled && setMode(b.dataset.m)));
+  renderStatus(); renderHyp(); costNote(); chart([]);
+}).catch(e => { $("#status").innerHTML = `<p class="pill fail">Could not load the market: ${esc(e.message)}</p>`; });
+loadRuns().catch(() => {});
+</script>
+</body>
+</html>
