@@ -299,6 +299,7 @@ def _run_fake_grid(settings: LiveSettings, cache_path: Path, out=print) -> dict:
 
 
 def main(argv: list[str] | None = None) -> None:
+    bench.load_env()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preflight", action="store_true")
     parser.add_argument("--yes", action="store_true")
@@ -323,7 +324,6 @@ def main(argv: list[str] | None = None) -> None:
             raise SystemExit(1)
         return
 
-    bench.load_env()
     if os.environ.get("ENABLE_LIVE") != "1":
         raise SystemExit("refusing paid calls: set ENABLE_LIVE=1")
     if cap is None:

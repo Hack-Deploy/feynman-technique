@@ -20,6 +20,8 @@ from poc.config import ROOT as REPO_ROOT
 from poc.llm import MeteredLLM, redact
 from poc.spend import CapReached, ModelPrice, SpendLedger
 
+_LOAD_ENV = bench.load_env
+
 
 @pytest.fixture(autouse=True)
 def isolated_live_files(monkeypatch, tmp_path):
@@ -356,6 +358,79 @@ def test_demo_grid_refuses_live_mode_without_each_guard(monkeypatch, tmp_path, e
         demo_grid.main(["--cache", str(cache), "--ledger", str(ledger)])
     assert not ledger.exists()
     assert not cache.exists()
+
+
+def test_demo_grid_preflight_loads_cap_from_poc_env(monkeypatch, tmp_path, capsys):
+    env_path = tmp_path / "poc.env"
+    env_path.write_text("DM_MAX_USD=5\n")
+    monkeypatch.setattr(bench, "load_env", lambda: _LOAD_ENV(env_path))
+    demo_grid.main([
+        "--preflight",
+        "--cache", str(tmp_path / "runs.jsonl"),
+        "--ledger", str(tmp_path / "spend.jsonl"),
+    ])
+    assert "effective cap: $5.000000" in capsys.readouterr().out
+
+
+def test_bench_live_uses_metered_ledger_and_stops_when_cap_is_reached(
+    monkeypatch, tmp_path, capsys
+):
+    settings = spend.load_settings()
+    model = settings.models[0].id
+    monkeypatch.setenv("ENABLE_LIVE", "1")
+    monkeypatch.setenv("DM_MAX_USD", "5")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "offline-test-key")
+    monkeypatch.setattr(bench, "load_env", lambda: None)
+
+    calls = []
+    scripted = _verdict_transport()
+
+    def transport(model_id, system, messages, max_tokens):
+        calls.append(model_id)
+        return scripted(model_id, system, messages, max_tokens)
+
+    monkeypatch.setattr("poc.llm.anthropic_transport", transport)
+    store_path = tmp_path / "bench.jsonl"
+    args = [
+        "--models", model,
+        "--seeds", "0",
+        "--store", str(store_path),
+        "--usd-per-call", "0.01",
+    ]
+    bench.main([*args, "--hypotheses", "gravity-inverse-square"])
+
+    assert calls == [model]
+    saved = json.loads(store_path.read_text().splitlines()[0])
+    assert saved["llm_usage"]["calls"] == 1
+    ledger = SpendLedger(spend.LEDGER_PATH, cap=5)
+    assert ledger.totals()["actual_usd"] > 0
+    assert "--usd-per-call is accepted but ignored" in capsys.readouterr().out
+
+    reservation = ledger.reserve("test-over-cap", model, 4.99)
+    ledger.settle(reservation, "test-over-cap", model, {"input_tokens": 1}, 4.99)
+    bench.main([*args, "--hypotheses", "coulomb-source-strength"])
+
+    output = capsys.readouterr().out
+    assert "spend cap reached; stopping live grid" in output
+    assert calls == [model]
+    assert len(store_path.read_text().splitlines()) == 1
+
+
+def test_bench_live_refuses_models_without_configured_prices(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setenv("ENABLE_LIVE", "1")
+    monkeypatch.setenv("DM_MAX_USD", "5")
+    monkeypatch.setattr(bench, "load_env", lambda: None)
+    store_path = tmp_path / "bench.jsonl"
+    with pytest.raises(SystemExit, match="not in poc/live_models.yaml"):
+        bench.main([
+            "--models", "unpriced-model",
+            "--hypotheses", "gravity-inverse-square",
+            "--store", str(store_path),
+        ])
+    assert not spend.LEDGER_PATH.exists()
+    assert not store_path.exists()
 
 
 def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):

@@ -488,4 +488,5 @@ XPASS-fail and should be removed).
   lock remain git-ignored. No real API calls were made.
 - Preflight with an empty live cache: $4.661748 total worst-case across 8 runs; the largest
   model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
-- Checks: targeted live/POC suite 44 passed; full suite 505 passed, 5 skipped, 14 xfailed.
+- Checks: targeted live/POC suite 47 passed; full suite 515 passed, 5 skipped, 14 xfailed,
+  35 warnings.

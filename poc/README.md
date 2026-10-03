@@ -52,8 +52,14 @@ ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.demo_grid
 # Add --yes to skip the confirmation prompt.
 git add attempts/fixtures/live/runs.jsonl attempts/fixtures/live/runs.summary.json && git commit -m "Live demo runs"
 uv run python app.py
-# Open /live and choose "Recorded runs".
+# Open http://127.0.0.1:8000/live and scroll to "3 · Recorded runs".
 ```
+
+An interrupted call (crash or Ctrl-C mid-request) leaves its reservation open and counted at its
+worst case, so the cap stays safe; Anthropic may still have billed tokens for that request.
+Claude Opus 5.5 always thinks, and `max_tokens` (3072, `live.max_tokens`) covers thinking plus
+the answer. If Opus replies come back cut off, raise it in `poc/live_models.yaml` and rerun the
+preflight.
 
 The spend ledger at `attempts/live_spend.jsonl` is git-ignored, shared by the app and CLI, and
 cumulative. Open reservations count toward the cap until settled or voided. The effective cap
