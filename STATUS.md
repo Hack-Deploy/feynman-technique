@@ -47,14 +47,33 @@
   from `data/build_success_table.py`; each model's mean p matches its pass@1.
 - README written; this log brought up to date.
 
+## Stage 1: power odds (2026-10-03)
+- **Built**: `success_table.csv` wired in as a third Track A odds source,
+  `power` (p = score^γ, γ fit per model so mean p over 22 worlds = pass@1).
+  `load_success_table()` maps its display names onto Table 1 names.
+- **Why**: `calibrated` scales scores linearly, which caps strong worlds far
+  too low (opus-4.7 gravity 0.41 vs 0.79) and props up weak ones.
+- **Result**: under `power`, the hidden-structure worlds need the top prize
+  (circle, extra_dimensions, dark_matter clear only at 200) and three_species
+  is never solved. H1 SUPPORTED at prize 100 and 200.
+- **Checks**: 3 new tests (known values, full coverage, order preserved);
+  60 tests PASSED.
+
+## Results app (2026-10-03)
+- **Built**: `app.py` (local app: run simulation, run tests, view results) and
+  `report.py` + `report_template.html` (same dashboard, exportable as
+  `output/report.html`). Charts: clearing prize per world, agent balances
+  payment by payment, mean profit per prize, public ledger, verdicts.
+- **Checks**: `tests/test_report.py` checks dashboard balances and ledger
+  counts against `summary.json`; 62 tests PASSED.
+
 ## Ledger leak fix (2026-10-03)
 - **Fixed**: ledger rows stored each solver's hidden true pass probability in
   `outcome.metric`. Rows are public once disclosed, so that leaked the answer
   the market is meant to discover. `outcome` now holds only `passed`.
-- **Checks**: `test_ledger_hides_true_probability`; 58 tests PASSED.
+- **Checks**: `test_ledger_hides_true_probability`; 63 tests PASSED.
 
 ## Open issues
-- `success_table.csv` not yet used by the runner (Stage 1).
 - `config.yaml` is not read by the runner/analysis; values are hard-coded.
 - H3 holds by construction: `llm_opus_unthrottled` reuses mda's pass rates.
 - Disclosed ledger rows don't update other agents' beliefs (Stage 3).
