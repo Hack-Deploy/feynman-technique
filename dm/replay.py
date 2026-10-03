@@ -14,13 +14,17 @@ import argparse
 import dataclasses
 import json
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from analysis import compute_final_balances, compute_funding, find_worlds_solved
-from dm.outcomes import ReplayPool, rounds_cost
+from dm.calibration import calibration_summary
+from dm.hypotheses import evaluate_hypotheses
+from dm.importers.forcebench import default_settle_path, records_from_settle
+from dm.outcomes import ReplayPool, experiments_cost, rounds_cost
 from dm.store import ATTEMPTS_DIR, AttemptStore
 from dm.types import AttemptRecord
 from market import MarketRun, run_market
@@ -35,7 +39,44 @@ STARTING_CREDITS = 100.0
 BELIEF_WEIGHT = 2.0  # same as Track A
 MIN_SEEDS_SOLVED = 3
 
-POOLS = {"ara": ATTEMPTS_DIR / "ara.jsonl"}
+
+@dataclass(frozen=True)
+class ReplaySpec:
+    venue: str
+    cost_fn: Any
+    charge_event: str
+    prizes: list[float]
+    cost_description: str
+    caveat: str
+
+
+ARA_CAVEAT = (
+    "One attempt per (solver, world): within a run each solver can try each "
+    "world at most once, and a world's outcome for a given solver is identical "
+    "in every seed (only bid order changes). The '>= 3 of 5 seeds' clearing "
+    "rule is therefore close to deterministic.")
+FORCEBENCH_CAVEAT = (
+    "5 settled attempts per (solver, world), drawn without replacement within "
+    "a run; first launch free, each paid launch 1 credit (experiment_charged)")
+REPLAY_SPECS = {
+    "ara": ReplaySpec(
+        venue="discoverphysics",
+        cost_fn=rounds_cost(1.0),
+        charge_event="round_charged",
+        prizes=PRIZES,
+        cost_description="rounds x 1 credit (round_charged)",
+        caveat=ARA_CAVEAT,
+    ),
+    "forcebench": ReplaySpec(
+        venue="forcebench",
+        cost_fn=experiments_cost(1.0),
+        charge_event="experiment_charged",
+        prizes=[2, 5, 10, 20, 50],
+        cost_description=FORCEBENCH_CAVEAT,
+        caveat=FORCEBENCH_CAVEAT,
+    ),
+}
+POOLS = {"ara": ATTEMPTS_DIR / "ara.jsonl", "forcebench": default_settle_path()}
 
 
 VERDICTS = ("numeric", "ara")
@@ -57,8 +98,29 @@ def run_id(label: str, prize: float, seed: int) -> str:
     return f"replay_{label}_prize{int(prize)}_seed{seed}"
 
 
-def make_pool(records: list[AttemptRecord]) -> ReplayPool:
-    return ReplayPool(records, rounds_cost(1.0), charge_event="round_charged")
+def _spec(pool: str) -> ReplaySpec:
+    try:
+        return REPLAY_SPECS[pool]
+    except KeyError:
+        raise ValueError(f"unknown replay pool {pool!r}") from None
+
+
+def _validate_venues(records: list[AttemptRecord], pool: str) -> None:
+    venues = {record.venue for record in records}
+    spec = _spec(pool)
+    if len(venues) > 1:
+        raise ValueError(f"replay pool {pool!r} cannot mix venues: {sorted(venues)}")
+    if venues and venues != {spec.venue}:
+        raise ValueError(
+            f"replay pool {pool!r} requires venue {spec.venue!r}, "
+            f"got {sorted(venues)}")
+
+
+def make_pool(records: list[AttemptRecord], pool: str = "ara") -> ReplayPool:
+    _validate_venues(records, pool)
+    spec = _spec(pool)
+    return ReplayPool(records, spec.cost_fn, charge_event=spec.charge_event,
+                      venue=spec.venue)
 
 
 def loo_beliefs(pool: ReplayPool, fallback: float = 0.5) -> dict[str, dict[str, float]]:
@@ -74,26 +136,31 @@ def loo_beliefs(pool: ReplayPool, fallback: float = 0.5) -> dict[str, dict[str, 
 
 
 def run_sweep(records: list[AttemptRecord], label: str,
-              prizes: list[float] = PRIZES, seeds: list[int] = SEEDS,
+              prizes: list[float] | None = None, seeds: list[int] | None = None,
               ticks: int = TICKS, starting_credits: float = STARTING_CREDITS,
+              pool: str = "ara",
               ) -> tuple[list[dict], list[dict]]:
-    pool = make_pool(records)
-    worlds, agents = pool.worlds(), pool.solvers()
-    beliefs = loo_beliefs(pool)
+    _validate_venues(records, pool)
+    spec = _spec(pool)
+    chosen_prizes = spec.prizes if prizes is None else prizes
+    chosen_seeds = SEEDS if seeds is None else seeds
+    replay_pool = make_pool(records, pool)
+    worlds, agents = replay_pool.worlds(), replay_pool.solvers()
+    beliefs = loo_beliefs(replay_pool)
     events: list[dict] = []
     ledger: list[dict] = []
-    for prize in prizes:
-        for seed in seeds:
+    for prize in chosen_prizes:
+        for seed in chosen_seeds:
             cfg = MarketRun(
                 run_id=run_id(label, prize, seed), seed=seed, ticks=ticks,
                 worlds=worlds, agents=agents, prizes={w: float(prize) for w in worlds},
                 starting_credits=starting_credits,
                 # The same pool must drive the bid rule and the charges, so an
                 # agent's affordability check matches what it is charged.
-                cost_model=pool, true_probs=None,
+                cost_model=replay_pool, true_probs=None,
                 initial_beliefs=beliefs, belief_weight=BELIEF_WEIGHT,
                 track=f"replay_{label}", probability_source=f"replay:{label}",
-                outcome_source=pool, state_confidence=True,
+                outcome_source=replay_pool, state_confidence=True,
             )
             ev, led = run_market(cfg)
             events.extend(e.to_dict() for e in ev)
@@ -191,31 +258,36 @@ def max_attempts_per_solver_world(events: list[dict]) -> int:
 
 
 def summarise(events: list[dict], ledger: list[dict], records: list[AttemptRecord],
-              label: str, prizes: list[float] = PRIZES,
-              seeds: list[int] = SEEDS) -> dict[str, Any]:
-    pool = make_pool(records)
-    worlds = pool.worlds()
+              label: str, prizes: list[float] | None = None,
+              seeds: list[int] | None = None, pool: str = "ara",
+              source_file: str | None = None) -> dict[str, Any]:
+    _validate_venues(records, pool)
+    spec = _spec(pool)
+    prizes = spec.prizes if prizes is None else prizes
+    seeds = SEEDS if seeds is None else seeds
+    replay_pool = make_pool(records, pool)
+    worlds = replay_pool.worlds()
     counts = solved_counts(events, worlds, label, prizes, seeds)
     seed_dependent = {w: {p: n for p, n in c.items() if 0 < n < len(seeds)}
                       for w, c in counts.items()}
     by_run = _by_run(events)
     return {
         "pool": label,
-        "caveat": (
-            "One attempt per (solver, world): within a run each solver can try each "
-            "world at most once, and a world's outcome for a given solver is identical "
-            "in every seed (only bid order changes). The '>= 3 of 5 seeds' clearing "
-            "rule is therefore close to deterministic."),
+        "caveat": spec.caveat,
         "config": {"prizes": prizes, "seeds": seeds, "ticks": TICKS,
                    "starting_credits": STARTING_CREDITS, "belief_weight": BELIEF_WEIGHT,
-                   "cost": "rounds x 1 credit (round_charged)",
+                   "cost": spec.cost_description,
                    "beliefs": "leave-one-out pass rate per solver, 0.5 fallback",
                    "clearing_rule": f"lowest prize solved in >= {MIN_SEEDS_SOLVED} of "
                                     f"{len(seeds)} seeds, else 'never'"},
         "n_records": len(records),
-        "solvers": pool.solvers(),
+        "source_file": source_file or next(
+            (r.extra.get("settle_file") for r in records if r.extra.get("settle_file")),
+            str(POOLS[pool].resolve().relative_to(ROOT))
+            if POOLS[pool].resolve().is_relative_to(ROOT) else str(POOLS[pool])),
+        "solvers": replay_pool.solvers(),
         "worlds": worlds,
-        "initial_beliefs": loo_beliefs(pool),
+        "initial_beliefs": loo_beliefs(replay_pool),
         "record_outcomes": {f"{r.solver}/{r.world}": {"passed": r.passed,
                                                      "rounds": r.rounds}
                             for r in sorted(records, key=lambda r: (r.solver, r.world))},
@@ -231,20 +303,43 @@ def summarise(events: list[dict], ledger: list[dict], records: list[AttemptRecor
             "max_attempts_per_solver_world_per_run": max_attempts_per_solver_world(events),
             "n_runs": len(by_run), "n_events": len(events), "n_ledger_rows": len(ledger),
         },
+        "calibration": calibration_summary(records),
+        "hypotheses": evaluate_hypotheses(
+            events, records, label, prizes, seeds, spec.charge_event),
     }
 
 
 def run_and_save(label: str, out_dir: Path | None = None,
                  store_path: Path | None = None, verdict: str = "numeric") -> dict[str, Any]:
-    path = store_path or POOLS[label]
-    records = with_verdict(AttemptStore(path).load(), verdict)
+    if label not in REPLAY_SPECS:
+        raise ValueError(f"unknown replay pool {label!r}")
+    if verdict != "numeric" and label != "ara":
+        raise ValueError("ARA verdict sensitivity is only available for the ARA pool")
+    path = store_path or (default_settle_path() if label == "forcebench" else POOLS[label])
+    if path.suffix == ".json":
+        if label != "forcebench":
+            raise ValueError("settle .json inputs are only supported for ForceBench")
+        records = records_from_settle(path)
+    else:
+        records = AttemptStore(path).load()
+    records = with_verdict(records, verdict)
+    _validate_venues(records, label)
     if not records:
         raise SystemExit(f"no records in {path}; run the importer first "
                          f"(uv run python -m dm.importers.{label})")
     run_label = label if verdict == "numeric" else f"{label}_{verdict}verdict"
-    events, ledger = run_sweep(records, run_label)
-    summary = summarise(events, ledger, records, run_label)
+    events, ledger = run_sweep(records, run_label, pool=label)
+    try:
+        source_file = str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        source_file = str(path.resolve())
+    summary = summarise(events, ledger, records, run_label, pool=label,
+                        source_file=source_file)
     summary["verdict_rule"] = verdict
+    if summary["checks"]["credit_sum_per_run_max_abs"] > 1e-9:
+        raise ValueError(
+            "replay failed credit conservation: "
+            f"{summary['checks']['credit_sum_per_run_max_abs']}")
     out = out_dir or OUTPUT_DIR / f"replay_{run_label}"
     out.mkdir(parents=True, exist_ok=True)
     (out / "events.json").write_text(json.dumps(events, indent=1))
@@ -255,13 +350,15 @@ def run_and_save(label: str, out_dir: Path | None = None,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Track A prize sweep on a replay pool")
-    ap.add_argument("pool", choices=sorted(POOLS))
+    ap.add_argument("pool", choices=sorted(REPLAY_SPECS))
     ap.add_argument("--store", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--verdict", choices=VERDICTS, default="numeric",
                     help="pass rule: numeric-only (default) or ARA's own (sensitivity)")
     args = ap.parse_args(argv)
     s = run_and_save(args.pool, args.out, args.store, args.verdict)
+    if args.pool == "forcebench":
+        print(f"settle file: {s['source_file']}")
     print(f"{s['n_records']} records, {len(s['solvers'])} solvers, "
           f"{len(s['worlds'])} worlds, verdict rule {args.verdict} → "
           f"{args.out or OUTPUT_DIR / ('replay_' + s['pool'])}")
