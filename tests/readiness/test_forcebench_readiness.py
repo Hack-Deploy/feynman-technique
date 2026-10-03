@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from analysis import compute_final_balances
@@ -389,36 +390,19 @@ def test_zero_experiment_attempt_is_charged_and_conserved():
     assert abs(sum(compute_final_balances(events).values())) < 1e-9
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: inf normalised_mse leaks into event log as non-standard JSON Infinity",
-)
-def test_infinite_score_events_are_strict_json():
-    record = _single_record(normalised_mse=float("inf"))
-    events = fb_run(0, prize=20, price=1.0, records=[record])
-    assert any(event["type"] == "attempt_started" for event in events)
-    json.dumps(events, allow_nan=False)
+def test_nonfinite_verdict_score_is_rejected():
+    with pytest.raises(ValueError):
+        _single_record(normalised_mse=float("inf"))
 
 
-def _reject_json_constant(value: str):
-    raise ValueError(f"invalid JSON constant: {value}")
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: inf normalised_mse leaks into event log as non-standard JSON Infinity",
-)
 def test_attempt_store_lines_are_strict_json(tmp_path):
-    record = _single_record(normalised_mse=float("inf"))
+    record = _single_record()
+    record.extra["x"] = float("inf")
     store = AttemptStore(tmp_path / "fb.jsonl")
-    store.append([record])
-    line = store.path.read_text()
-    json.loads(line, parse_constant=_reject_json_constant)
+    with pytest.raises(ValueError):
+        store.append([record])
 
 
-@pytest.mark.xfail(
-    strict=True, reason="BUG: ReplayPool accepts duplicate attempt_ids"
-)
 def test_replay_pool_rejects_duplicate_attempt_ids():
     first = _single_record()
     second = replace(first, solver="random_menu")
@@ -444,13 +428,38 @@ def test_attempt_record_rejects_out_of_range_stated_probability(stated_p):
         _single_record(stated_p=stated_p)
 
 
-@pytest.mark.xfail(
-    strict=True, reason="BUG: ReplayPool ignores recorded price mismatch"
-)
 def test_replay_pool_rejects_experiment_price_mismatch():
     records = forcebench_pool(1.0)
     with pytest.raises(ValueError):
         ReplayPool(records, experiments_cost(0.25))
+
+
+def test_replay_pool_filters_records_by_venue():
+    forcebench = _single_record(attempt_id="forcebench-0")
+    discoverphysics = replace(
+        forcebench,
+        attempt_id="discoverphysics-1",
+        venue="discoverphysics",
+        protocol="discoverphysics_native",
+    )
+    pool = ReplayPool(
+        [forcebench, discoverphysics],
+        experiments_cost(1.0),
+        venue="forcebench",
+    )
+    _, _, attempt_id = pool.draw(
+        "bayes_lite", "gravity", np.random.default_rng(0)
+    )
+    assert attempt_id == "forcebench-0"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("rounds", -1), ("experiments", -1)],
+)
+def test_attempt_record_rejects_negative_experiment_counts(field, value):
+    with pytest.raises(ValueError):
+        replace(_single_record(), **{field: value})
 
 
 def test_recorded_cost_charges_each_drawn_records_lab_cost():

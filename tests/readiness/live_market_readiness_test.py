@@ -453,13 +453,9 @@ class TestEngineGuards:
         bal = compute_final_balances(ev)
         assert all(v >= 0 for k, v in bal.items() if k.startswith("agent:"))
 
-    @pytest.mark.xfail(strict=True, reason="BUG: negative lab_cost is accepted; the lab "
-                       "pays the agent and ends negative (no validation in AttemptRecord/"
-                       "ReplayPool/run_market)")
     def test_negative_cost_rejected(self):
-        bad = [AttemptRecord(**{**r.to_dict(), "lab_cost": -10.0}) for r in _records()]
-        with pytest.raises((ValueError, AssertionError)):
-            _run(ReplayPool(bad, recorded_cost()), prize=500)
+        with pytest.raises(ValueError, match="lab_cost"):
+            AttemptRecord(**{**_records()[0].to_dict(), "lab_cost": -10.0})
 
     def test_every_collected_bid_leaves_an_event(self):
         # One solver, two worlds, enough for one 41-credit attempt but not two.
@@ -473,13 +469,9 @@ class TestEngineGuards:
                 dropped.append(seed)
         assert not dropped, f"bids silently dropped in seeds {dropped}"
 
-    @pytest.mark.xfail(strict=True, reason="BUG: a non-finite normalised_mse (ARA has "
-                       "'inf' rows) flows into ledger/event JSON as bare Infinity, which "
-                       "is not valid JSON for the dashboard (JSON.parse rejects it)")
     def test_non_finite_metric_is_json_safe(self):
-        recs = [AttemptRecord(**{**r.to_dict(), "verdict": {**r.verdict,
-                                                           "normalised_mse": math.inf}})
-                if not r.passed else r for r in _records()]
+        recs = _records()
+        next(r for r in recs if not r.passed).verdict["normalised_mse"] = math.inf
         ev, led = _run(ReplayPool(recs, experiments_cost(0.5)), prize=500)
         json.dumps(ev, allow_nan=False)
         json.dumps(led, allow_nan=False)
@@ -522,23 +514,20 @@ class TestStore:
         AttemptStore(p).append([self._rec(1)])
         with p.open("a") as f:
             f.write('{"attempt_id": "r2", "sour')
-        assert [r.attempt_id for r in AttemptStore(p).load()] == ["r1"]
+        with pytest.warns(UserWarning, match="truncated final line"):
+            assert [r.attempt_id for r in AttemptStore(p).load()] == ["r1"]
 
-    @pytest.mark.xfail(strict=True, reason="BUG: store writes non-finite floats as bare "
-                       "Infinity/NaN (json.dumps default allow_nan=True, dm/store.py:28)")
     def test_store_writes_strict_json(self, tmp_path):
         p = tmp_path / "i.jsonl"
-        AttemptStore(p).append([self._rec(1, verdict={"normalised_mse": math.inf,
-                                                      "passed": False})])
-        json.loads(p.read_text(), parse_constant=lambda c: (_ for _ in ()).throw(
-            ValueError(c)))
+        record = self._rec(1)
+        record.verdict["normalised_mse"] = math.inf
+        with pytest.raises(ValueError):
+            AttemptStore(p).append([record])
 
-    @pytest.mark.xfail(strict=True, reason="GAP: AttemptRecord.from_dict silently drops "
-                       "unknown keys, so a record written by a newer schema loses data "
-                       "when read and re-appended (dm/types.py:92)")
     def test_unknown_fields_round_trip(self):
         d = {**self._rec(1).to_dict(), "schema_version": 2}
-        assert AttemptRecord.from_dict(d).to_dict().get("schema_version") == 2
+        with pytest.raises(ValueError, match="schema_version"):
+            AttemptRecord.from_dict(d)
 
 
 # ------------------------------------------------------------ ARA-shaped pools (C12)
