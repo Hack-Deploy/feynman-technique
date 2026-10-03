@@ -445,7 +445,7 @@ ForceBench attempt through `dm.settle` and shows the ARA replay and the settled 
 | STOP 1 Cost preflight | ⏳ next | Preflight command (projected spend from the fake run's token counts × prices); then the user names the cheapest model and approves a budget |
 | 5 ForceBench + offline solvers | ✅ done offline and through `dm.settle` | `llm_menu` (live only); pass rates overstate identification on yukawa/fractional/oscillator/extra_dimensions (see Phase 5 findings) |
 | 6 Live grid | ⛔ blocked | STOP 1 budget |
-| 7 Markets on real attempts | 🟡 partly | ARA replay sweep exists (`dm/replay.py`). Missing: ForceBench and live pools, H1–H4 from the log, H3 on ForceBench, `dm/calibration.py` (Brier + reliability), `dm/live_market.py` |
+| 7 Markets on real attempts | ✅ done for ARA and ForceBench replay | `dm/calibration.py`, `dm.replay forcebench`, H1–H4 in replay summaries (see Phase 7 entry). Missing: live pools, `dm/live_market.py` |
 | 8 Dashboard, report, demo | 🟡 partly | `/real` page in the app (PR #16). Missing: calibration view, replay slider, failure-ledger view, `REPORT.md`, `DEMO.md`, README "three ways to run" |
 
 **Known bugs still marked xfail**: none (0 strict xfails after merging `review/remaining-readiness`).
@@ -495,3 +495,11 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
 - Checks after merging `origin/real-attempts`: targeted live/POC suite 47 passed; full suite
   657 passed, 5 skipped, 0 xfailed, no XPASS.
+
+## Phase 7: calibration, ForceBench replay, H1–H4, ARA on /simulation
+
+- `dm/calibration.py`: Brier score, 10-bin reliability table, calibration-in-the-large; records without a stated p are excluded and counted.
+- `dm/importers/forcebench.py` + `uv run python -m dm.replay forcebench`: settled ForceBench attempts (generated `output/forcebench_settle.json`, else the committed snapshot) as a `ReplayPool` with `experiments_cost(1.0)`; pools reject records from another venue; replays fail loudly if credits are not conserved.
+- `dm/hypotheses.py`: H1–H4 from the replay event log into `summary.json` (`UNAVAILABLE` with a reason when a pool can't answer). ARA: H1 not supported, H2 measured, H3/H4 unavailable. ForceBench: H1 unavailable, H2 measured, H3 partial, H4 not supported (underconfident). Details in REPORT_DRAFT.md.
+- Snapshots: refreshed `replay_ara_summary.json` (existing keys unchanged), new `replay_forcebench_summary.json`, registered in `real_data.SNAPSHOTS` and served in `/api/real` (`forcebench_replay`).
+- `/simulation`: new "Now with real AI scientists" section (model × world dots, clearing prize per world, profit per model by prize, calibration note pointing to `/live`, caveats, ARA attribution).
