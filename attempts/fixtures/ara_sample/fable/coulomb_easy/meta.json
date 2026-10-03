@@ -1,0 +1,24 @@
+{
+ "agent": "fable",
+ "world": "coulomb_easy",
+ "archived_at": "2026-07-14T17:34:41",
+ "rounds": 8,
+ "total_cost_usd": 31.2793,
+ "total_duration_s": 1255.5,
+ "bridge_errors": 0,
+ "tokens": {
+  "input_tokens": 4900,
+  "cache_creation_input_tokens": 1103286,
+  "cache_read_input_tokens": 5040920,
+  "output_tokens": 81274
+ },
+ "model": "cc-session",
+ "engine": "nbody",
+ "noise_std": 0.154507,
+ "noise_seed": 0,
+ "mean_pos_error": 0.4395080434636444,
+ "max_pos_error": 6.069440920315835,
+ "explanation_score": 1.0,
+ "judge_model": "claude-opus-4-6",
+ "agent_explanation": "This universe implements standard electrostatics (Coulomb's law) with unit coupling constant, in 2D, with the point charges interacting via the 3D inverse-square form.\n\n**The system.** The two scalar "
+}

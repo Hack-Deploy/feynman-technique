@@ -288,6 +288,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     ledger: list[LedgerRow] = []
     seq = 0
 
+    _validate(cfg)
     source: OutcomeSource = cfg.outcome_source or BernoulliTable(
         cfg.cost_model, cfg.true_probs or {})
     if hasattr(source, "reset"):
@@ -339,11 +340,13 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
              from_account="external", to_account=acct, amount=accounts[acct])
 
     # --- Tick 0: post prizes (with the preregistration commitment, if any) ---
+    # Commitments are fixed here; reveal and settlement compare against these.
+    posted = {w: p.commitment() for w, p in preregs.items()}
     for world in cfg.worlds:
         prize = cfg.prizes[world]
         accounts["researcher"] -= prize
         accounts["escrow"] += prize
-        commitment = preregs[world].commitment() if world in preregs else None
+        commitment = posted.get(world)
         emit(tick=0, type="prize_posted", world=world,
              from_account="researcher", to_account="escrow", amount=prize,
              commitment=commitment)
@@ -356,8 +359,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     def reveal(world: str, tick: int) -> None:
         if world in preregs:
             emit(tick=tick, type="prereg_revealed", world=world,
-                 commitment=preregs[world].commitment(),
-                 detail=preregs[world].to_dict())
+                 commitment=posted[world], detail=preregs[world].to_dict())
 
     # --- Ticks 1..ticks ---
     for tick in range(1, cfg.ticks + 1):
@@ -401,6 +403,10 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
             # Re-check affordability (credits may have changed)
             max_c = cfg.cost_model.max_cost(agent, world)
             if accounts[acct] < max_c:
+                if real and (agent, world) not in broke_noted:
+                    broke_noted.add((agent, world))
+                    emit(tick=tick, type="insufficient_credits",
+                         world=world, agent=agent, amount=max_c)
                 continue
 
             emit(tick=tick, type="bid_placed", world=world, agent=agent)
@@ -408,6 +414,11 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
             # 4. Draw the attempt (cost and outcome) from the outcome source
             passed, cost_detail, source_attempt_id = source.draw(agent, world, rng)
             cost = cost_detail["credits"]
+            if (world in preregs and source_attempt_id is not None
+                    and cost_detail.get("commitment") != preregs[world].commitment()):
+                raise ValueError(
+                    f"attempt {source_attempt_id} on {world} was not scored against the "
+                    f"preregistration posted for this prize")
 
             if real:
                 emit(tick=tick, type="attempt_started", world=world, agent=agent,
@@ -415,7 +426,8 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                 stated = cost_detail.get("stated_p")
                 emit(tick=tick, type="confidence_stated", world=world, agent=agent,
                      attempt_id=source_attempt_id,
-                     p=stated if stated is not None else beliefs[agent][world].mean)
+                     p=stated if stated is not None else beliefs[agent][world].mean,
+                     detail={"p_source": "solver" if stated is not None else "belief"})
 
             accounts[acct] -= cost
             accounts["lab"] += cost
@@ -523,11 +535,24 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     return events, ledger
 
 
+def _validate(cfg: MarketRun) -> None:
+    if len(set(cfg.agents)) != len(cfg.agents):
+        raise ValueError(f"duplicate agents: {cfg.agents}")
+    if len(set(cfg.worlds)) != len(cfg.worlds):
+        raise ValueError(f"duplicate worlds: {cfg.worlds}")
+    src = cfg.outcome_source
+    # An outcome source that prices its own attempts (ReplayPool) must also be the
+    # cost model, or the bid rule checks one price and the charge uses another.
+    if src is not None and hasattr(src, "max_cost") and src is not cfg.cost_model:
+        raise ValueError("outcome_source prices its own attempts; pass it as cost_model too")
+
+
 def _check_conservation(accounts: dict[str, float], expected: float,
                         tick: int) -> None:
-    """Assert total credits are conserved."""
+    """Assert total credits are conserved (relative tolerance: float sums of large
+    or fractional amounts drift by a few ulps without any credit being lost)."""
     total = sum(accounts.values())
-    assert abs(total - expected) < 1e-9, (
+    assert abs(total - expected) <= 1e-9 * max(1.0, abs(expected)), (
         f"Credit conservation violated at tick {tick}: "
         f"total={total}, expected={expected}, diff={total - expected}"
     )

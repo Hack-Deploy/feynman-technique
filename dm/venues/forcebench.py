@@ -3,42 +3,16 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from dm.store import ATTEMPTS_DIR
-from dm.types import InsufficientCredits
+from dm.types import InsufficientCredits, SubmittedAttempt
 from dm.wallet import Wallet
 
 if TYPE_CHECKING:
     from dm.solvers import MenuSolver, Observation
-
-try:
-    from dm.types import SubmittedAttempt
-except ImportError:  # Phase 2 stand-in; same fields as dm.types.SubmittedAttempt
-    @dataclass(frozen=True)
-    class SubmittedAttempt:
-        source: str
-        protocol: str
-        venue: str
-        world: str
-        solver: str
-        seed: int
-        stated_p_success: float | None
-        rounds: int
-        experiments: int
-        lab_cost: float
-        llm_usage: dict = field(default_factory=dict)
-        submitted_law: str | None = None
-        explanation: str | None = None
-        training: list = field(default_factory=list)
-        transcript_path: str | None = None
-        created_at: str = ""
-        extra: dict = field(default_factory=dict)
-
-        def to_dict(self) -> dict:
-            return asdict(self)
 
 
 WORLDS = (
@@ -236,10 +210,5 @@ def run_attempt(
         },
     }
     transcript_path.write_text(json.dumps(transcript, sort_keys=True, indent=1) + "\n")
-    attempt = SubmittedAttempt(
-        **{
-            **attempt.to_dict(),
-            "transcript_path": _relative_or_absolute(transcript_path),
-        }
-    )
+    attempt = replace(attempt, transcript_path=_relative_or_absolute(transcript_path))
     return attempt

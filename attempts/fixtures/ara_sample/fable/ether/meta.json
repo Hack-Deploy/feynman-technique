@@ -1,0 +1,24 @@
+{
+ "agent": "fable",
+ "world": "ether",
+ "archived_at": "2026-07-14T22:59:09",
+ "rounds": 7,
+ "total_cost_usd": 57.2797,
+ "total_duration_s": 2642.4,
+ "bridge_errors": 0,
+ "tokens": {
+  "input_tokens": 19157,
+  "cache_creation_input_tokens": 1444843,
+  "cache_read_input_tokens": 19608048,
+  "output_tokens": 169889
+ },
+ "model": "cc-session",
+ "engine": "nbody",
+ "noise_std": 0.345806,
+ "noise_seed": 0,
+ "mean_pos_error": Infinity,
+ "max_pos_error": Infinity,
+ "explanation_score": 0.9,
+ "judge_model": "claude-opus-4-6",
+ "agent_explanation": "The universe is governed by two superposed fields.\n\n(1) A central logarithmic potential sourced solely by the anchor: every test particle feels an attraction of magnitude A/r toward the anchor, with A"
+}

@@ -55,7 +55,7 @@ class Wallet:
                 }
             )
             raise InsufficientCredits(
-                f"agent {self.owner!r} has {self.balance:g} credits; needs {cost:g}"
+                needed=cost, balance=self.balance, count=count, price=float(price)
             )
         self._balance_m -= cost_m
         self._lab_m += cost_m
