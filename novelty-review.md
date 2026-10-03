@@ -1,6 +1,6 @@
 # Discovery Market: literature and startup review
 
-Review done on 2026-10-03 to back up slide 7, "What's new, and why it matters". Every claim below links to its source. Things we could not verify are listed at the end.
+Review done on 2026-10-03 to back up slide 2, "What's new, and why it matters". Every claim below links to its source. Things we could not verify are listed at the end.
 
 ## Bottom line
 
