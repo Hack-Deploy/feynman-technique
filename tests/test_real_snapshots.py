@@ -3,6 +3,19 @@
 import real_data
 
 
+def test_law_summary():
+    assert real_data._law_summary(None) is None
+    assert real_data._law_summary("def f(:") is None
+    assert real_data._law_summary("def f():\n    return 1\n") is None
+    assert real_data._law_summary(
+        'def f():\n    """\n    First line.\n    More.\n    """\n'
+    ) == "First line."
+    assert real_data._law_summary(
+        'def first():\n    return 1\n\n'
+        'def second():\n    """Documented."""\n    return 2\n'
+    ) is None
+
+
 def _missing(monkeypatch, tmp_path):
     gen = {name: tmp_path / f"{name}.missing" for name in ("ARA_STORE", "ARA_SUMMARY", "FORCEBENCH_GRID", "FORCEBENCH_REPLAY_SUMMARY")}
     snaps = {gen[name]: real_data.SNAPSHOTS[getattr(real_data, name)] for name in gen}
@@ -21,6 +34,12 @@ def test_page_data_falls_back_to_snapshots(monkeypatch, tmp_path):
     data = real_data.build_real_data()
     ara, fb = data["ara"], data["forcebench"]
     assert ara["available"] and ara["snapshot"] and len(ara["attempts"]) == 88
+    assert all(isinstance(attempt.get("law"), str) and attempt["law"] for attempt in ara["attempts"])
+    circle_fable = next(
+        attempt for attempt in ara["attempts"]
+        if attempt["world"] == "circle" and attempt["model"] == "fable"
+    )
+    assert circle_fable["law_summary"] == "Universal pairwise attraction with a 3/2-power distance law."
     assert "ARA Labs" in ara["attribution"]
     assert fb["available"] and fb["snapshot"] and len(fb["table"]) == 12
     assert len(fb["attempts"]) == 60

@@ -35,12 +35,13 @@
   .dots { width: 100%; border-collapse: collapse; margin-top: 18px; }
   .dots td, .dots th { border: 0; padding: 6px 6px; }
   .dots th { text-align: left; }
-  .dot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; margin: 2px; cursor: pointer; border: 3px solid transparent; vertical-align: middle; }
-  .dot.right { background: var(--green); }
-  .dot.lucky { background: var(--amber); }
-  .dot.fail { background: var(--rust); }
-  .dot.closest { background: var(--navy-2); }
-  .dot.sel { border-color: var(--ink); }
+  .dot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; margin: 2px; cursor: pointer; border: 3px solid var(--ink); background: #fff; vertical-align: middle; }
+  .dot.right { background: var(--green); border-color: var(--green); }
+  .dot.closest { background: linear-gradient(90deg, var(--navy-2) 50%, #fff 50%); border-color: var(--navy-2); }
+  .dot.lucky { background: repeating-linear-gradient(45deg, var(--amber) 0 3px, #fff 3px 6px); border-color: var(--amber); }
+  .dot.fail { background: #fff; border-color: var(--rust); }
+  .dot.sel { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .dot.key { width: 16px; height: 16px; border-width: 2px; margin: 0 6px 0 0; cursor: default; vertical-align: -3px; }
   .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 14px; margin-top: 10px; }
   .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 6px; }
   .detail { margin-top: 18px; min-height: 120px; }
@@ -299,10 +300,10 @@
 <section id="results">
   <p class="label">5 · Why pass or fail?</p>
   <h2>60 settled attempts: 6 worlds × 2 AI scientists × 5 runs.</h2>
-  <p class="sub">Green: passed with the right law. Blue: the true law wasn't on its list, and its closest guess passed. <b style="color:var(--amber)">Amber: passed with the wrong law</b>, because the judge's tests could not tell the difference. Red: failed. Click any dot.</p>
+  <p class="sub">Filled: passed with the right law. Half-filled: the true law wasn't on its list, and its closest guess passed. <b style="color:var(--amber)">Striped: passed with the wrong law</b>, because the judge's tests could not tell the difference. Hollow ring: failed. Click any dot.</p>
   <div class="buckets" id="buckets"></div>
   <div id="grid"><p class="wait">Loading results…</p></div>
-  <div class="legend"><span><i style="background:var(--green)"></i>right law, passed</span><span><i style="background:var(--navy-2)"></i>closest guess available, passed</span><span><i style="background:var(--amber)"></i>wrong law, passed anyway</span><span><i style="background:var(--rust)"></i>failed</span></div>
+  <div class="legend"><span><i class="dot key right"></i>right law, passed</span><span><i class="dot key closest"></i>closest guess available, passed</span><span><i class="dot key lucky"></i>wrong law, passed anyway</span><span><i class="dot key fail"></i>failed</span></div>
   <div class="detail card plain" id="detail"><p class="wait">Click a dot to see what was proposed and why it passed or failed.</p></div>
 </section>
 
@@ -312,8 +313,9 @@
   <h2>The same market, run on 88 published attempts by 8 frontier AI models.</h2>
   <p class="sub" id="araIntro">Here the AI scientists are chatbots, not small programs. Each of 8 frontier models had one go at each of the 11 public DiscoverPhysics worlds, designing its own experiments. We replay those attempts through the market: each round of experiments costs 1 credit, and the prize is paid only if the judge's hidden tests pass (error under 0.1).</p>
   <h3 style="margin-top:26px">Who solved what</h3>
-  <p class="note">Green: passed the hidden tests. Red: failed. One attempt per model per world. Click any dot.</p>
+  <p class="note">Filled: passed the hidden tests. Hollow ring: failed. One attempt per model per world. Click any dot.</p>
   <div class="scroll" id="araGrid"><p class="wait">Loading published attempts…</p></div>
+  <div class="legend"><span><i class="dot key right"></i>passed</span><span><i class="dot key fail"></i>failed</span></div>
   <div class="detail card plain" id="araDetail" style="min-height:0"><p class="wait">Click a dot to see that attempt.</p></div>
   <div class="grid2" style="margin-top:26px">
     <div><h3>Clearing prize per world</h3>
@@ -498,10 +500,10 @@ function renderGrid(fb) {
   if (!ATTEMPTS.length) { $("#grid").innerHTML = '<p class="wait">No settled results yet. Run <code>uv run python -m tests.forcebench_settle</code>.</p>'; return; }
   const c = {right: 0, closest: 0, lucky: 0, fail: 0}; ATTEMPTS.forEach(a => c[kind(a)]++);
   $("#buckets").innerHTML = `
-    <div class="card green"><div class="n" style="color:var(--green)">${c.right}</div><h3>Right law, passed</h3><p>The market worked: the prize went to a correct answer.</p></div>
-    <div class="card"><div class="n" style="color:var(--navy-2)">${c.closest}</div><h3>Closest guess, passed</h3><p>The true law wasn't among its guesses; the nearest one was good enough.</p></div>
-    <div class="card" style="background:var(--amber-soft)"><div class="n" style="color:var(--amber)">${c.lucky}</div><h3>Wrong law, passed</h3><p>The judge was too lenient. These are the bugs a real market must not have.</p></div>
-    <div class="card rust"><div class="n" style="color:var(--rust)">${c.fail}</div><h3>Failed</h3><p>No prize. The attempt and its data go into the public record.</p></div>`;
+    <div class="card green"><div class="n" style="color:var(--green)">${c.right}</div><h3><i class="dot key right"></i>Right law, passed</h3><p>The market worked: the prize went to a correct answer.</p></div>
+    <div class="card"><div class="n" style="color:var(--navy-2)">${c.closest}</div><h3><i class="dot key closest"></i>Closest guess, passed</h3><p>The true law wasn't among its guesses; the nearest one was good enough.</p></div>
+    <div class="card" style="background:var(--amber-soft)"><div class="n" style="color:var(--amber)">${c.lucky}</div><h3><i class="dot key lucky"></i>Wrong law, passed</h3><p>The judge was too lenient. These are the bugs a real market must not have.</p></div>
+    <div class="card rust"><div class="n" style="color:var(--rust)">${c.fail}</div><h3><i class="dot key fail"></i>Failed</h3><p>No prize. The attempt and its data go into the public record.</p></div>`;
   const solvers = fb.solvers;
   let h = `<table class="dots"><tr><th>World</th>${solvers.map(s => `<th>${SOLVER[s] || s}</th>`).join("")}</tr>`;
   for (const w of fb.worlds) {
@@ -584,6 +586,8 @@ function showAra(i) {
     <div><span>Experiments</span><b>${a.experiments ?? "–"}</b></div>
     <div><span>Error (pass &lt; 0.1)</span><b style="color:${a.passed ? "var(--green)" : "var(--rust)"}">${num(a.nmse, 3)}</b></div>
     <div><span>Model cost</span><b>${a.usd == null ? "–" : "$" + num(a.usd, 2)}</b></div></div>
+    <p class="label" style="margin:16px 0 0">Proposal</p>
+    ${a.law ? `${a.law_summary ? `<p style="margin:4px 0 0">${esc(a.law_summary)}</p>` : ""}<details style="margin-top:6px"><summary>Show the submitted code</summary><pre>${esc(a.law)}</pre></details>` : '<p class="wait" style="margin:4px 0 0">No proposal recorded for this attempt.</p>'}
     <p class="note" style="margin-top:10px">Market charge: 1 credit per round.${own}${a.dataset_url ? ` <a href="${esc(a.dataset_url)}" target="_blank" rel="noopener">Source</a>.` : ""}</p>`;
 }
 function hbars(el, rows, opts) {
