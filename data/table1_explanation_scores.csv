@@ -1,0 +1,12 @@
+world,opus-4.7,gpt-5.5,sonnet-4.6,qwen3.5-397b
+gravity,0.94,0.96,0.50,0.76
+yukawa,0.96,0.90,0.28,0.40
+hubble,0.90,0.64,0.24,0.20
+ether,0.76,0.76,0.38,0.36
+oscillator,0.72,0.90,0.38,0.26
+coulomb,0.70,0.74,0.24,0.30
+circle,0.48,0.54,0.36,0.46
+extra_dimensions,0.54,0.36,0.16,0.24
+fractional,0.48,0.48,0.34,0.46
+dark_matter,0.38,0.22,0.22,0.30
+three_species,0.40,0.40,0.34,0.26
