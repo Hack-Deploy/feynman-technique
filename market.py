@@ -291,6 +291,13 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
     _validate(cfg)
     source: OutcomeSource = cfg.outcome_source or BernoulliTable(
         cfg.cost_model, cfg.true_probs or {})
+    # Real path: a source that charges via its own cost function (e.g.
+    # ReplayPool.cost_fn) must also be the cost model the bid rule uses,
+    # otherwise affordability is checked against different numbers than the
+    # charges actually drawn.
+    if cfg.outcome_source is not None and hasattr(source, "cost_fn") \
+            and cfg.cost_model is not source:
+        raise ValueError("cost_model must match outcome_source charges")
     if hasattr(source, "reset"):
         source.reset()
     real = cfg.state_confidence
@@ -403,10 +410,13 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
             # Re-check affordability (credits may have changed)
             max_c = cfg.cost_model.max_cost(agent, world)
             if accounts[acct] < max_c:
-                if real and (agent, world) not in broke_noted:
-                    broke_noted.add((agent, world))
-                    emit(tick=tick, type="insufficient_credits",
-                         world=world, agent=agent, amount=max_c)
+                if real:
+                    if (agent, world) not in broke_noted:
+                        broke_noted.add((agent, world))
+                        emit(tick=tick, type="insufficient_credits",
+                             world=world, agent=agent, amount=max_c)
+                    emit(tick=tick, type="bid_cancelled", world=world, agent=agent,
+                         detail={"reason": "insufficient_credits"})
                 continue
 
             emit(tick=tick, type="bid_placed", world=world, agent=agent)
@@ -420,35 +430,55 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                     f"attempt {source_attempt_id} on {world} was not scored against the "
                     f"preregistration posted for this prize")
 
+            # Market ledger id, computed before attempt-scoped events so they
+            # can all link back to the ledger row via detail.market_attempt_id.
+            attempt_id = str(uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                f"{cfg.run_id}:{cfg.seed}:{tick}:{agent}:{world}"
+            ))
+
             if real:
                 emit(tick=tick, type="attempt_started", world=world, agent=agent,
-                     attempt_id=source_attempt_id)
+                     attempt_id=source_attempt_id,
+                     detail={"market_attempt_id": attempt_id})
                 stated = cost_detail.get("stated_p")
                 emit(tick=tick, type="confidence_stated", world=world, agent=agent,
                      attempt_id=source_attempt_id,
                      p=stated if stated is not None else beliefs[agent][world].mean,
-                     detail={"p_source": "solver" if stated is not None else "belief"})
+                     detail={
+                         "market_attempt_id": attempt_id,
+                         "p_source": "solver" if stated is not None else "belief",
+                         "p_source_label": "stated" if stated is not None else "belief",
+                     })
 
+            assert cost <= accounts[acct] + 1e-9, \
+                f"charge {cost} exceeds {acct} balance {accounts[acct]}"
             accounts[acct] -= cost
             accounts["lab"] += cost
             emit(tick=tick, type=cfg.cost_model.charge_event_type(),
                  world=world, agent=agent,
                  from_account=acct, to_account="lab", amount=cost,
-                 count=cost_detail.get("count"), attempt_id=source_attempt_id)
+                 count=cost_detail.get("count"), attempt_id=source_attempt_id,
+                 detail={"market_attempt_id": attempt_id} if real else None)
 
             if real:
                 emit(tick=tick, type="attempt_submitted", world=world, agent=agent,
-                     attempt_id=source_attempt_id)
+                     attempt_id=source_attempt_id,
+                     detail={"market_attempt_id": attempt_id})
+                verdict_detail = {
+                    "passed": passed,
+                    "normalised_mse": cost_detail.get("normalised_mse"),
+                    "market_attempt_id": attempt_id,
+                }
+                if world in preregs:
+                    verdict_detail["prereg_match"] = (
+                        cost_detail.get("commitment")
+                        == preregs[world].commitment())
                 emit(tick=tick, type="verdict_issued", world=world, agent=agent,
                      attempt_id=source_attempt_id,
                      commitment=cost_detail.get("commitment"),
-                     detail={"passed": passed,
-                             "normalised_mse": cost_detail.get("normalised_mse")})
+                     detail=verdict_detail)
 
-            attempt_id = str(uuid.uuid5(
-                uuid.NAMESPACE_DNS,
-                f"{cfg.run_id}:{cfg.seed}:{tick}:{agent}:{world}"
-            ))
             context = {
                 "prize": cfg.prizes[world],
                 "probability_source": cfg.probability_source,
@@ -491,7 +521,8 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                 open_worlds.discard(world)
                 closed_this_tick.add(world)
 
-                emit(tick=tick, type="attempt_passed", world=world, agent=agent)
+                emit(tick=tick, type="attempt_passed", world=world, agent=agent,
+                     detail={"market_attempt_id": attempt_id} if real else None)
                 emit(tick=tick, type="prize_paid", world=world, agent=agent,
                      from_account="escrow", to_account=acct, amount=prize)
                 reveal(world, tick)
@@ -504,7 +535,8 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                 # The passing attempt is disclosed immediately
                 row.disclosed_at_tick = tick
             else:
-                emit(tick=tick, type="attempt_failed", world=world, agent=agent)
+                emit(tick=tick, type="attempt_failed", world=world, agent=agent,
+                     detail={"market_attempt_id": attempt_id} if real else None)
                 hidden_rows.append(row)
             ledger.append(row)
 

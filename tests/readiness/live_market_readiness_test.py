@@ -382,9 +382,6 @@ class TestCalibrationFromEvents:
         cs = [e for e in ev if e["type"] == "confidence_stated"]
         assert cs and all((e.get("detail") or {}).get("p_source") == "belief" for e in cs)
 
-    @pytest.mark.xfail(strict=True, reason="GAP: events carry the replayed record id but "
-                       "not the market attempt id (ledger uuid5), so a verdict cannot be "
-                       "joined to its ledger row except by (tick, agent, world)")
     def test_events_link_to_ledger_rows(self):
         ev, led = _run(ReplayPool(_records(), experiments_cost(0.5)), prize=500)
         ids = {r["attempt_id"] for r in led}
@@ -429,29 +426,35 @@ class TestPreregLifecycle:
             before = json.dumps([e for e in ev if e["seq"] < revealed[0]["seq"]])
             assert f'"SECRET_CASE": "{w}"' not in before
 
-    @pytest.mark.xfail(strict=True, reason="GAP: verdict_issued.commitment is copied from "
-                       "the replayed record, not checked against the commitment the market "
-                       "posted for that world; a record scored under another prereg settles")
     def test_verdict_commitment_matches_market_prereg(self):
         pr = _preregs()
-        ev, _ = _run(ReplayPool(_records(), experiments_cost(1)), prize=500, preregs=pr)
+        records = [
+            AttemptRecord(**{
+                **record.to_dict(),
+                "verdict": {
+                    **record.verdict,
+                    "prereg_commitment": pr[record.world].commitment(),
+                },
+            })
+            for record in _records()
+        ]
+        ev, _ = _run(ReplayPool(records, experiments_cost(1)), prize=500, preregs=pr)
         for e in ev:
             if e["type"] == "verdict_issued":
-                assert e.get("commitment") == pr[e["world"]].commitment()
+                assert e["detail"]["prereg_match"] is True
+
+        with pytest.raises(ValueError, match="not scored against"):
+            _run(ReplayPool(_records(), experiments_cost(1)), prize=500, preregs=pr)
 
 
 # ------------------------------------------------------------ engine guards
 
 class TestEngineGuards:
 
-    @pytest.mark.xfail(strict=True, reason="BUG: bid rule/affordability uses cfg.cost_model "
-                       "while charges come from cfg.outcome_source; if they differ, agents "
-                       "go negative and the charge event type is wrong (market.py:376-426)")
     def test_mismatched_cost_model_cannot_overdraw(self):
         pool = ReplayPool(_records(), experiments_cost(5.0))
-        ev, _ = _run(pool, prize=500, cost_model=TrackACostModel())
-        bal = compute_final_balances(ev)
-        assert all(v >= 0 for k, v in bal.items() if k.startswith("agent:"))
+        with pytest.raises(ValueError, match="prices its own attempts"):
+            _run(pool, prize=500, cost_model=TrackACostModel())
 
     def test_negative_cost_rejected(self):
         with pytest.raises(ValueError, match="lab_cost"):
