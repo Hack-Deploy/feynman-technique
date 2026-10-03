@@ -1,6 +1,6 @@
 {
-  "events.json": "af75c585afbffdcbc787cc2bfdc7eb974929701f15d6a34f2af7f2ffdcdfd551",
-  "ledger.json": "8416fca9493cc6d76f37b563e61a9557931a7ad1321651b2cd97f542cc474884",
-  "summary.json": "99f3d6afc954c2aef7334351236d08d952a6a442f1cbb38585b03001408a8164",
-  "_note": "sha256 of run.py outputs after Phase 0 (metric leak nulled). Phase 1+ must reproduce these."
+  "events.json": "15a18d1e64956834201f6f9ecbd518ce5eb47c7d425f7b98ece9319814c17ae0",
+  "ledger.json": "a36adf6a39ce84ed00b619b9604488a8e75ba425fae7a92a1052a1c6fedcadff",
+  "summary.json": "f2eae377837f970634e613654a79dc2eb4d508814fa96543e14f7cc313898699",
+  "_note": "sha256 of run.py outputs produced by main's own code at 85b6090. The branch engine must reproduce these."
 }

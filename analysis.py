@@ -17,6 +17,7 @@ from typing import Any
 import numpy as np
 
 from data_loader import load_table2
+from runner import PROB_SOURCES
 
 
 def compute_final_balances(events: list[dict]) -> dict[str, float]:
@@ -259,7 +260,7 @@ def build_full_summary(
 
     # H1: Do stronger agents end in profit while weaker agents stop bidding?
     h1_results = {}
-    for source in ["raw", "calibrated"]:
+    for source in PROB_SOURCES:
         h1_results[source] = {}
         for prize in prize_sweep_a:
             template = f"track_a_{source}_prize{prize}_seed{{seed}}"
@@ -272,7 +273,7 @@ def build_full_summary(
 
     # H2: Clearing prizes
     h2_results = {}
-    for source in ["raw", "calibrated"]:
+    for source in PROB_SOURCES:
         clearing = compute_clearing_prizes(
             all_events, track_a_worlds, prize_sweep_a, seeds,
             track="A", probability_source=source,
@@ -397,13 +398,13 @@ def _build_verdicts(h1_results, h2_results, h3_results,
     verdicts = {}
 
     # H1 verdict (per probability source)
-    for source in ["raw", "calibrated"]:
+    for source in PROB_SOURCES:
         verdicts[f"h1_{source}"] = _h1_verdict(
             source, h1_results.get(source, {}), strength_order
         )
 
     # H2 verdict
-    for source in ["raw", "calibrated"]:
+    for source in PROB_SOURCES:
         key = f"h2_{source}"
         clearing = h2_results.get(source, {})
         lines = [f"H2 verdict ({source} odds):"]

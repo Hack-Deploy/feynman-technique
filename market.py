@@ -451,9 +451,12 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                 solver=agent,
                 design=f"track_{cfg.track}",
                 context=context,
-                # metric: a measured score (replays) or None; never the hidden truth.
-                outcome={"passed": passed,
-                         "metric": cost_detail.get("normalised_mse")},
+                # Simulated rows record only pass/fail (never the hidden true p);
+                # replayed real attempts also record their measured normalised MSE.
+                outcome=({"passed": passed}
+                         if source_attempt_id is None else
+                         {"passed": passed,
+                          "metric": cost_detail.get("normalised_mse")}),
                 effort={
                     "rounds": cost_detail.get("rounds"),
                     "experiments": cost_detail.get("experiments"),

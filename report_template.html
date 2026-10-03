@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · Results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --black: #0B0B0B; --ink: #1A1A1A; --ink-2: #5A5A56; --rule: #DCDBD5; --paper: #FFFFFF; --soft: #F4F3EE; --red: #D9452B;
+  --sans: 'Archivo', system-ui, sans-serif; --cond: 'Archivo Narrow', 'Arial Narrow', sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); }
+.mast { background: var(--black); color: #fff; }
+.mast .in { max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; margin-right: auto; }
+.lw1 { font: 700 18px/1 var(--sans); letter-spacing: -0.01em; }
+.lw2 { font: 700 13px/1 var(--cond); letter-spacing: 0.22em; text-transform: uppercase; color: #9A9A96; }
+.mast .page { font: 600 13px var(--cond); letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A96; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 96px; }
+
+.bar { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; padding: 20px 0; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper); z-index: 2; }
+.ctl label { display: block; font: 600 12px var(--cond); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 6px; }
+.seg { display: inline-flex; border: 1px solid var(--black); }
+.seg button { font: 600 14px var(--sans); background: #fff; color: var(--ink); border: 0; padding: 7px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--black); }
+.seg button.on { background: var(--black); color: #fff; }
+.seg button:focus-visible, .act:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+.runbox { background: var(--soft); padding: 18px 20px; margin-top: 24px; display: none; }
+.app .runbox { display: block; }
+.runbox .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.act { font: 600 15px var(--sans); padding: 9px 16px; border: 1px solid var(--black); background: var(--black); color: #fff; cursor: pointer; }
+.act.ghost { background: #fff; color: var(--black); }
+.act[disabled] { opacity: 0.5; cursor: wait; }
+.status { font: 14px var(--sans); color: var(--ink-2); margin-left: 6px; }
+.status.ok { color: #1E7A45; } .status.bad { color: var(--red); }
+pre.log { margin: 14px 0 0; max-height: 260px; overflow: auto; background: var(--black); color: #E6E6E2; font: 12.5px/1.5 var(--mono); padding: 14px 16px; white-space: pre-wrap; display: none; }
+pre.log.show { display: block; }
+
+h2 { font: 700 26px/1.2 var(--sans); letter-spacing: -0.015em; margin: 56px 0 6px; }
+.sub { color: var(--ink-2); margin: 0 0 18px; max-width: 720px; }
+svg { width: 100%; height: auto; display: block; font-family: var(--sans); }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); margin-top: 10px; }
+.sw { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th { font: 600 12px var(--cond); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); text-align: left; padding: 8px 10px 8px 0; border-bottom: 1.5px solid var(--black); }
+td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
+.r { text-align: right; font-family: var(--mono); font-size: 14px; }
+.neg { color: var(--red); }
+.scroll { max-height: 360px; overflow: auto; border-bottom: 1.5px solid var(--black); }
+.scroll thead th { position: sticky; top: 0; background: #fff; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(--mono); white-space: pre-wrap; margin: 0; }
+.empty { color: var(--ink-2); font-style: italic; padding: 14px 0; }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { position: static; } }
+</style>
+</head>
+<body>
+<header class="mast"><div class="in">
+  <a class="logo" href="index.html"><svg width="33" height="25" viewBox="0 0 33 25" aria-hidden="true"><rect x="1" y="1" width="31" height="23" rx="4" fill="none" stroke="#fff" stroke-width="1.6"/><g fill="none" stroke="#fff" stroke-width="1"><circle cx="7" cy="7" r="2.1"/><circle cx="13.5" cy="7" r="2.1"/><circle cx="20" cy="7" r="2.1"/><circle cx="26.5" cy="7" r="2.1"/><circle cx="7" cy="13" r="2.1"/><circle cx="13.5" cy="13" r="2.1"/><circle cx="20" cy="13" r="2.1" fill="#fff"/><circle cx="26.5" cy="13" r="2.1"/><circle cx="7" cy="19" r="2.1"/><circle cx="13.5" cy="19" r="2.1"/><circle cx="20" cy="19" r="2.1"/><circle cx="26.5" cy="19" r="2.1"/></g></svg><span class="lw1">Discovery</span><span class="lw2">Market</span></a>
+  <span class="page">Simulation results</span>
+</div></header>
+
+<main class="wrap">
+
+<section class="runbox">
+  <div class="row">
+    <button class="act" id="btnRun">Run simulation</button>
+    <button class="act ghost" id="btnTest">Run tests</button>
+    <span class="status" id="status">Results from the last run on disk.</span>
+  </div>
+  <pre class="log" id="log"></pre>
+</section>
+
+<div class="bar">
+  <div class="ctl"><label>Odds source</label><div class="seg" id="segSource"></div></div>
+  <div class="ctl"><label>Prize per world</label><div class="seg" id="segPrize"></div></div>
+  <div class="ctl"><label>Seed</label><div class="seg" id="segSeed"></div></div>
+</div>
+
+<h2>Prize needed to solve each world</h2>
+<p class="sub">Smallest prize at which any agent solved the world, in at least one seed. Red rows: worlds with hidden structure.</p>
+<div id="clearing"></div>
+
+<h2>Agent balances over time</h2>
+<p class="sub" id="balSub"></p>
+<div id="balances"></div>
+<div class="legend" id="balLegend"></div>
+
+<div class="two">
+  <div>
+    <h2>Mean profit by prize</h2>
+    <p class="sub">Credits gained or lost, averaged over five seeds.</p>
+    <div id="profits"></div>
+  </div>
+  <div>
+    <h2>Public ledger</h2>
+    <p class="sub" id="ledSub"></p>
+    <div id="ledger"></div>
+  </div>
+</div>
+
+<h2>Verdicts</h2>
+<p class="sub">Text output from the analysis, for the selected odds source.</p>
+<div class="two"><pre class="verdict" id="vH1"></pre><pre class="verdict" id="vH2"></pre></div>
+
+</main>
+
+<script>
+let DATA = /*__DATA__*/null;
+const COLORS = { "opus-4.7": "#0B0B0B", "gpt-5.5": "#D9452B", "sonnet-4.6": "#8A8A85", "qwen3.5-397b": "#2F6FA8" };
+const state = { source: "power", prize: 100, seed: 0 };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v * 10) / 10);
+const nice = w => w.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+
+function seg(el, values, key, label) {
+  el.innerHTML = values.map(v => `<button data-v="${v}" class="${String(v) === String(state[key]) ? "on" : ""}">${label ? label(v) : v}</button>`).join("");
+  el.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    state[key] = typeof state[key] === "number" ? Number(b.dataset.v) : b.dataset.v;
+    render();
+  };
+}
+
+function runId() { return `track_a_${state.source}_prize${state.prize}_seed${state.seed}`; }
+
+function drawClearing() {
+  const levels = [...DATA.prizes, "never"];
+  const worlds = Object.keys(DATA.clearing[state.source]);
+  const W = 1000, rowH = 34, top = 34, left = 170, right = 30, H = top + worlds.length * rowH + 10;
+  const x = i => left + i * ((W - left - right) / (levels.length - 1));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Clearing prize per world">`;
+  levels.forEach((l, i) => {
+    s += `<line x1="${x(i)}" y1="${top - 8}" x2="${x(i)}" y2="${H - 6}" stroke="#ECEBE6"/>`;
+    s += `<text x="${x(i)}" y="18" font-size="13" text-anchor="middle" fill="#5A5A56">${l === "never" ? "never" : l}</text>`;
+  });
+  worlds.forEach((w, r) => {
+    const y = top + r * rowH + rowH / 2, hid = DATA.hidden.includes(w);
+    s += `<text x="${left - 16}" y="${y + 5}" font-size="15" text-anchor="end" fill="${hid ? "#D9452B" : "#1A1A1A"}" font-weight="${hid ? 600 : 400}">${nice(w)}</text>`;
+    DATA.sources.forEach(src => {
+      if (src === state.source) return;
+      const i = levels.indexOf(DATA.clearing[src][w]);
+      s += `<circle cx="${x(i)}" cy="${y}" r="7" fill="none" stroke="#B8B7B1" stroke-width="1.5"><title>${src}: ${DATA.clearing[src][w]}</title></circle>`;
+    });
+    const i = levels.indexOf(DATA.clearing[state.source][w]);
+    s += `<circle cx="${x(i)}" cy="${y}" r="8" fill="${hid ? "#D9452B" : "#0B0B0B"}"><title>${state.source}: ${DATA.clearing[state.source][w]}</title></circle>`;
+  });
+  s += `</svg><div class="legend"><span><span class="sw" style="background:#0B0B0B;height:10px;width:10px;border-radius:50%"></span>${esc(state.source)} odds</span><span><span class="sw" style="border:1.5px solid #B8B7B1;height:10px;width:10px;border-radius:50%;background:none"></span>other odds sources, for comparison</span></div>`;
+  $("clearing").innerHTML = s;
+}
+
+function drawBalances() {
+  const run = DATA.balances[runId()];
+  $("balSub").textContent = `${state.source} odds, prize ${state.prize} per world, seed ${state.seed}. Every agent starts with 100 credits. Each step is one payment: a run fee or a prize.`;
+  if (!run || !run.steps) {
+    $("balances").innerHTML = `<p class="empty">No bids in this run, since the prize never covered the expected cost.</p>`; $("balLegend").innerHTML = ""; return;
+  }
+  const series = run.points, N = run.steps, W = 1000, H = 340, L = 56, R = 120, Tp = 16, B = 40;
+  let all = [];
+  DATA.agents.forEach(a => series[a].forEach(p => all.push(p[1])));
+  let lo = Math.min(0, ...all), hi = Math.max(100, ...all); const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const X = n => L + n / N * (W - L - R), Y = v => Tp + (hi - v) / (hi - lo) * (H - Tp - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent balances, payment by payment">`;
+  const step = (hi - lo) > 400 ? 100 : (hi - lo) > 160 ? 50 : 25;
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    s += `<line x1="${L}" y1="${Y(v)}" x2="${W - R}" y2="${Y(v)}" stroke="${v === 100 ? "#B8B7B1" : "#ECEBE6"}" ${v === 100 ? 'stroke-dasharray="4 4"' : ""}/>`;
+    s += `<text x="${L - 8}" y="${Y(v) + 4}" font-size="12" text-anchor="end" fill="#5A5A56">${v}</text>`;
+  }
+  const every = Math.max(1, Math.ceil(run.ticks.length / 12));
+  run.ticks.forEach(([n, t], i) => {
+    if (n === 0) return;
+    s += `<line x1="${X(n)}" y1="${Tp}" x2="${X(n)}" y2="${H - B}" stroke="#ECEBE6"/>`;
+    if (i % every === 0) s += `<text x="${X(n)}" y="${H - 22}" font-size="11" text-anchor="middle" fill="#8A8A85">t${t}</text>`;
+  });
+  s += `<text x="${(L + W - R) / 2}" y="${H - 4}" font-size="12" text-anchor="middle" fill="#1A1A1A">Payments in order (${N} total); gridlines mark market ticks</text>`;
+  const ends = [];
+  DATA.agents.forEach(a => {
+    const pts = series[a]; let d = "", last = null;
+    pts.forEach(([n, v]) => { d += last === null ? `M${X(n)},${Y(v)}` : `H${X(n)}V${Y(v)}`; last = v; });
+    d += `H${X(N)}`;
+    s += `<path d="${d}" fill="none" stroke="${COLORS[a]}" stroke-width="2.2"/>`;
+    ends.push([a, last]);
+  });
+  ends.sort((p, q) => q[1] - p[1]);
+  let prevY = -1e9;
+  ends.forEach(([a, v]) => {
+    let y = Math.max(Y(v) + 4, prevY + 15); prevY = y;
+    s += `<text x="${W - R + 8}" y="${y}" font-size="12" fill="${COLORS[a]}" font-weight="600">${a} ${Math.round(v)}</text>`;
+  });
+  $("balances").innerHTML = s + "</svg>";
+  $("balLegend").innerHTML = `<span><span class="sw" style="background:none;border-top:2px dashed #B8B7B1;height:0"></span>starting balance, 100 credits</span>`;
+}
+
+function drawProfits() {
+  const p = DATA.profits[state.source];
+  let s = `<table><thead><tr><th>Agent</th>${DATA.prizes.map(z => `<th class="r">${z}</th>`).join("")}</tr></thead><tbody>`;
+  DATA.agents.forEach(a => {
+    s += `<tr><td><span class="sw" style="background:${COLORS[a]}"></span>${a}</td>`;
+    DATA.prizes.forEach(z => {
+      const v = p[String(z)][a];
+      const sel = z === state.prize ? "font-weight:600;background:#F4F3EE" : "";
+      s += `<td class="r ${v < 0 ? "neg" : ""}" style="${sel}">${v === 0 ? "0" : fmt(v)}</td>`;
+    });
+    s += "</tr>";
+  });
+  $("profits").innerHTML = s + "</tbody></table>";
+}
+
+function drawLedger() {
+  const rows = DATA.ledger[runId()] || [];
+  const fails = rows.filter(r => !r[3]).length;
+  $("ledSub").textContent = rows.length ? `${rows.length} attempts in this run: ${rows.length - fails} passes, ${fails} failures.` : "No attempts in this run, since no agent found a bid worth the cost.";
+  if (!rows.length) { $("ledger").innerHTML = ""; return; }
+  let s = `<div class="scroll"><table><thead><tr><th>Public at tick</th><th>World</th><th>Agent</th><th>Result</th><th class="r">Cost</th></tr></thead><tbody>`;
+  rows.forEach(([tick, w, a, ok, c]) => {
+    s += `<tr><td class="r" style="text-align:left">${tick ?? "–"}</td><td>${nice(w)}</td><td>${a}</td><td class="${ok ? "" : "neg"}">${ok ? "Pass" : "Fail"}</td><td class="r">${c}</td></tr>`;
+  });
+  $("ledger").innerHTML = s + "</tbody></table></div>";
+}
+
+function render() {
+  seg($("segSource"), DATA.sources, "source");
+  seg($("segPrize"), DATA.prizes, "prize");
+  seg($("segSeed"), DATA.seeds, "seed");
+  drawClearing(); drawBalances(); drawProfits(); drawLedger();
+  $("vH1").textContent = DATA.verdicts[`h1_${state.source}`] || "";
+  $("vH2").textContent = DATA.verdicts[`h2_${state.source}`] || "";
+}
+
+async function call(path, btn, label) {
+  const btns = document.querySelectorAll(".act"); btns.forEach(b => b.disabled = true);
+  const st = $("status"); st.className = "status"; st.textContent = `${label}…`;
+  const log = $("log"); log.classList.add("show"); log.textContent = "";
+  try {
+    const r = await fetch(path, { method: "POST" }); const j = await r.json();
+    log.textContent = j.output; log.scrollTop = log.scrollHeight;
+    st.className = "status " + (j.ok ? "ok" : "bad");
+    st.textContent = j.ok ? `${label} finished in ${j.seconds}s.` : `${label} failed. Details in the log below.`;
+    if (j.ok && path === "/api/run") { DATA = await (await fetch("/api/data")).json(); render(); }
+  } catch (e) {
+    st.className = "status bad"; st.textContent = "No response from the app server.";
+  } finally { btns.forEach(b => b.disabled = false); }
+}
+
+(async function init() {
+  // No embedded data means app.py served the page: fetch live data and show the run buttons.
+  if (!DATA) {
+    document.body.classList.add("app");
+    DATA = await (await fetch("/api/data")).json();
+  } else {
+    document.querySelector(".logo").href = "../index.html";
+  }
+  $("btnRun").onclick = () => call("/api/run", $("btnRun"), "Simulation");
+  $("btnTest").onclick = () => call("/api/test", $("btnTest"), "Tests");
+  render();
+})();
+</script>
+</body>
+</html>

@@ -20,10 +20,10 @@ class TestLedgerLeak:
         lambda: run_track_a(prize=100, probability_source="raw", seed=0),
         lambda: run_track_c(prize=100, price_per_experiment=0.5, seed=0),
     ])
-    def test_outcome_metric_is_null(self, run):
+    def test_outcome_has_no_metric(self, run):
         _, ledger = run()
         assert ledger, "expected at least one attempt"
-        assert all(r.outcome["metric"] is None for r in ledger)
+        assert all(set(r.outcome) == {"passed"} for r in ledger)
 
 
 class TestExpectedCost:

@@ -294,6 +294,16 @@ class TestP1LedgerDisclosure:
             else:
                 assert row.disclosed_at_tick == 200
 
+    def test_ledger_hides_true_probability(self):
+        """Public rows must not reveal the solver's hidden pass probability."""
+        cfg = _make_simple_run(seed=3, ticks=200, prize=50, p=0.37,
+                               starting_credits=500)
+        _, ledger = run_market(cfg)
+        assert ledger
+        for row in ledger:
+            assert set(row.outcome) == {"passed"}
+            assert 0.37 not in row.to_dict()["outcome"].values()
+
 
 class TestP1Refunds:
     """Prize refunds at end of run."""
@@ -371,6 +381,35 @@ class TestP1ProbabilitySources:
         for agent in probs:
             for world in probs[agent]:
                 assert probs[agent][world] <= 1.0
+
+    def test_power_probabilities(self):
+        """power: p = score ** gamma, read from data/success_table.csv."""
+        t1 = load_table1()
+        t2 = load_table2()
+        probs = build_track_a_probs(t1, t2, "power")
+        # opus-4.7 gravity: 0.94 ** 3.776 ≈ 0.79
+        assert probs["opus-4.7"]["gravity"] == pytest.approx(0.7916, abs=1e-4)
+        assert probs["gpt-5.5"]["dark_matter"] == pytest.approx(0.0015, abs=1e-4)
+
+    def test_power_covers_every_world_and_agent(self):
+        """The success table's names map onto every Table 1 cell."""
+        t1 = load_table1()
+        t2 = load_table2()
+        probs = build_track_a_probs(t1, t2, "power")
+        for agent in t1.columns:
+            for world in t1.index:
+                assert 0.0 <= probs[agent][world] <= 1.0
+
+    def test_power_preserves_score_order(self):
+        """A monotone transform keeps each agent's ranking of worlds."""
+        t1 = load_table1()
+        t2 = load_table2()
+        probs = build_track_a_probs(t1, t2, "power")
+        for agent in t1.columns:
+            for w1 in t1.index:
+                for w2 in t1.index:
+                    if t1.loc[w1, agent] > t1.loc[w2, agent]:
+                        assert probs[agent][w1] > probs[agent][w2]
 
 
 class TestP2CalibratedFewBids:
