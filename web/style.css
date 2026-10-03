@@ -22,7 +22,6 @@ a { color: var(--navy); }
   border-bottom: 1px solid var(--line); }
 .topbar .in { max-width: 1180px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; gap: 28px; height: 60px; }
 .brand { font-weight: 800; letter-spacing: -0.01em; font-size: 18px; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 10px; }
-.brand i { width: 14px; height: 14px; border-radius: 50%; background: var(--navy); box-shadow: 9px 0 0 var(--rust); margin-right: 10px; }
 .tabs { display: flex; gap: 4px; margin-left: auto; }
 .tabs a { text-decoration: none; color: var(--body); font: 600 14px var(--sans); padding: 8px 14px; border-radius: 6px; }
 .tabs a:hover { background: var(--faint); }
