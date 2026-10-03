@@ -91,3 +91,26 @@ class AttemptRecord:
     def from_dict(cls, d: dict[str, Any]) -> AttemptRecord:
         known = {f.name for f in fields(cls)}
         return cls(**{k: v for k, v in d.items() if k in known})
+
+
+@dataclass(frozen=True)
+class SubmittedAttempt:
+    """What a venue hands to ``dm.settle``: everything except the verdict."""
+
+    source: str
+    protocol: str
+    venue: str
+    world: str
+    solver: str
+    seed: int
+    stated_p_success: float | None
+    rounds: int
+    experiments: int
+    lab_cost: float
+    llm_usage: dict = field(default_factory=dict)
+    submitted_law: str | None = None
+    explanation: str | None = None
+    training: list = field(default_factory=list)  # experiments the solver paid for
+    transcript_path: str | None = None
+    created_at: str = ""
+    extra: dict = field(default_factory=dict)

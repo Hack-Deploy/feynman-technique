@@ -144,3 +144,26 @@
 - The Phase 1 byte-identity baseline (`tests/fixtures/baseline_sha256.json`) is regenerated from
   **`main`'s own code** at 85b6090 (including the new `power` odds source), and this branch's
   engine reproduces those three files exactly.
+
+## Phase 2: the oracle — IN PROGRESS (not yet checked)
+- **Built so far**: `dm/oracle/` (`make_prereg`, `score`, `explain_score`), `dm/oracle/cases.py`
+  (hidden cases + normalising variance), `dm/oracle/_worker.py` (scoring subprocess: timeout,
+  network disabled, API keys stripped from env), `dm/settle.py` (only caller of the oracle),
+  `dm.types.SubmittedAttempt`.
+- **Verified**: the normalising variance convention reproduces all 11 vendor `_WORLD_VARS` on the
+  default cases (two-particle: `pos2`; multi-particle: every agent-facing particle, even where only
+  probes are scored). Hidden layouts use fixed seeds (42/123), so the oracle can rebuild worlds.
+- **Hidden-case design**: compared three designs over test seeds 0–2 against true laws and wrong
+  laws. Chose V1 (base launch r0 ∈ U[3, 6], tangential 0.2–0.5, all cases measured at t = 1..10):
+  true laws score nMSE ≤ 5e-6 on gravity/yukawa/fractional/oscillator/coulomb_easy; the 1/r law
+  fails yukawa on all three seeds (0.80, 0.25, 0.63). The earlier design let 1/r pass yukawa (0.077).
+- **Open issues (need a decision before Phase 2 is checked)**:
+  - yukawa (λ = 2) and fractional (1/r²) are indistinguishable on every design tried: each world's
+    true law passes the other (nMSE ≈ 0.000–0.002).
+  - extra_dimensions: 1/r passes (the crossover only shows within r ≈ 0.5, which the cases exclude
+    to avoid near-singular passes). The vendor's own default cases have the same blind spot.
+- **Vendor bug found**: `coulomb_easy` (nbody) is *repulsive* with a = |p1|/r², and p2 has no
+  effect: the probe's force charge is fixed at 1, so its source charge −|p2| is never used.
+  The docstring and mission describe an attractive F = k·p1·p2/r². The oracle scores against the
+  simulator as it behaves; vendor code is not edited.
+- **Result**: ⏳ not yet checked; no Phase 2 tests committed yet.
