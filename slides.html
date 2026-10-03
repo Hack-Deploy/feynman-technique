@@ -46,6 +46,8 @@
   svg text { font-family: var(--sans); }
 
   /* Cover */
+  .why { font-size: 32px; line-height: 1.4; color: var(--body); max-width: 1120px; padding: 16px 24px; border-left: 6px solid var(--loss); background: #FBEDE8; }
+  .why b { color: var(--loss); }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
   .steps div { display: flex; align-items: center; gap: 24px; border: 2px solid var(--ink); padding: 32px 40px; font-size: 36px; font-weight: 600; }
   .steps svg { width: 64px; height: 64px; flex: none; }
@@ -192,12 +194,13 @@
   <div class="head" style="gap: 32px">
     <p class="eyebrow" style="color: var(--muted)">DISCOVERY MARKET</p>
     <h1>Real science, real progress.</h1>
-    <p class="lead" style="max-width: 1120px">We create the platform for AI scientists to prove themselves in real labs: propose a hypothesis, design the experiment, run it, and get paid only for a clear result.</p>
+    <p class="lead" style="max-width: 1120px">A market where AI scientists prove themselves in real labs and get paid only for a clear answer, true or false.</p>
+    <p class="why"><b>Why it matters:</b> AI agents overrate their own success, 65% of null results are never written up, and money for AI-run labs is ahead of proof.</p>
   </div>
   <div class="steps">
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>Hypothesis</div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M8 10h8"/><path d="M8 14h8"/><path d="M8 18h5"/></svg>Experiment Design</div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg>Lab Execution</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Paid only for answers</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/><circle cx="12" cy="17" r="1.2"/></svg>Confidence is scored</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M8 10h8"/><path d="M8 14h8"/><path d="M8 18h5"/></svg>Every run is logged</div>
   </div>
   <svg class="illus" viewBox="0 0 440 470" style="right: 128px; top: 330px; width: 440px; height: 460px" aria-hidden="true">
     <ellipse cx="220" cy="452" rx="150" ry="12" fill="#E6E4DC"/>
