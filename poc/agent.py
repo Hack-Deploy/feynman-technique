@@ -48,7 +48,9 @@ class MeteredExecutor:
             raise ValueError("<run_experiment> must contain a JSON list of experiments")
         priced = [experiment_price(inp, self.cfg, self.hyp) for inp in exp_input]
         total = round(sum(p for p, _ in priced), 6)
-        if not self.account.can_afford(total):
+        # This round's fee is charged when the round ends, so reserve it now; otherwise
+        # a batch that just fits the budget pushes total spend over it.
+        if not self.account.can_afford(round(total + self.cfg.round_fee, 6)):
             self.account.refuse(total, self.round_num, len(exp_input))
             raise OverBudget(total, self.account.remaining)
         results = self.inner.run(exp_input)
