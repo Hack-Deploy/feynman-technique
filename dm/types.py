@@ -8,9 +8,20 @@ from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 
+def _json_default(o: Any) -> Any:
+    # numpy scalars/arrays (oracle test cases are built with numpy RNGs)
+    if hasattr(o, "tolist"):
+        return o.tolist()
+    raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
+
+
 def canonical_json(obj: Any) -> str:
-    """Deterministic JSON: sorted keys, no whitespace, no NaN/Infinity."""
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    """Deterministic JSON: sorted keys, no whitespace, no NaN/Infinity.
+
+    numpy scalars and arrays are converted with ``tolist()`` so they hash like the
+    equivalent Python values (float32 widens to the float64 of the same value)."""
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), allow_nan=False,
+                      default=_json_default)
 
 
 class InsufficientCredits(RuntimeError):
@@ -39,6 +50,11 @@ class Preregistration:
     metric: str = "normalised_mse"
     threshold: float = 0.1
     public_tests: bool = False  # True if the world's default (public) cases had to be used
+    # >=128-bit secret nonce chosen by the oracle; without it a commitment over cases
+    # derived from a small seed can be brute-forced. Hidden until reveal, like test_seed.
+    salt: str = ""
+
+    HIDDEN = ("test_cases", "test_seed", "salt")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -48,14 +64,22 @@ class Preregistration:
         return hashlib.sha256(canonical_json(self.to_dict()).encode()).hexdigest()
 
     def public(self) -> dict[str, Any]:
-        """Everything except the hidden test cases, plus the commitment."""
-        d = {k: v for k, v in self.to_dict().items() if k != "test_cases"}
+        """Everything except the hidden fields, plus the commitment."""
+        d = {k: v for k, v in self.to_dict().items() if k not in self.HIDDEN}
         d["commitment"] = self.commitment()
         return d
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Preregistration:
         return cls(**d)
+
+    @classmethod
+    def verify(cls, revealed: dict[str, Any], commitment: str) -> Preregistration:
+        """Rebuild a revealed preregistration and check it against the posted commitment."""
+        p = cls.from_dict(revealed)
+        if p.commitment() != commitment:
+            raise ValueError("revealed preregistration does not match its commitment")
+        return p
 
 
 @dataclass(frozen=True)
