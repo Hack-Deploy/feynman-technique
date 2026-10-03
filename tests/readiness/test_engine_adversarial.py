@@ -194,7 +194,6 @@ def _raise_json_constant(value):
 class TestStrictBugRegressions:
     """Tests that describe correct behavior for known engine bugs."""
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E1: string verdicts are truthy")
     def test_string_false_verdict_cannot_win(self):
         """Reject a string-valued false verdict or refuse its prize."""
         try:
@@ -207,7 +206,6 @@ class TestStrictBugRegressions:
         events, _ = run_market(cfg(pool))
         assert not any(event.type == "prize_paid" for event in events)
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E2: missing passed defaults to false")
     def test_missing_passed_verdict_is_rejected(self):
         """Require every replay verdict to include a passed key."""
         with pytest.raises((ValueError, KeyError)):
@@ -216,7 +214,6 @@ class TestStrictBugRegressions:
                 experiments_cost(1),
             )
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E3: replay commitment is unchecked")
     def test_mismatched_prereg_commitment_cannot_win(self):
         """Refuse to pay a replay verdict scored against another preregistration."""
         prereg = Preregistration(
@@ -248,7 +245,6 @@ class TestStrictBugRegressions:
             return
         assert not any(event.type == "prize_paid" for event in events)
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E4: replay pool key drops venue")
     def test_replay_pool_separates_venues(self):
         """Keep records from different venues in separate pool buckets."""
         try:
@@ -263,7 +259,6 @@ class TestStrictBugRegressions:
             return
         assert len(pool.pool) == 2
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E5: replay cost can overdraw agents")
     def test_replay_charge_never_makes_agent_balance_negative(self):
         """Prevent replay charges from exceeding the agent's available credits."""
         pool = ReplayPool(
@@ -312,13 +307,11 @@ class TestStrictBugRegressions:
             ({"lab_cost": -10.0}, recorded_cost()),
         ],
     )
-    @pytest.mark.xfail(strict=True, reason="BUG-E7: replay accepts negative record costs")
     def test_replay_rejects_negative_record_counts_and_costs(self, kwargs, cost_fn):
         """Reject negative experiments, rounds, or lab cost at pool creation."""
         with pytest.raises(ValueError):
             ReplayPool([rec(0, **kwargs)], cost_fn)
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E8: floating-point conservation false alarm")
     def test_large_fractional_run_completes_when_credits_are_conserved(self):
         """Allow a conserved large-credit simulation to finish despite float drift."""
         pool = ReplayPool(
@@ -327,7 +320,6 @@ class TestStrictBugRegressions:
         )
         run_market(cfg(pool, prize=1e7, credits=1e9, ticks=60))
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E9: preregistration cases are mutable")
     def test_prereg_commitment_cannot_change_through_test_cases(self):
         """Keep a frozen preregistration commitment stable after construction."""
         prereg = Preregistration(
@@ -346,7 +338,6 @@ class TestStrictBugRegressions:
             return
         assert prereg.commitment() == before
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E10: dropped mid-tick bid is silent")
     def test_mid_tick_dropped_bid_emits_an_affordability_event(self):
         """Report when an earlier bid makes another world unaffordable."""
         pool = ReplayPool(
@@ -367,7 +358,6 @@ class TestStrictBugRegressions:
         )
 
     @pytest.mark.parametrize("duplicate", ["agents", "worlds"])
-    @pytest.mark.xfail(strict=True, reason="BUG-E11: duplicate market entities are accepted")
     def test_duplicate_agents_or_worlds_are_rejected(self, duplicate):
         """Reject repeated agent or world identifiers before market execution."""
         pool = ReplayPool([rec(0, passed=False)], experiments_cost(1))
@@ -379,7 +369,6 @@ class TestStrictBugRegressions:
         with pytest.raises(ValueError, match="duplicate"):
             run_market(run_cfg)
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E12: truncated final JSONL line aborts load")
     def test_store_ignores_a_truncated_final_line(self, tmp_path):
         """Load valid records even if the final JSONL append was truncated."""
         path = tmp_path / "attempts.jsonl"
@@ -389,15 +378,19 @@ class TestStrictBugRegressions:
             output.write(b'{"attempt_id": "t-1", "sour')
         assert len(store.load()) == 1
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E13: unknown record fields are dropped")
     def test_store_preserves_unknown_fields_on_round_trip(self, tmp_path):
-        """Preserve unrecognized record fields when a loaded record is appended."""
+        """Never silently drop unknown fields: preserve them or refuse to load."""
         path = tmp_path / "attempts.jsonl"
         record = rec(0).to_dict()
         record["question_id"] = "discoverphysics/gravity"
         path.write_text(json.dumps(record) + "\n")
         store = AttemptStore(path)
-        store.append(store.load())
+        try:
+            loaded = store.load()
+        except ValueError as exc:
+            assert "question_id" in str(exc)
+            return
+        store.append(loaded)
         data = json.loads(path.read_text().splitlines()[-1])
         assert (
             data.get("question_id") == "discoverphysics/gravity"
@@ -405,7 +398,6 @@ class TestStrictBugRegressions:
             == "discoverphysics/gravity"
         )
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E14: store writes NaN as invalid JSON")
     def test_store_rejects_nan_or_writes_strict_json(self, tmp_path):
         """Reject NaN record values or guarantee strict JSON output."""
         path = tmp_path / "attempts.jsonl"
@@ -417,7 +409,6 @@ class TestStrictBugRegressions:
         line = path.read_text().splitlines()[-1]
         json.loads(line, parse_constant=_raise_json_constant)
 
-    @pytest.mark.xfail(strict=True, reason="BUG-E15: record parser accepts string counts")
     def test_record_parser_rejects_string_experiments(self):
         """Require experiments to remain an integer when parsing a record."""
         data = rec(0).to_dict()

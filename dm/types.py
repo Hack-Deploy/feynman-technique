@@ -117,12 +117,22 @@ class Preregistration:
 
     HIDDEN = ("test_cases", "test_seed", "salt")
 
+    def __post_init__(self) -> None:
+        # Freeze the hidden cases (a deep copy) and the commitment at construction, so
+        # nothing done to the caller's list later can change what was committed.
+        frozen = tuple(json.loads(canonical_json(list(self.test_cases))))
+        object.__setattr__(self, "test_cases", frozen)
+        object.__setattr__(self, "_commitment", hashlib.sha256(
+            canonical_json(self.to_dict()).encode()).hexdigest())
+
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        d["test_cases"] = json.loads(canonical_json(list(self.test_cases)))
+        return d
 
     def commitment(self) -> str:
-        """sha256 over the canonical JSON of every field."""
-        return hashlib.sha256(canonical_json(self.to_dict()).encode()).hexdigest()
+        """sha256 over the canonical JSON of every field (fixed at construction)."""
+        return self._commitment
 
     def public(self) -> dict[str, Any]:
         """Everything except the hidden fields, plus the commitment."""
@@ -172,10 +182,19 @@ class AttemptRecord:
         for name in ("llm_usage", "verdict", "extra"):
             value = json.loads(canonical_json(_to_builtin(getattr(self, name))))
             object.__setattr__(self, name, value)
+        v = self.seed
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise TypeError(f"{self.attempt_id}: seed must be int, got {v!r}")
+        if "passed" in self.verdict and not isinstance(self.verdict["passed"], bool):
+            raise TypeError(f"{self.attempt_id}: verdict.passed must be bool")
 
     @property
     def passed(self) -> bool:
-        return bool(self.verdict.get("passed", False))
+        return self.verdict.get("passed") is True
+
+    @property
+    def settled(self) -> bool:
+        return isinstance(self.verdict.get("passed"), bool)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
