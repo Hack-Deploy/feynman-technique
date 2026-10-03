@@ -214,8 +214,12 @@ def _bernoulli_cfg(preregs, worlds=("gravity", "yukawa"), probs=(0.6, 0.0), tick
         belief_weight=2, track="A", probability_source="t", preregs=preregs)
 
 
-def _replay_cfg(preregs, seed=0, ticks=50):
+def _replay_cfg(preregs, seed=0, ticks=50, bind=False):
     recs = AttemptStore(FIXTURES_DIR / "replay_pool.jsonl").load()
+    if bind:  # records scored against the posted preregistrations
+        recs = [dataclasses.replace(r, verdict={**r.verdict,
+                                                "prereg_commitment": preregs[r.world].commitment()})
+                for r in recs]
     pool = ReplayPool(recs, experiments_cost(0.5))
     worlds = ["gravity", "yukawa", "coulomb_easy"]
     return MarketRun(
@@ -244,7 +248,8 @@ def _run(cfg):
 
 CFGS = {
     "bernoulli": lambda s: _bernoulli_cfg(_preregs(["gravity", "yukawa"]), seed=s),
-    "replay": lambda s: _replay_cfg(_preregs(["gravity", "yukawa", "coulomb_easy"]), seed=s),
+    "replay": lambda s: _replay_cfg(_preregs(["gravity", "yukawa", "coulomb_easy"]), seed=s,
+                                    bind=True),
 }
 
 
@@ -323,11 +328,14 @@ def test_preregs_do_not_change_settlement_or_balances():
     assert strip(a) == strip(b)
 
 
-@pytest.mark.xfail(strict=True,
-                   reason="gap: verdict_issued.commitment comes from the replayed record and "
-                          "is never checked against the prereg posted for the world")
+def test_attempt_scored_under_another_prereg_cannot_settle():
+    # Fixture records carry prereg_commitment=None.
+    with pytest.raises(ValueError, match="not scored against"):
+        _run(_replay_cfg(_preregs(["gravity", "yukawa", "coulomb_easy"])))
+
+
 def test_verdicts_settle_against_the_posted_commitment():
-    cfg = _replay_cfg(_preregs(["gravity", "yukawa", "coulomb_easy"]))
+    cfg = _replay_cfg(_preregs(["gravity", "yukawa", "coulomb_easy"]), bind=True)
     events, _ = _run(cfg)
     posted = {e["world"]: e["commitment"] for e in events if e["type"] == "prize_posted"}
     verdicts = [e for e in events if e["type"] == "verdict_issued"]

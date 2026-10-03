@@ -408,6 +408,11 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
             # 4. Draw the attempt (cost and outcome) from the outcome source
             passed, cost_detail, source_attempt_id = source.draw(agent, world, rng)
             cost = cost_detail["credits"]
+            if (world in preregs and source_attempt_id is not None
+                    and cost_detail.get("commitment") != preregs[world].commitment()):
+                raise ValueError(
+                    f"attempt {source_attempt_id} on {world} was not scored against the "
+                    f"preregistration posted for this prize")
 
             if real:
                 emit(tick=tick, type="attempt_started", world=world, agent=agent,
