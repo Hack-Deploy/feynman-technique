@@ -429,3 +429,8 @@ XPASS-fail and should be removed).
 - Add ForceBench attempt details, menu/venue/library metadata and snapshot fallback; add live
   market info, runs, scripted demos, live spend guards, and round updates.
 - Checks: targeted suite 43 passed, 1 skipped; full suite 413 passed, 5 skipped, 14 xfailed.
+
+## ForceBench snapshot
+
+- Generated and committed the 60-cell ForceBench grid snapshot at code HEAD `7cbf98b`.
+- Check with the snapshot present: full suite 413 passed, 5 skipped, 14 xfailed.
