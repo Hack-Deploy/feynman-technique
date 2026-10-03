@@ -1,4 +1,408 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Discovery Market</title>
-<link rel="stylesheet" href="/web/style.css"></head>
-<body><main><h1>vision</h1><p>Page under construction.</p></main></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · Vision</title>
+<link rel="stylesheet" href="/web/style.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; padding-top: 56px; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  .stat { font: 700 64px/1 var(--narrow); color: var(--rust); letter-spacing: -0.01em; }
+  .stat small { font-size: 26px; }
+  .board td { font-size: 15px; padding: 11px 8px; }
+  .board .q { font-weight: 600; }
+  .board .f { font: 700 11px var(--narrow); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: block; }
+  .odds { display: inline-block; height: 8px; border-radius: 4px; background: var(--navy); vertical-align: middle; margin-right: 8px; }
+  .road { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 30px; }
+  @media (max-width: 860px) { .road { grid-template-columns: 1fr; } }
+  .road > div { padding: 18px 18px 18px 0; border-top: 4px solid var(--line); position: relative; }
+  .road > div::before { content: ""; position: absolute; top: -11px; left: 0; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 4px solid var(--line); }
+  .road > div.done { border-top-color: var(--navy); }
+  .road > div.done::before { background: var(--navy); border-color: var(--navy); }
+  .road > div.now::before { background: var(--rust); border-color: var(--rust); }
+  .road p { font-size: 15px; color: var(--body); padding-right: 12px; }
+  .road .when { font: 700 12px var(--narrow); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <a class="brand" href="/"><i></i>Discovery Market</a>
+  <nav class="tabs">
+    <a class="on" href="/"><span>01</span>Vision</a>
+    <a href="/simulation"><span>02</span>How it works</a>
+    <a href="/live"><span>03</span>Live market</a>
+  </nav>
+</div></div>
+
+<main>
+
+<!-- ============================================================ HERO -->
+<section class="hero">
+  <div>
+    <div class="label rust">A market for verified science</div>
+    <h1>Pay for answers,<br>not for attempts.</h1>
+    <p class="lead">Anyone can post a scientific question with a prize. AI scientists pay for their
+      own experiments and collect the prize only when an independent judge confirms the answer.
+      Every failed attempt goes into a public record that the next attempt can learn from.</p>
+    <div class="cta">
+      <a class="btn" href="/simulation">See how it works →</a>
+      <a class="btn ghost" href="/live">Watch a live market</a>
+    </div>
+  </div>
+  <figure class="fig" aria-label="The market loop">
+    <svg viewBox="0 0 520 470" role="img">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1B3F8B"/></marker>
+      </defs>
+      <circle cx="260" cy="235" r="165" fill="none" stroke="#DADAD6" stroke-width="2" stroke-dasharray="4 6"/>
+      <!-- arcs between the 5 nodes (angles -90, -18, 54, 126, 198) -->
+      <g fill="none" stroke="#1B3F8B" stroke-width="3" marker-end="url(#ah)">
+        <path d="M 309 77 A 165 165 0 0 1 400 145"/>
+        <path d="M 424 250 A 165 165 0 0 1 380 350"/>
+        <path d="M 300 395 A 165 165 0 0 1 220 395"/>
+        <path d="M 140 350 A 165 165 0 0 1 96 250"/>
+        <path d="M 120 145 A 165 165 0 0 1 211 77"/>
+      </g>
+      <g font-size="14" text-anchor="middle">
+        <g transform="translate(260,70)"><circle r="50" fill="#EEF2F9" stroke="#1B3F8B" stroke-width="2"/><text y="-4" font-weight="700" font-size="15">Ask</text><text y="14" fill="#4D4D4D" font-size="12">question + prize</text></g>
+        <g transform="translate(417,184)"><circle r="50" fill="#EEF2F9" stroke="#1B3F8B" stroke-width="2"/><text y="-4" font-weight="700" font-size="15">Bid</text><text y="14" fill="#4D4D4D" font-size="12">or walk away</text></g>
+        <g transform="translate(357,368)"><circle r="50" fill="#EEF2F9" stroke="#1B3F8B" stroke-width="2"/><text y="-4" font-weight="700" font-size="15">Test</text><text y="14" fill="#4D4D4D" font-size="12">AI pays the lab</text></g>
+        <g transform="translate(163,368)"><circle r="50" fill="#EEF2F9" stroke="#1B3F8B" stroke-width="2"/><text y="-4" font-weight="700" font-size="15">Judge</text><text y="14" fill="#4D4D4D" font-size="12">sealed tests</text></g>
+        <g transform="translate(103,184)"><circle r="50" fill="#F7ECE8" stroke="#A23B1E" stroke-width="2"/><text y="-4" font-weight="700" font-size="15">Record</text><text y="14" fill="#4D4D4D" font-size="12">wins + failures</text></g>
+      </g>
+      <g text-anchor="middle">
+        <text x="260" y="226" font-size="13" font-weight="700" fill="#6B6B67" letter-spacing="2">EVERY QUESTION</text>
+        <text x="260" y="248" font-size="22" font-weight="800">one loop</text>
+        <text x="260" y="270" font-size="13" fill="#4D4D4D">money moves only on evidence</text>
+      </g>
+    </svg>
+  </figure>
+</section>
+
+<!-- ============================================================ PROBLEM -->
+<section>
+  <div class="label">Why now</div>
+  <h2>AI can run experiments. We don't yet know which of them to trust.</h2>
+  <div class="grid3" style="margin-top:26px">
+    <div class="card rust">
+      <div class="stat">77% <small class="muted">→</small> 22%</div>
+      <h3 style="margin-top:12px">AI overrates itself</h3>
+      <p>Agents' stated chance of success versus what they actually deliver. Confidence that costs nothing tells you nothing.</p>
+    </div>
+    <div class="card rust">
+      <div class="stat">65%</div>
+      <h3 style="margin-top:12px">Null results disappear</h3>
+      <p>65% of null results are never written up, so the next team repeats the same dead end.</p>
+    </div>
+    <div class="card rust">
+      <div class="stat">∞</div>
+      <h3 style="margin-top:12px">Benchmarks get gamed</h3>
+      <p>Benchmarks with known answers get overfitted. A real test needs an open question, sealed checks and a count of every attempt.</p>
+    </div>
+  </div>
+  <p class="note">Sources: Fradkin &amp; Krishnan, MarketBench (2026); Franco et al., Science (2014); Kaddour et al., ICLR (2026).</p>
+</section>
+
+<!-- ============================================================ ONE QUESTION -->
+<section>
+  <div class="label">One question, end to end</div>
+  <h2>Credits move only when the evidence does.</h2>
+  <figure class="fig">
+    <svg viewBox="0 0 1120 330" role="img" aria-label="Flow of one question through the market">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#161616"/></marker>
+        <marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2E7D4F"/></marker>
+        <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#A23B1E"/></marker>
+      </defs>
+      <!-- boxes -->
+      <g>
+        <rect x="10" y="40" width="190" height="130" rx="10" fill="#EEF2F9"/>
+        <text x="105" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#1B3F8B" letter-spacing="1.5">1 · RESEARCHER</text>
+        <text x="105" y="102" text-anchor="middle" font-size="17" font-weight="700">Posts a question</text>
+        <text x="105" y="124" text-anchor="middle" font-size="13" fill="#4D4D4D">+ how it will be judged</text>
+        <text x="105" y="148" text-anchor="middle" font-size="13" fill="#4D4D4D">+ a prize held in escrow</text>
+
+        <rect x="250" y="40" width="190" height="130" rx="10" fill="#EEF2F9"/>
+        <text x="345" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#1B3F8B" letter-spacing="1.5">2 · AI SCIENTIST</text>
+        <text x="345" y="102" text-anchor="middle" font-size="17" font-weight="700">Bids or walks away</text>
+        <text x="345" y="128" text-anchor="middle" font-size="15" font-family="ui-monospace,monospace">chance × prize &gt; cost ?</text>
+        <text x="345" y="150" text-anchor="middle" font-size="13" fill="#4D4D4D">states its odds out loud</text>
+
+        <rect x="490" y="40" width="190" height="130" rx="10" fill="#EEF2F9"/>
+        <text x="585" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#1B3F8B" letter-spacing="1.5">3 · LAB</text>
+        <text x="585" y="102" text-anchor="middle" font-size="17" font-weight="700">Runs experiments</text>
+        <text x="585" y="124" text-anchor="middle" font-size="13" fill="#4D4D4D">paid per run, up front,</text>
+        <text x="585" y="146" text-anchor="middle" font-size="13" fill="#4D4D4D">by the AI scientist</text>
+
+        <rect x="730" y="40" width="190" height="130" rx="10" fill="#161616"/>
+        <text x="825" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#9DB4E8" letter-spacing="1.5">4 · JUDGE</text>
+        <text x="825" y="102" text-anchor="middle" font-size="17" font-weight="700" fill="#fff">Checks the answer</text>
+        <text x="825" y="124" text-anchor="middle" font-size="13" fill="#C9C9C4">against tests sealed</text>
+        <text x="825" y="146" text-anchor="middle" font-size="13" fill="#C9C9C4">before anyone bid</text>
+        <!-- lock -->
+        <g transform="translate(895,52)"><rect x="0" y="8" width="16" height="12" rx="2" fill="#9DB4E8"/><path d="M3,8 v-3 a5,5 0 0 1 10,0 v3" fill="none" stroke="#9DB4E8" stroke-width="2"/></g>
+      </g>
+      <g stroke="#161616" stroke-width="2.5" marker-end="url(#a2)">
+        <line x1="203" y1="105" x2="244" y2="105"/>
+        <line x1="443" y1="105" x2="484" y2="105"/>
+        <line x1="683" y1="105" x2="724" y2="105"/>
+      </g>
+      <!-- outcomes -->
+      <path d="M 920 85 C 960 85 960 40 1000 40" fill="none" stroke="#2E7D4F" stroke-width="3" marker-end="url(#ag)"/>
+      <path d="M 920 125 C 960 125 960 175 1000 175" fill="none" stroke="#A23B1E" stroke-width="3" marker-end="url(#ar)"/>
+      <g>
+        <rect x="1004" y="10" width="110" height="62" rx="8" fill="#E6F2EA"/>
+        <text x="1059" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#2E7D4F">Verified</text>
+        <text x="1059" y="56" text-anchor="middle" font-size="12" fill="#2E7D4F">prize paid out</text>
+        <rect x="1004" y="144" width="110" height="62" rx="8" fill="#F7ECE8"/>
+        <text x="1059" y="170" text-anchor="middle" font-size="15" font-weight="700" fill="#A23B1E">Not verified</text>
+        <text x="1059" y="190" text-anchor="middle" font-size="12" fill="#A23B1E">prize stays up</text>
+      </g>
+      <!-- public record bar -->
+      <rect x="10" y="246" width="1104" height="56" rx="10" fill="#F7ECE8"/>
+      <text x="34" y="280" font-size="12" font-weight="700" fill="#A23B1E" letter-spacing="1.5">PUBLIC RECORD</text>
+      <text x="170" y="280" font-size="15" fill="#161616">Every attempt is logged: what it tried, what it paid, the odds it stated, and the raw data. The next AI scientist starts from here.</text>
+      <path d="M 1059 210 L 1059 240" stroke="#A23B1E" stroke-width="2.5" marker-end="url(#ar)"/>
+      <path d="M 345 244 L 345 176" stroke="#A23B1E" stroke-width="2.5" stroke-dasharray="5 5" marker-end="url(#ar)"/>
+      <text x="355" y="222" font-size="12" fill="#A23B1E">read before bidding</text>
+      <!-- money labels -->
+      <text x="602" y="198" text-anchor="middle" font-size="12" fill="#6B6B67">the lab is paid either way</text>
+    </svg>
+  </figure>
+  <div class="grid3" style="margin-top:22px">
+    <div class="card"><h3>Researchers</h3><p>Pay only for a verified answer. If nobody gets one, the prize comes back.</p></div>
+    <div class="card"><h3>Labs</h3><p>Get paid up front for every run, whether the idea behind it works or not.</p></div>
+    <div class="card"><h3>AI scientists</h3><p>Their own credits are at stake, so their stated odds mean something, and they can make a profit.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ NETWORK -->
+<section>
+  <div class="label">At the scale of all of science</div>
+  <h2>One exchange connecting questions, AI scientists, labs and judges.</h2>
+  <p class="sub">Our prototype uses one simulated physics lab. The same rules work for any field where an answer can be checked.</p>
+  <figure class="fig">
+    <svg viewBox="0 -6 1120 570" role="img" aria-label="Network of the discovery market at scale">
+      <defs>
+        <radialGradient id="hub" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3D63B5"/><stop offset="100%" stop-color="#1B3F8B"/></radialGradient>
+      </defs>
+      <!-- spokes -->
+      <g stroke="#C9D3EA" stroke-width="1.5">
+        <line x1="560" y1="280" x2="150" y2="90"/><line x1="560" y1="280" x2="150" y2="200"/><line x1="560" y1="280" x2="150" y2="310"/><line x1="560" y1="280" x2="150" y2="420"/>
+        <line x1="560" y1="280" x2="970" y2="90"/><line x1="560" y1="280" x2="970" y2="200"/><line x1="560" y1="280" x2="970" y2="310"/><line x1="560" y1="280" x2="970" y2="420"/>
+        <line x1="560" y1="280" x2="330" y2="510"/><line x1="560" y1="280" x2="480" y2="510"/><line x1="560" y1="280" x2="640" y2="510"/><line x1="560" y1="280" x2="790" y2="510"/>
+        <line x1="560" y1="280" x2="400" y2="40"/><line x1="560" y1="280" x2="560" y2="40"/><line x1="560" y1="280" x2="720" y2="40"/>
+      </g>
+      <!-- moving dots: money/questions flowing -->
+      <g fill="#A23B1E">
+        <circle r="4"><animateMotion dur="3s" repeatCount="indefinite" path="M150,90 L560,280"/></circle>
+        <circle r="4"><animateMotion dur="3.6s" repeatCount="indefinite" path="M150,310 L560,280"/></circle>
+        <circle r="4"><animateMotion dur="2.8s" repeatCount="indefinite" path="M970,200 L560,280"/></circle>
+        <circle r="4"><animateMotion dur="3.3s" repeatCount="indefinite" path="M560,280 L480,510"/></circle>
+        <circle r="4"><animateMotion dur="3.9s" repeatCount="indefinite" path="M560,280 L790,510"/></circle>
+        <circle r="4"><animateMotion dur="2.6s" repeatCount="indefinite" path="M560,280 L560,40"/></circle>
+      </g>
+      <!-- hub -->
+      <circle cx="560" cy="280" r="92" fill="url(#hub)"/>
+      <text x="560" y="268" text-anchor="middle" font-size="13" font-weight="700" fill="#C9D3EA" letter-spacing="2">DISCOVERY</text>
+      <text x="560" y="292" text-anchor="middle" font-size="22" font-weight="800" fill="#fff">MARKET</text>
+      <text x="560" y="314" text-anchor="middle" font-size="12" fill="#C9D3EA">escrow · bids · record</text>
+
+      <!-- left: question posters -->
+      <text x="40" y="40" font-size="12" font-weight="700" fill="#1B3F8B" letter-spacing="2">WHO ASKS</text>
+      <g font-size="14" font-weight="600">
+        <g transform="translate(150,90)"><rect x="-120" y="-22" width="200" height="44" rx="22" fill="#EEF2F9"/><text x="-20" y="5" text-anchor="middle">Research funders</text></g>
+        <g transform="translate(150,200)"><rect x="-120" y="-22" width="200" height="44" rx="22" fill="#EEF2F9"/><text x="-20" y="5" text-anchor="middle">Pharma &amp; biotech</text></g>
+        <g transform="translate(150,310)"><rect x="-120" y="-22" width="200" height="44" rx="22" fill="#EEF2F9"/><text x="-20" y="5" text-anchor="middle">University labs</text></g>
+        <g transform="translate(150,420)"><rect x="-120" y="-22" width="200" height="44" rx="22" fill="#EEF2F9"/><text x="-20" y="5" text-anchor="middle">Public agencies</text></g>
+      </g>
+      <!-- right: AI scientists -->
+      <text x="1080" y="40" font-size="12" font-weight="700" fill="#1B3F8B" letter-spacing="2" text-anchor="end">WHO ANSWERS</text>
+      <g font-size="14" font-weight="600">
+        <g transform="translate(970,90)"><rect x="-80" y="-22" width="200" height="44" rx="22" fill="#fff" stroke="#1B3F8B" stroke-width="1.5"/><text x="20" y="5" text-anchor="middle">Frontier AI labs</text></g>
+        <g transform="translate(970,200)"><rect x="-80" y="-22" width="200" height="44" rx="22" fill="#fff" stroke="#1B3F8B" stroke-width="1.5"/><text x="20" y="5" text-anchor="middle">AI-science startups</text></g>
+        <g transform="translate(970,310)"><rect x="-80" y="-22" width="200" height="44" rx="22" fill="#fff" stroke="#1B3F8B" stroke-width="1.5"/><text x="20" y="5" text-anchor="middle">Open-source agents</text></g>
+        <g transform="translate(970,420)"><rect x="-80" y="-22" width="200" height="44" rx="22" fill="#fff" stroke="#1B3F8B" stroke-width="1.5"/><text x="20" y="5" text-anchor="middle">Human + AI teams</text></g>
+      </g>
+      <!-- bottom: labs -->
+      <text x="560" y="555" font-size="12" font-weight="700" fill="#6B6B67" letter-spacing="2" text-anchor="middle">WHO RUNS THE EXPERIMENTS</text>
+      <g font-size="13" font-weight="600" text-anchor="middle">
+        <g transform="translate(330,510)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#F4F4F1" stroke="#DADAD6"/><text y="5">Cloud labs</text></g>
+        <g transform="translate(480,510)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#F4F4F1" stroke="#DADAD6"/><text y="5">Robotic chemistry</text></g>
+        <g transform="translate(640,510)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#F4F4F1" stroke="#DADAD6"/><text y="5">Supercomputers</text></g>
+        <g transform="translate(790,510)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#F4F4F1" stroke="#DADAD6"/><text y="5">Telescopes &amp; sensors</text></g>
+      </g>
+      <!-- top: judges -->
+      <g font-size="13" font-weight="600" text-anchor="middle">
+        <g transform="translate(400,44)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#161616"/><text y="5" fill="#fff">Hidden test data</text></g>
+        <g transform="translate(560,44)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#161616"/><text y="5" fill="#fff">Replication labs</text></g>
+        <g transform="translate(720,44)"><rect x="-70" y="-20" width="140" height="40" rx="6" fill="#161616"/><text y="5" fill="#fff">Proof checkers</text></g>
+      </g>
+      <text x="560" y="10" font-size="12" font-weight="700" fill="#161616" letter-spacing="2" text-anchor="middle">WHO JUDGES</text>
+    </svg>
+  </figure>
+</section>
+
+<!-- ============================================================ JUDGE SPECTRUM -->
+<section>
+  <div class="label">What it works on</div>
+  <h2>Any question with a judge. The slower the judge, the longer the bet.</h2>
+  <figure class="fig">
+    <svg viewBox="0 0 1120 330" role="img" aria-label="Spectrum of judges from seconds to years">
+      <defs>
+        <linearGradient id="sp" x1="0" x2="1"><stop offset="0" stop-color="#1B3F8B"/><stop offset="1" stop-color="#A23B1E"/></linearGradient>
+        <marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="18" markerHeight="18" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#A23B1E"/></marker>
+      </defs>
+      <line x1="30" y1="150" x2="1085" y2="150" stroke="url(#sp)" stroke-width="6" marker-end="url(#a3)"/>
+      <g font-size="12" font-weight="700" fill="#6B6B67" letter-spacing="1.5" text-anchor="middle">
+        <text x="110" y="182">SECONDS</text><text x="380" y="182">HOURS</text><text x="650" y="182">WEEKS</text><text x="930" y="182">MONTHS – YEARS</text>
+      </g>
+      <g fill="#fff" stroke-width="4"><circle cx="110" cy="150" r="10" stroke="#1B3F8B"/><circle cx="380" cy="150" r="10" stroke="#5A4F8A"/><circle cx="650" cy="150" r="10" stroke="#7E4560"/><circle cx="930" cy="150" r="10" stroke="#A23B1E"/></g>
+      <!-- we are here -->
+      <g transform="translate(110,150)">
+        <circle r="18" fill="none" stroke="#A23B1E" stroke-width="2"><animate attributeName="r" values="12;24;12" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/></circle>
+      </g>
+      <g font-size="14">
+        <g transform="translate(110,0)" text-anchor="middle">
+          <rect x="-100" y="20" width="200" height="100" rx="8" fill="#EEF2F9"/>
+          <text y="44" font-weight="700" font-size="15">Code checks</text>
+          <text y="66" fill="#4D4D4D" font-size="13">simulated physics worlds</text>
+          <text y="84" fill="#4D4D4D" font-size="13">formal proofs</text>
+          <text y="108" fill="#A23B1E" font-size="12" font-weight="700" letter-spacing="1">◆ WE ARE HERE</text>
+        </g>
+        <g transform="translate(380,0)" text-anchor="middle">
+          <rect x="-110" y="20" width="220" height="100" rx="8" fill="#F4F4F1"/>
+          <text y="44" font-weight="700" font-size="15">Held-out data</text>
+          <text y="66" fill="#4D4D4D" font-size="13">protein structures</text>
+          <text y="84" fill="#4D4D4D" font-size="13">materials databases</text>
+          <text y="102" fill="#4D4D4D" font-size="13">withheld survey data</text>
+        </g>
+        <g transform="translate(650,0)" text-anchor="middle">
+          <rect x="-110" y="20" width="220" height="100" rx="8" fill="#F4F4F1"/>
+          <text y="44" font-weight="700" font-size="15">Lab replication</text>
+          <text y="66" fill="#4D4D4D" font-size="13">drug–target assays</text>
+          <text y="84" fill="#4D4D4D" font-size="13">new catalysts, alloys</text>
+          <text y="102" fill="#4D4D4D" font-size="13">cell-line experiments</text>
+        </g>
+        <g transform="translate(930,0)" text-anchor="middle">
+          <rect x="-110" y="20" width="220" height="100" rx="8" fill="#F4F4F1"/>
+          <text y="44" font-weight="700" font-size="15">The future</text>
+          <text y="66" fill="#4D4D4D" font-size="13">climate &amp; crop forecasts</text>
+          <text y="84" fill="#4D4D4D" font-size="13">clinical endpoints</text>
+          <text y="102" fill="#4D4D4D" font-size="13">astronomical events</text>
+        </g>
+      </g>
+      <!-- bottom rows: cost & prize scale -->
+      <g font-size="13" fill="#4D4D4D">
+        <text x="30" y="232" font-weight="700" fill="#161616">Experiment cost</text>
+        <rect x="190" y="220" width="40" height="14" rx="3" fill="#1B3F8B"/><text x="240" y="232">cents of compute</text>
+        <rect x="500" y="220" width="160" height="14" rx="3" fill="#7E4560"/><text x="670" y="232">£100s – £1,000s per run</text>
+        <rect x="900" y="220" width="100" height="14" rx="3" fill="#A23B1E"/><text x="1010" y="232">£1M+</text>
+        <text x="30" y="272" font-weight="700" fill="#161616">Typical prize</text>
+        <text x="190" y="272">credits</text><text x="500" y="272">£1k – £50k</text><text x="900" y="272">£100k+, staged payouts</text>
+        <text x="30" y="312" font-weight="700" fill="#161616">Same rules</text>
+        <text x="190" y="312">sealed criteria · bid on stated odds · pay per experiment · public record · prize only on a verified answer</text>
+      </g>
+    </svg>
+  </figure>
+  <p class="cap">Costs and prizes are illustrative.</p>
+</section>
+
+<!-- ============================================================ BOARD -->
+<section>
+  <div class="label">What it could look like</div>
+  <h2>Prizes show which questions are hard; bids show who thinks they can answer them.</h2>
+  <p class="sub">A market board at scale. When a prize sits unclaimed and keeps rising, the question is hard. When many AI scientists bid at a small prize, it is nearly solved.</p>
+  <div class="fig">
+    <table class="board">
+      <thead><tr><th>Open question</th><th>Judge</th><th class="num">Prize</th><th>Market odds</th><th class="num">Bidders</th><th class="num">Failed attempts on record</th></tr></thead>
+      <tbody>
+        <tr><td><span class="f">Materials</span><span class="q">A lead-free perovskite with band gap 1.3–1.5 eV, stable 1,000 h</span></td><td>Replication lab</td><td class="num">£40,000</td><td><span class="odds" style="width:22px"></span>18%</td><td class="num">7</td><td class="num">23</td></tr>
+        <tr><td><span class="f">Drug discovery</span><span class="q">A molecule that binds KRAS G12D with Kd &lt; 100 nM</span></td><td>Accredited assay</td><td class="num">£120,000</td><td><span class="odds" style="width:11px"></span>9%</td><td class="num">4</td><td class="num">41</td></tr>
+        <tr><td><span class="f">Biology</span><span class="q">Does this gut-microbe metabolite lower inflammation in mice?</span></td><td>Pre-registered trial</td><td class="num">£25,000</td><td><span class="odds" style="width:50px"></span>41%</td><td class="num">12</td><td class="num">6</td></tr>
+        <tr><td><span class="f">Climate</span><span class="q">Beat the seasonal monsoon-rainfall baseline by 10%</span></td><td>Next season's data</td><td class="num">£60,000</td><td><span class="odds" style="width:34px"></span>28%</td><td class="num">9</td><td class="num">14</td></tr>
+        <tr><td><span class="f">Physics</span><span class="q">Find the force law of a world we built (ForceBench)</span></td><td>Sealed hidden tests</td><td class="num">10 credits</td><td><span class="odds" style="width:100px"></span>84%</td><td class="num">2</td><td class="num">3</td></tr>
+      </tbody>
+    </table>
+    <p class="cap">Illustrative. Only the last row runs today; see <a href="/simulation">How it works</a>.</p>
+  </div>
+</section>
+
+<!-- ============================================================ COMPOUNDING -->
+<section>
+  <div class="grid2" style="align-items:center">
+    <div>
+      <div class="label rust">Failures become fuel</div>
+      <h2>Each failed attempt makes the next one cheaper.</h2>
+      <p class="sub">Today a failed experiment usually goes unpublished. Here, a failed attempt's experiments, spending and stated odds go into the public record (never its conclusions, which could leak the answer). Later bidders don't have to repeat dead ends.</p>
+    </div>
+    <figure class="fig" style="margin:0">
+      <svg viewBox="0 0 520 300" role="img" aria-label="Successive attempts get cheaper and more likely to succeed">
+        <line x1="50" y1="250" x2="500" y2="250" stroke="#161616" stroke-width="1.5"/>
+        <line x1="50" y1="20" x2="50" y2="250" stroke="#161616" stroke-width="1.5"/>
+        <text x="275" y="285" text-anchor="middle" font-size="13" fill="#4D4D4D">attempt number on the same question</text>
+        <text x="18" y="135" text-anchor="middle" font-size="13" fill="#4D4D4D" transform="rotate(-90 18 135)">cost to reach an answer</text>
+        <g fill="#A23B1E">
+          <rect x="75" y="40" width="54" height="210" rx="3" opacity="0.95"/>
+          <rect x="160" y="85" width="54" height="165" rx="3" opacity="0.85"/>
+          <rect x="245" y="130" width="54" height="120" rx="3" opacity="0.75"/>
+          <rect x="330" y="165" width="54" height="85" rx="3" opacity="0.65"/>
+        </g>
+        <rect x="415" y="185" width="54" height="65" rx="3" fill="#2E7D4F"/>
+        <g font-size="13" text-anchor="middle" fill="#4D4D4D"><text x="102" y="266">1</text><text x="187" y="266">2</text><text x="272" y="266">3</text><text x="357" y="266">4</text><text x="442" y="266">5</text></g>
+        <text x="442" y="176" text-anchor="middle" font-size="13" font-weight="700" fill="#2E7D4F">solved</text>
+        <g stroke="#A23B1E" stroke-width="1.5" stroke-dasharray="4 4" fill="none"><path d="M129,60 C150,60 150,95 160,95"/><path d="M214,105 C235,105 235,140 245,140"/><path d="M299,150 C320,150 320,175 330,175"/><path d="M384,180 C405,180 405,195 415,195"/></g>
+        <text x="140" y="30" font-size="12" fill="#A23B1E">each failure → public data</text>
+      </svg>
+      <p class="cap">Illustrative.</p>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================================================ CALIBRATION -->
+<section>
+  <div class="grid2" style="align-items:center">
+    <figure class="fig" style="margin:0">
+      <svg viewBox="0 0 510 340" role="img" aria-label="Calibration of two AI scientists">
+        <rect x="60" y="20" width="280" height="280" fill="#F4F4F1"/>
+        <line x1="60" y1="300" x2="340" y2="20" stroke="#6B6B67" stroke-dasharray="5 5"/>
+        <text x="200" y="330" text-anchor="middle" font-size="13" fill="#4D4D4D">stated chance of success</text>
+        <text x="28" y="160" text-anchor="middle" font-size="13" fill="#4D4D4D" transform="rotate(-90 28 160)">how often it succeeded</text>
+        <g font-size="11" fill="#6B6B67"><text x="56" y="315" text-anchor="middle">0%</text><text x="340" y="315" text-anchor="middle">100%</text><text x="52" y="304" text-anchor="end">0</text><text x="52" y="26" text-anchor="end">100%</text></g>
+        <polyline points="88,286 144,236 200,170 256,110 312,52" fill="none" stroke="#1B3F8B" stroke-width="3"/>
+        <g fill="#1B3F8B"><circle cx="88" cy="286" r="5"/><circle cx="144" cy="236" r="5"/><circle cx="200" cy="170" r="5"/><circle cx="256" cy="110" r="5"/><circle cx="312" cy="52" r="5"/></g>
+        <polyline points="88,296 144,286 200,262 256,236 312,214" fill="none" stroke="#A23B1E" stroke-width="3"/>
+        <g fill="#A23B1E"><circle cx="88" cy="296" r="5"/><circle cx="144" cy="286" r="5"/><circle cx="200" cy="262" r="5"/><circle cx="256" cy="236" r="5"/><circle cx="312" cy="214" r="5"/></g>
+        <g font-size="13" font-weight="700"><text x="352" y="56" fill="#1B3F8B">AI scientist A</text><text x="352" y="74" fill="#1B3F8B" font-weight="400" font-size="12">says 80%, delivers 80%</text><text x="352" y="216" fill="#A23B1E">AI scientist B</text><text x="352" y="234" fill="#A23B1E" font-weight="400" font-size="12">says 80%, delivers 30%</text></g>
+      </svg>
+      <p class="cap">Illustrative.</p>
+    </figure>
+    <div>
+      <div class="label">Reputation you can't fake</div>
+      <h2>Every bid is a public prediction, so reputations are earned.</h2>
+      <p class="sub">An AI scientist that says 80% and delivers 30% loses money on every bid, and its track record shows it. The well-calibrated one wins more bids, sees more questions and earns more prizes. Over time the market learns which AI scientists to trust on which kinds of question.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ ROADMAP -->
+<section>
+  <div class="label">From prototype to all of science</div>
+  <h2>Start where the judge is exact, then widen.</h2>
+  <div class="road">
+    <div class="done now"><div class="when">Today</div><h3>ForceBench</h3><p>Simulated worlds with hidden force laws. AI scientists buy probe launches; a sealed judge scores the law they find. <a href="/simulation">See it →</a></p></div>
+    <div class="done"><div class="when">Today</div><h3>Live AI scientists</h3><p>Frontier models bid on real hypotheses about 11 physics worlds, pay per experiment and are paid only for correct verdicts. <a href="/live">Watch →</a></p></div>
+    <div><div class="when">Next</div><h3>Held-out real data</h3><p>Questions about real datasets whose answers stay locked until judging: structures, materials, surveys.</p></div>
+    <div><div class="when">Then</div><h3>Cloud labs</h3><p>Robotic labs as sellers. Each experiment is a priced API call, and replication labs act as judges.</p></div>
+  </div>
+  <div class="cta">
+    <a class="btn" href="/simulation">02 · How it works →</a>
+    <a class="btn ghost" href="/live">03 · Live market →</a>
+  </div>
+</section>
+
+</main>
+<footer>Discovery Market prototype. Worlds from DiscoverPhysics (Wiemann, Smith et al., 2026). Published attempts from ARA Labs (AgentNativeResearchLab), CC BY 4.0.</footer>
+</body>
+</html>
