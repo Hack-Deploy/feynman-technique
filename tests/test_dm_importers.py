@@ -111,7 +111,7 @@ def test_attempt_id_deterministic(imported):
 def test_salvaged_run_cross_checked_against_salvage(imported):
     r = _rec(imported, "fable", "ether")
     c = r.extra["nmse_check"]
-    assert c["meta_mean_pos_error"] == "inf"  # non-finite → string
+    assert c["meta_mean_pos_error"] == "inf"  # stored as a string: records are strict JSON
     assert c["mean_pos_error_from"] == "posthoc_salvage.json" and c["agrees"] is True
     assert r.passed and r.extra["ara_passed"]
 
@@ -256,7 +256,7 @@ def test_vendor_runs_store_roundtrip(tmp_path):
 
 
 def test_json_safe_and_finite_or_none():
-    assert ara.json_safe({"a": [math.inf, {"b": -math.inf}], "c": math.nan, "d": 1.5}) == {
+    assert ara._json_safe({"a": [math.inf, {"b": -math.inf}], "c": math.nan, "d": 1.5}) == {
         "a": ["inf", {"b": "-inf"}], "c": "nan", "d": 1.5}
     assert ara.finite_or_none(math.inf) is None and ara.finite_or_none(True) is None
     assert ara.finite_or_none(0.5) == 0.5

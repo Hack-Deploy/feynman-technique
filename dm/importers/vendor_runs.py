@@ -16,8 +16,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from dm.importers.ara import (PASS_THRESHOLD, WORLD_VARS, count_experiments,
-                               finite_or_none, json_safe, write_store)
+from dm.importers.ara import (
+    PASS_THRESHOLD, WORLD_VARS, _json_safe, count_experiments, finite_or_none, write_store,
+)
 from dm.store import ATTEMPTS_DIR
 from dm.types import AttemptRecord
 
@@ -79,7 +80,7 @@ def build_record(d: dict, path: str) -> AttemptRecord | None:
                  "prereg_commitment": None, "public_tests": True,
                  "explanation_score": _explanation_score(d)},
         created_at=str(d.get("timestamp", "")),
-        extra=json_safe(extra),
+        extra=_json_safe(extra),
     )
 
 
