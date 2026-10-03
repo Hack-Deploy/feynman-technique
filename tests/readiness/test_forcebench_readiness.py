@@ -397,7 +397,7 @@ def test_nonfinite_verdict_score_is_rejected():
 
 def test_attempt_store_lines_are_strict_json(tmp_path):
     record = _single_record()
-    record.extra["x"] = float("inf")
+    object.__setattr__(record, "extra", {"x": float("inf")})
     store = AttemptStore(tmp_path / "fb.jsonl")
     with pytest.raises(ValueError):
         store.append([record])

@@ -470,7 +470,12 @@ class TestEngineGuards:
 
     def test_non_finite_metric_is_json_safe(self):
         recs = _records()
-        next(r for r in recs if not r.passed).verdict["normalised_mse"] = math.inf
+        record = next(r for r in recs if not r.passed)
+        object.__setattr__(
+            record,
+            "verdict",
+            {**record.verdict, "normalised_mse": math.inf},
+        )
         ev, led = _run(ReplayPool(recs, experiments_cost(0.5)), prize=500)
         json.dumps(ev, allow_nan=False)
         json.dumps(led, allow_nan=False)
@@ -519,7 +524,11 @@ class TestStore:
     def test_store_writes_strict_json(self, tmp_path):
         p = tmp_path / "i.jsonl"
         record = self._rec(1)
-        record.verdict["normalised_mse"] = math.inf
+        object.__setattr__(
+            record,
+            "verdict",
+            {**record.verdict, "normalised_mse": math.inf},
+        )
         with pytest.raises(ValueError):
             AttemptStore(p).append([record])
 

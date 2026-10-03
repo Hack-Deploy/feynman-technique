@@ -49,6 +49,47 @@ def _to_builtin(obj: Any) -> Any:
     return obj
 
 
+class FrozenDict(dict):
+    _error = "AttemptRecord fields are read-only; use dataclasses.replace"
+
+    def _readonly(self, *args, **kwargs):
+        raise TypeError(self._error)
+
+    __setitem__ = __delitem__ = clear = pop = popitem = setdefault = update = __ior__ = _readonly
+
+    def __reduce__(self):
+        return (type(self), (dict(self),))
+
+
+class FrozenList(list):
+    _error = "AttemptRecord fields are read-only; use dataclasses.replace"
+
+    def _readonly(self, *args, **kwargs):
+        raise TypeError(self._error)
+
+    __setitem__ = __delitem__ = append = extend = insert = pop = remove = clear = sort = reverse = _readonly
+    __iadd__ = __imul__ = _readonly
+
+    def __reduce__(self):
+        return (type(self), (list(self),))
+
+
+def _freeze(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return FrozenDict({key: _freeze(value) for key, value in obj.items()})
+    if isinstance(obj, list):
+        return FrozenList(_freeze(value) for value in obj)
+    return obj
+
+
+def _thaw(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {key: _thaw(value) for key, value in obj.items()}
+    if isinstance(obj, list):
+        return [_thaw(value) for value in obj]
+    return obj
+
+
 def _validate_attempt_values(
     stated_p_success: float | None, rounds: int, experiments: int, lab_cost: float
 ) -> None:
@@ -181,7 +222,7 @@ class AttemptRecord:
         )
         for name in ("llm_usage", "verdict", "extra"):
             value = json.loads(canonical_json(_to_builtin(getattr(self, name))))
-            object.__setattr__(self, name, value)
+            object.__setattr__(self, name, _freeze(value))
         v = self.seed
         if isinstance(v, bool) or not isinstance(v, int):
             raise TypeError(f"{self.attempt_id}: seed must be int, got {v!r}")
@@ -197,7 +238,7 @@ class AttemptRecord:
         return isinstance(self.verdict.get("passed"), bool)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {f.name: _thaw(getattr(self, f.name)) for f in fields(self)}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> AttemptRecord:
