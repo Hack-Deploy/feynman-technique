@@ -39,6 +39,7 @@
   .dot.right { background: var(--green); }
   .dot.lucky { background: var(--amber); }
   .dot.fail { background: var(--rust); }
+  .dot.closest { background: var(--navy-2); }
   .dot.sel { border-color: var(--ink); }
   .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 14px; margin-top: 10px; }
   .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 6px; }
@@ -57,7 +58,7 @@
   .runbox { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 10px; }
   @media (max-width: 860px) { .runbox { grid-template-columns: 1fr; } }
   .wait { color: var(--muted); font-size: 15px; }
-  .buckets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  .buckets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
   @media (max-width: 860px) { .buckets { grid-template-columns: 1fr; } }
   .buckets .n { font: 700 54px/1 var(--narrow); }
 </style>
@@ -81,13 +82,6 @@
     <h1>Find the hidden law of a toy universe.</h1>
     <p class="lead">We built six small simulated universes. Each has a secret force law: a rule for how two particles push or pull on each other. The market asks one question: <b>what is the law?</b></p>
     <p class="sub">An AI scientist pays to launch particles and watch where they go. Then it submits a formula. A judge tests that formula on launches the AI scientist never saw. If the formula predicts them well, it passes.</p>
-    <div class="qa">
-      <a href="#market"><span>1</span>What is the market?</a>
-      <a href="#menu"><span>2</span>What can it buy?</a>
-      <a href="#bid"><span>3</span>How does bidding work?</a>
-      <a href="#judge"><span>4</span>How is it judged?</a>
-      <a href="#results"><span>5</span>Why pass or fail?</a>
-    </div>
   </div>
   <div class="fig">
     <svg viewBox="0 0 520 420" role="img" aria-label="A hidden world with a source particle and probe launches">
@@ -98,7 +92,7 @@
       <text x="40" y="50" font-size="12" font-weight="700" letter-spacing="2" fill="#6B6B67">A HIDDEN WORLD</text>
       <g fill="none" stroke="#DADAD6" stroke-dasharray="3 5"><circle cx="200" cy="220" r="60"/><circle cx="200" cy="220" r="120"/><circle cx="200" cy="220" r="180"/></g>
       <circle cx="200" cy="220" r="22" fill="#1B3F8B"/>
-      <text x="200" y="225" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">source</text>
+      <text x="200" y="224" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">source</text>
       <path d="M320 220 C 300 222, 280 222, 252 221" stroke="#A23B1E" stroke-width="3" fill="none" marker-end="url(#hv)"/>
       <circle cx="320" cy="220" r="10" fill="#A23B1E"/>
       <path d="M350 130 C 320 150, 300 175, 270 188" stroke="#A23B1E" stroke-width="3" fill="none" marker-end="url(#hv)" opacity=".75"/>
@@ -111,6 +105,13 @@
       <text x="40" y="385" font-size="13" fill="#4D4D4D">Each launch: put a probe somewhere, let go, record its path.</text>
     </svg>
   </div>
+    <div class="qa" style="grid-column:1/-1">
+      <a href="#market"><span>1</span>What is the market?</a>
+      <a href="#menu"><span>2</span>What can it buy?</a>
+      <a href="#bid"><span>3</span>How does bidding work?</a>
+      <a href="#judge"><span>4</span>How is it judged?</a>
+      <a href="#results"><span>5</span>Why pass or fail?</a>
+    </div>
 </section>
 
 <!-- ============================================================ MARKET -->
@@ -225,7 +226,7 @@
         <text x="30" y="142" fill="#ddd">and publishes a fingerprint</text>
         <text x="30" y="160" fill="#ddd">of them (a hash)</text>
         <rect x="30" y="178" width="200" height="30" rx="6" fill="#2a2a2a"/>
-        <text x="40" y="198" fill="#9DB3E0" font-family="ui-monospace,monospace" font-size="12" id="hashText">9f3c…e1a0</text>
+        <text x="40" y="198" fill="#9DB3E0" font-family="ui-monospace,monospace" font-size="12" id="hashText">e.g. 9f3c…e1a0</text>
 
         <rect x="290" y="30" width="240" height="200" rx="12" fill="#EEF2F9"/>
         <text x="310" y="60" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">DURING · SUBMIT</text>
@@ -284,10 +285,10 @@
 <section id="results">
   <p class="label">5 · Why pass or fail?</p>
   <h2>60 settled attempts: 6 worlds × 2 AI scientists × 5 runs.</h2>
-  <p class="sub">Green: passed with the right law. <b style="color:var(--amber)">Amber: passed with the wrong law</b>, because the judge's tests could not tell the difference. Red: failed. Click any dot.</p>
+  <p class="sub">Green: passed with the right law. Blue: the true law wasn't on its list, and its closest guess passed. <b style="color:var(--amber)">Amber: passed with the wrong law</b>, because the judge's tests could not tell the difference. Red: failed. Click any dot.</p>
   <div class="buckets" id="buckets"></div>
   <div id="grid"><p class="wait">Loading results…</p></div>
-  <div class="legend"><span><i style="background:var(--green)"></i>right law, passed</span><span><i style="background:var(--amber)"></i>wrong law, passed anyway</span><span><i style="background:var(--rust)"></i>failed</span></div>
+  <div class="legend"><span><i style="background:var(--green)"></i>right law, passed</span><span><i style="background:var(--navy-2)"></i>closest guess available, passed</span><span><i style="background:var(--amber)"></i>wrong law, passed anyway</span><span><i style="background:var(--rust)"></i>failed</span></div>
   <div class="detail card plain" id="detail"><p class="wait">Click a dot to see what was proposed and why it passed or failed.</p></div>
 </section>
 
@@ -295,7 +296,7 @@
   <p class="label rust">What the failures teach</p>
   <h2>A market is only as good as its judge.</h2>
   <div class="grid3" style="margin-top:20px">
-    <div class="card rust"><h3>Too-easy tests reward lucky guesses</h3><p>On fading, inertia and time-varying worlds, a plain 1/r formula passes. The tests sit where those laws look alike. That is the amber.</p></div>
+    <div class="card rust"><h3>Too-easy tests reward lucky guesses</h3><p>On "Heavy probe" all 10 attempts passed with the wrong law, 7 of them with a fading law instead of 1/r². On "Breathing gravity" a plain 1/r guess, ignoring time, passes 10 out of 10. The tests sit where those laws look alike. That is the amber.</p></div>
     <div class="card rust"><h3>Some laws look identical</h3><p>"Fades out beyond 2 units" and "falls as 1/r²" give almost the same paths on every launch on the menu. No amount of spending on this menu separates them.</p></div>
     <div class="card"><h3>What we're fixing</h3><p>Harder hidden tests that probe where laws differ, a salted fingerprint so tests can't be guessed, and checks that reject a formula that cheats the simulator.</p></div>
   </div>
@@ -339,9 +340,15 @@ function plainLaw(label) {
   const [fam, role] = label.split(" / ");
   return `${FAMILY[fam] || fam}, strength ∝ ${ROLE[role] || role}`;
 }
+function nested(a) {
+  const p = a.top_params || [];
+  return a.world === "coulomb_easy" && a.top_model === "crossover / p1" && Math.abs(p[0] ?? 1) < 0.03 && (p[1] ?? 0) < 0;
+}
+function closest(a) { return a.world === "extra_dimensions" && a.top_model === "crossover / ratio"; }
 function kind(a) {
   if (!a.passed) return "fail";
-  return a.identified ? "right" : "lucky";
+  if (a.identified || nested(a)) return "right";
+  return closest(a) ? "closest" : "lucky";
 }
 
 /* ---------- menu tiles ---------- */
@@ -394,14 +401,14 @@ renderBid();
 /* ---------- worlds ---------- */
 function curveSvg(key) {
   const w = WORLD[key], W = 300, H = 130, x0 = 34, y0 = 108;
-  const rs = Array.from({length: 60}, (_, i) => 0.6 + i * (7.4 / 59));
+  const rs = Array.from({length: 60}, (_, i) => 1 + i * (7 / 59));
   const ys = rs.map(w.f), max = Math.max(...ys.slice(0));
-  const sx = r => x0 + (r - 0.6) / 7.4 * (W - x0 - 10), sy = v => y0 - Math.min(v / max, 1) * 90;
+  const sx = r => x0 + (r - 1) / 7 * (W - x0 - 10), sy = v => y0 - Math.min(v / max, 1) * 90;
   // fitted 1/r baseline: least squares k for k/r over the sampled range
   const k = rs.reduce((a, r, i) => a + ys[i] / r, 0) / rs.reduce((a, r) => a + 1 / (r * r), 0);
   const path = f => rs.map((r, i) => `${i ? "L" : "M"}${sx(r).toFixed(1)} ${sy(f(r)).toFixed(1)}`).join(" ");
   let band = "";
-  if (w.band) band = `<path d="${path(r => 1.5 / r)} L${sx(8)} ${sy(0)} L${sx(0.6)} ${sy(0)}Z" fill="#EEF2F9"/>`;
+  if (w.band) band = `<path d="${path(r => 1.5 / r)} L${sx(8)} ${sy(0)} L${sx(1)} ${sy(0)}Z" fill="#EEF2F9"/>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%">${band}
     <line x1="${x0}" y1="${y0}" x2="${W - 8}" y2="${y0}" stroke="#DADAD6"/><line x1="${x0}" y1="12" x2="${x0}" y2="${y0}" stroke="#DADAD6"/>
     <path d="${path(r => k / r)}" stroke="#A23B1E" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
@@ -414,9 +421,9 @@ function renderWorlds(fb) {
   for (const a of fb.attempts || []) (by[a.world] ||= []).push(a);
   $("#worldCards").innerHTML = fb.worlds.map(key => {
     const w = WORLD[key] || {name: key, truth: ""}, rows = by[key] || [];
-    const c = {right: 0, lucky: 0, fail: 0}; rows.forEach(a => c[kind(a)]++);
+    const c = {right: 0, closest: 0, lucky: 0, fail: 0}; rows.forEach(a => c[kind(a)]++);
     const base = rows.filter(a => a.baseline_passed).length;
-    const score = rows.length ? `<div class="score"><span class="pill pass">${c.right} right</span><span class="pill warn">${c.lucky} lucky</span><span class="pill fail">${c.fail} failed</span><span class="pill info">plain 1/r passes ${base}/${rows.length}</span></div>` : "";
+    const score = rows.length ? `<div class="score"><span class="pill pass">${c.right} right</span>${c.closest ? `<span class="pill info">${c.closest} closest</span>` : ""}<span class="pill warn">${c.lucky} wrong law</span><span class="pill fail">${c.fail} failed</span><span class="pill info">plain 1/r passes ${base}/${rows.length}</span></div>` : "";
     return `<div class="card plain"><p class="label" style="margin:0">${esc(key)}</p><h3>${esc(w.name)}</h3><p class="truth">${esc(w.truth)}</p>${WORLD[key] ? curveSvg(key) : ""}${score}</div>`;
   }).join("");
 }
@@ -425,6 +432,8 @@ function renderWorlds(fb) {
 let ATTEMPTS = [];
 function why(a) {
   const w = WORLD[a.world]?.name || a.world;
+  if (a.passed && nested(a)) return `Right law, written in a bigger formula: its 1/r part is almost zero (${num(a.top_params[0], 3)}), leaving a 1/r² push. Error ${num(a.nmse, 3)}, under 0.1.`;
+  if (a.passed && closest(a)) return `None of the 15 guesses has this world's exact shape. It picked the closest one, "1/r² up close, 1/r far away", and that predicted the hidden tests well (error ${num(a.nmse, 3)}).`;
   if (a.passed && a.identified) return `It found the right kind of law, so its predictions matched the hidden tests (error ${num(a.nmse, 3)}, under 0.1).`;
   if (a.passed) return `Its formula is the wrong kind of law for “${w}”, but on the hidden tests the two give nearly the same paths (error ${num(a.nmse, 3)}). The judge can't tell, so it pays.${a.baseline_passed ? " Even a plain 1/r guess passes here." : ""}`;
   if (a.world === "extra_dimensions") return `None of its 15 guesses has this world's exact shape, and the closest fit missed on the hidden tests (error ${num(a.nmse, 3)}).`;
@@ -433,7 +442,7 @@ function why(a) {
 function showDetail(i) {
   document.querySelectorAll(".dot").forEach(d => d.classList.toggle("sel", +d.dataset.i === i));
   const a = ATTEMPTS[i], k = kind(a);
-  const pill = {right: '<span class="pill pass">passed · right law</span>', lucky: '<span class="pill warn">passed · wrong law</span>', fail: '<span class="pill fail">failed</span>'}[k];
+  const pill = {closest: '<span class="pill info">passed · closest guess</span>', right: '<span class="pill pass">passed · right law</span>', lucky: '<span class="pill warn">passed · wrong law</span>', fail: '<span class="pill fail">failed</span>'}[k];
   $("#detail").innerHTML = `<p class="label" style="margin:0">${esc(WORLD[a.world]?.name || a.world)} · ${SOLVER[a.solver] || a.solver} · run ${a.seed}</p>
     <h3>${pill} &nbsp;<span class="mono">${esc(law(a.top_model, a.top_params))}</span></h3>
     <p class="sub" style="margin-top:6px">${esc(why(a))}</p>
@@ -446,9 +455,10 @@ function showDetail(i) {
 function renderGrid(fb) {
   ATTEMPTS = fb.attempts || [];
   if (!ATTEMPTS.length) { $("#grid").innerHTML = '<p class="wait">No settled results yet. Run <code>uv run python -m tests.forcebench_settle</code>.</p>'; return; }
-  const c = {right: 0, lucky: 0, fail: 0}; ATTEMPTS.forEach(a => c[kind(a)]++);
+  const c = {right: 0, closest: 0, lucky: 0, fail: 0}; ATTEMPTS.forEach(a => c[kind(a)]++);
   $("#buckets").innerHTML = `
     <div class="card green"><div class="n" style="color:var(--green)">${c.right}</div><h3>Right law, passed</h3><p>The market worked: the prize went to a correct answer.</p></div>
+    <div class="card"><div class="n" style="color:var(--navy-2)">${c.closest}</div><h3>Closest guess, passed</h3><p>The true law wasn't among its guesses; the nearest one was good enough.</p></div>
     <div class="card" style="background:var(--amber-soft)"><div class="n" style="color:var(--amber)">${c.lucky}</div><h3>Wrong law, passed</h3><p>The judge was too lenient. These are the bugs a real market must not have.</p></div>
     <div class="card rust"><div class="n" style="color:var(--rust)">${c.fail}</div><h3>Failed</h3><p>No prize. The attempt and its data go into the public record.</p></div>`;
   const solvers = fb.solvers;
@@ -493,7 +503,7 @@ function renderAttempt(r) {
     } else {
       const l = s.launch, menuL = (FB.menu.find(m => m.action === l.action)) || {r0: l.r0, vy: l.velocity?.[1], p1: l.p1, p2: l.p2};
       body = `<div class="runbox"><div><p class="label" style="margin:0">${s.title === "Free launch" ? "Starting data, free" : "Bought"}</p>
-        <h3>Launch ${l.action ?? "–"}: ${esc(describe(menuL))}</h3>${launchSvg(menuL, 300, 80)}
+        <h3>Launch ${l.action ?? "–"}: ${esc(describe(menuL))}</h3><div style="max-width:320px">${launchSvg(menuL, 300, 80)}</div>
         <p class="note">Probe distance over time: ${(l.radii || []).map(x => num(x, 2)).join(" → ") || "–"}</p>
         <p class="note">Credits spent so far: ${num(s.spent, 0)} of ${num(r.wallet.start, 0)}</p></div>
         <div class="beliefs"><p class="label" style="margin:0">What it believes now</p>

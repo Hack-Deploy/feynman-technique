@@ -144,7 +144,7 @@ function renderStatus() {
   const l = INFO.live;
   $("#status").innerHTML = l.enabled
     ? `<div class="status on"><span class="pill pass">real models on</span><div>Spend cap $${l.max_usd}. A run is projected at up to $${(l.projected_usd_per_run ?? 0).toFixed(2)}; $${(l.projected_usd_spent ?? 0).toFixed(2)} projected so far.</div></div>`
-    : `<div class="status off"><span class="pill warn">real models off</span><div>The scripted demo runs the full market with a pre-written AI scientist, free. To use a real model on this machine:<ul>${(l.reasons || []).map(r => `<li>${esc(r)}</li>`).join("")}</ul></div></div>`;
+    : `<div class="status off"><span class="pill warn">real models off</span><div>The scripted demo runs the full market for free with a pre-written AI scientist: it buys one experiment, then always answers “supported”, so it wins on true claims and loses on false ones. To use a real model on this machine:<ul>${(l.reasons || []).map(r => `<li>${esc(r)}</li>`).join("")}</ul></div></div>`;
   const liveBtn = document.querySelector('#mode [data-m="live"]');
   liveBtn.disabled = !l.enabled;
   if (!l.enabled) setMode("demo");
