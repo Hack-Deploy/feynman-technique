@@ -395,3 +395,30 @@ def test_replay_ledger_records_attempt_source():
         and row["context"]["protocol"] == "fixture"
         for row in ledger
     )
+
+
+def test_bounty_routes_reject_foreign_origin_and_host(app_server, monkeypatch):
+    calls = []
+
+    def fake_post_bounty(*args):
+        calls.append(args)
+        return {}
+
+    monkeypatch.setattr(app.bounty, "post_bounty", fake_post_bounty)
+
+    status, _, body = _request(
+        f"{app_server}/api/bounty",
+        method="POST",
+        data=json.dumps({"hypothesis": "x", "criterion": "y", "prize": 1}).encode(),
+        headers={"Content-Type": "application/json", "Origin": "http://evil.example"},
+    )
+    assert status == 403
+    assert json.loads(body) == {"error": "forbidden"}
+
+    status, _, body = _request(
+        f"{app_server}/api/bounty/info",
+        headers={"Host": "evil.example"},
+    )
+    assert status == 403
+    assert json.loads(body) == {"error": "forbidden"}
+    assert calls == []
