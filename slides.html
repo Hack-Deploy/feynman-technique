@@ -46,6 +46,8 @@
   svg text { font-family: var(--sans); }
 
   /* Cover */
+  .why { font-size: 32px; line-height: 1.4; color: var(--body); max-width: 1120px; padding: 16px 24px; border-left: 6px solid var(--loss); background: #FBEDE8; }
+  .why b { color: var(--loss); }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
   .steps div { display: flex; align-items: center; gap: 24px; border: 2px solid var(--ink); padding: 32px 40px; font-size: 36px; font-weight: 600; }
   .steps svg { width: 64px; height: 64px; flex: none; }
@@ -105,6 +107,17 @@
   .plan svg { width: 72px; height: 72px; }
   .plan .arrow { font-size: 36px; color: var(--muted); }
   .payouts .art { width: 240px; height: 218px; flex: none; }
+
+  /* Novelty */
+  .novel { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .novel h3 { font-family: var(--mono); font-size: 24px; font-weight: 500; letter-spacing: 2px; color: var(--accent); padding-bottom: 12px; border-bottom: 3px solid var(--accent); }
+  .novel .matters h3 { color: var(--loss); border-color: var(--loss); }
+  .novel ul { list-style: none; display: flex; flex-direction: column; gap: 24px; margin-top: 24px; }
+  .novel li { font-size: 28px; line-height: 1.35; color: var(--body); }
+  .novel li b { display: block; font-size: 32px; color: var(--ink); }
+  .novel sup { font-size: 18px; color: var(--muted); }
+  .landscape { font-size: 26px; line-height: 1.4; padding: 20px 28px; background: #F2F2EE; border-left: 6px solid var(--ink); }
+  .sources { position: absolute; left: 128px; right: 220px; bottom: 52px; font-size: 18px; line-height: 1.4; color: var(--muted); }
 
   /* Controls */
   .controls { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font: 14px/1 var(--mono); color: #CFCFC8; background: rgba(0,0,0,.45); padding: 6px 8px; border-radius: 999px; z-index: 2; }
@@ -181,12 +194,13 @@
   <div class="head" style="gap: 32px">
     <p class="eyebrow" style="color: var(--muted)">DISCOVERY MARKET</p>
     <h1>Real science, real progress.</h1>
-    <p class="lead" style="max-width: 1120px">We create the platform for AI scientists to prove themselves in real labs: propose a hypothesis, design the experiment, run it, and get paid only for a clear result.</p>
+    <p class="lead" style="max-width: 1120px">A market where AI scientists prove themselves in real labs and get paid only for a clear answer, true or false.</p>
+    <p class="why"><b>Why it matters:</b> AI agents overrate their own success, 65% of null results are never written up, and money for AI-run labs is ahead of proof.</p>
   </div>
   <div class="steps">
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>Hypothesis</div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M8 10h8"/><path d="M8 14h8"/><path d="M8 18h5"/></svg>Experiment Design</div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg>Lab Execution</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Paid only for answers</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/><circle cx="12" cy="17" r="1.2"/></svg>Confidence is scored</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M8 10h8"/><path d="M8 14h8"/><path d="M8 18h5"/></svg>Every run is logged</div>
   </div>
   <svg class="illus" viewBox="0 0 440 470" style="right: 128px; top: 330px; width: 440px; height: 460px" aria-hidden="true">
     <ellipse cx="220" cy="452" rx="150" ry="12" fill="#E6E4DC"/>
@@ -228,7 +242,36 @@
   </svg>
 </section>
 
-<!-- 2 · Step 1 -->
+<!-- 2 · What's new and why it matters -->
+<section class="slide" style="gap: 32px; padding-bottom: 160px">
+  <div class="head">
+    <p class="eyebrow">WHY DISCOVERY MARKET</p>
+    <h2>What's new, and why it matters</h2>
+  </div>
+  <div class="novel">
+    <div>
+      <h3>WHAT'S NEW</h3>
+      <ul>
+        <li><b>Pay for answers, not effort</b>True or false both pay. No clear answer, no payout.</li>
+        <li><b>AI scientists bet on their own confidence</b>They bid only when a clear answer covers the cost, and every prediction is scored against what happened.</li>
+        <li><b>Nothing goes in the file drawer</b>Every run is logged, including negative results.</li>
+      </ul>
+    </div>
+    <div class="matters">
+      <h3>WHY IT MATTERS</h3>
+      <ul>
+        <li><b>AI agents overrate themselves</b>Some agents that succeed 22% of the time predict 77% success.<sup>1</sup> Self-assessment is the bottleneck for markets of agents.<sup>2</sup></li>
+        <li><b>Null results disappear</b>65% of null results are never even written up.<sup>3</sup></li>
+        <li><b>Money is ahead of proof</b>Lila Sciences has raised $550M and Periodic Labs a $300M seed for AI-run labs.<sup>4</sup> Repeatable, valuable results are still the open test.<sup>5</sup></li>
+      </ul>
+    </div>
+  </div>
+  <p class="landscape">Neighbours each cover one piece: AI scientists (Sakana, Google Co-Scientist, FutureHouse), cloud labs and lab marketplaces (Emerald Cloud Lab, Science Exchange), science prediction markets (DARPA SCORE). In our review we found none that pays AI scientists only for clear answers from real labs.</p>
+  <p class="sources">1 Kaddour et al., Agentic Uncertainty Reveals Agentic Overconfidence, ICLR 2026 · 2 Fradkin &amp; Krishnan, MarketBench, 2026 · 3 Franco, Malhotra &amp; Simonovits, Science 2014 · 4 Startup Fortune citing Reuters (Jun 2026); TechBuzz (Sep 2025) · 5 Startup Fortune (Jun 2026). Full list: novelty-review.md</p>
+  <p class="page-num">2</p>
+</section>
+
+<!-- 3 · Step 1 -->
 <section class="slide">
   <div class="head">
     <p class="eyebrow">STEP 1 OF 5</p>
@@ -262,10 +305,10 @@
     <circle cx="346" cy="418" r="4.5" fill="#FFFFFF" stroke="#1B3F8B" stroke-width="2.5"/>
     <text x="390" y="428" font-size="26" font-weight="500" text-anchor="middle" fill="#1B3F8B" style="font-family: var(--mono)">£50</text>
   </svg>
-  <p class="page-num">2</p>
+  <p class="page-num">3</p>
 </section>
 
-<!-- 3 · Step 2 -->
+<!-- 4 · Step 2 -->
 <section class="slide" style="gap: 28px">
   <div class="head">
     <p class="eyebrow">STEP 2 OF 5</p>
@@ -285,10 +328,10 @@
     <text x="660" y="60" font-size="16" text-anchor="end" font-weight="600" fill="#1B3F8B">designer's confidence: ~95%</text>
   </svg>
   <p class="lead" style="font-size: 32px">Confident enough to cover the cost → <b style="color: var(--accent)">bid</b>. Not confident enough → walk away.</p>
-  <p class="page-num">3</p>
+  <p class="page-num">4</p>
 </section>
 
-<!-- 4 · Step 3 -->
+<!-- 5 · Step 3 -->
 <section class="slide" style="gap: 32px">
   <div class="head">
     <p class="eyebrow">STEP 3 OF 5</p>
@@ -305,10 +348,10 @@
     <span class="safety"><svg viewBox="0 0 24 24" fill="none" stroke="#1B3F8B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Safety check passed</span>
   </div>
   <svg class="illus" viewBox="0 0 420 640" style="right: 128px; top: 170px; width: 500px; height: 762px; color: #1B3F8B" role="img" aria-label="A technician on a ladder drops an apple onto a marked spot next to a measuring tape"><use href="#drop"/></svg>
-  <p class="page-num">4</p>
+  <p class="page-num">5</p>
 </section>
 
-<!-- 5 · Step 4 -->
+<!-- 6 · Step 4 -->
 <section class="slide" style="gap: 40px">
   <div class="head">
     <p class="eyebrow">STEP 4 OF 5</p>
@@ -336,10 +379,10 @@
     </svg></div>
   </div>
   <p class="callout">Every run is logged, including negative results, so the next experiment learns from what didn't work.</p>
-  <p class="page-num">5</p>
+  <p class="page-num">6</p>
 </section>
 
-<!-- 6 · Step 5 -->
+<!-- 7 · Step 5 -->
 <section class="slide" style="gap: 24px">
   <div class="head">
     <p class="eyebrow">STEP 5 OF 5</p>
@@ -388,10 +431,10 @@
       </svg>
     </figure>
   </div>
-  <p class="page-num">6</p>
+  <p class="page-num">7</p>
 </section>
 
-<!-- 7 · Proof of concept: setup -->
+<!-- 8 · Proof of concept: setup -->
 <section class="slide" style="gap: 64px">
   <div class="head">
     <p class="eyebrow">PROOF OF CONCEPT</p>
@@ -407,22 +450,22 @@
     </svg>
     <p style="font-family: var(--serif); font-size: 48px; line-height: 1.3">The full market running on DiscoverPhysics: 11 simulated physics worlds where the true answer is known, so every payout can be checked.</p>
   </div>
-  <p class="page-num">7</p>
+  <p class="page-num">8</p>
 </section>
 
-<!-- 8 · Hand-off to the demo -->
+<!-- 9 · Hand-off to the demo -->
 <section class="slide statement" style="gap: 40px">
   <p class="eyebrow">DEMO</p>
   <h2>The run and the results.</h2>
   <svg class="illus" viewBox="0 0 420 640" style="right: 160px; top: 170px; width: 480px; height: 731px; color: #E4E9F3; --illus-soft: #2A4F9C" aria-hidden="true"><use href="#drop"/></svg>
-  <p class="page-num">8</p>
+  <p class="page-num">9</p>
 </section>
 
 </div>
 
 <nav class="controls" aria-label="Slide controls">
   <button id="prev" aria-label="Previous slide">←</button>
-  <span id="count">1 / 8</span>
+  <span id="count">1 / 9</span>
   <button id="next" aria-label="Next slide">→</button>
 </nav>
 
