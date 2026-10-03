@@ -373,7 +373,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                         "probability_source": cfg.probability_source,
                         "track": cfg.track,
                     },
-                    outcome={"passed": True, "metric": true_p},
+                    outcome={"passed": True},
                     effort={
                         "rounds": cost_detail.get("rounds"),
                         "experiments": cost_detail.get("experiments"),
@@ -406,7 +406,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                         "probability_source": cfg.probability_source,
                         "track": cfg.track,
                     },
-                    outcome={"passed": False, "metric": true_p},
+                    outcome={"passed": False},
                     effort={
                         "rounds": cost_detail.get("rounds"),
                         "experiments": cost_detail.get("experiments"),
