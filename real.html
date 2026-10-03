@@ -192,7 +192,7 @@ function showAttempt(r) {
   $("attemptOut").innerHTML = `
     <p class="verdictline ${v.passed ? "yes" : "no"}">${v.passed ? "Passed" : "Failed"}: ${esc(r.solver)} on ${esc(nice(r.world))}, seed ${r.seed}, after ${r.experiments} paid launch${r.experiments === 1 ? "" : "es"}</p>
     ${nmseBar(v.nmse, v.threshold)}
-    ${v.passed && !r.identified ? `<div class="caveat"><b>Passed, but with the wrong law.</b> The submitted ${esc(r.top_model)} formula is not the true form for ${esc(nice(r.world))}${r.world === "extra_dimensions" ? " (none of the solver's model families can express it)" : ""}. It is close enough on the hidden cases to beat nMSE 0.1, which is why the pass rule needs tightening.</div>` : v.passed ? `<p class="note"><b>Right law:</b> the submitted formula has the true form for ${esc(nice(r.world))}.</p>` : ""}
+    ${v.passed && !r.identified ? `<div class="caveat"><b>Passed, but with the wrong law.</b> The submitted ${esc(r.top_model)} formula is not the true form for ${esc(nice(r.world))}${r.world === "extra_dimensions" ? " (none of the solver's model families can express it)" : ""}. It is close enough on the hidden cases to beat nMSE 0.1. This is a known, accepted limit of the pass rule (the paper's): on some worlds a pass does not prove the right law, so we report "right law" separately.</div>` : v.passed ? `<p class="note"><b>Right law:</b> the submitted formula has the true form for ${esc(nice(r.world))}.</p>` : ""}
     <div class="stats">
       <div><b>${r.experiments}</b><span>launches bought of 8</span></div>
       <div><b>${r.wallet.lab_revenue}</b><span>credits paid to the lab</span></div>
@@ -278,6 +278,7 @@ function renderAra() {
   const worlds = ["all", ...a.worlds], models = ["all", ...a.solvers.map(m => m.replace("ara:", ""))];
   out.innerHTML = `
     <div class="caveat"><b>Read with care:</b> ${esc(a.caveat)}</div>
+    ${a.snapshot ? `<p class="note"><b>Committed snapshot</b> (no generated replay found). Use the button to regenerate it from the published data.</p>` : ""}
     <div class="stats">
       <div><b>${a.attempts.length}</b><span>published attempts</span></div>
       <div><b>${passN}</b><span>pass nMSE &lt; 0.1</span></div>
@@ -352,7 +353,8 @@ function renderGrid() {
       <div><b>${(g.table.reduce((t, c) => t + c.mean_experiments * c.n, 0) / n).toFixed(1)}</b><span>launches per attempt (max 8)</span></div>
     </div>
     ${s}
-    <div class="caveat"><b>What this shows:</b> the oracle settles real attempts end to end, but the pass rule (nMSE &lt; 0.1) is too weak. Fractional and extra dimensions pass without the right law ever being submitted, and a plain 1/r law passes oscillator every time. Fixing this is the top open item.</div>
+    <div class="caveat"><b>What this shows:</b> the oracle settles real attempts end to end. The pass rule (nMSE &lt; 0.1, as in the DiscoverPhysics paper) has known blind spots that we accept and report: yukawa and fractional cannot be told apart, extra dimensions passes without the right law, and a plain 1/r law passes oscillator. Read "Pass" together with "Right law".</div>
+    ${g.snapshot ? `<p class="note"><b>Committed snapshot</b> (no generated grid found). Use the button to regenerate it (about 6 minutes).</p>` : ""}
     <p class="note">Scored via dm.settle at commit ${esc(g.head || "?")}, hidden test seed ${esc(g.test_seed)}. Coulomb (easy) is repulsive and ignores p2 in the simulator, unlike its documentation. The 1/r baseline there is not fitted. On gravity the true force is 1/r, so the baseline is meant to pass there.</p>
     ${rebuildBox("btnGrid", "Re-run the grid", "/api/real/grid", "About 6 minutes.")}`;
   $("btnGrid").onclick = () => rebuild("btnGrid", "/api/real/grid", "Grid");

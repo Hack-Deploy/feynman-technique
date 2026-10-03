@@ -21,12 +21,28 @@ ARA_STORE = ROOT / "attempts" / "ara.jsonl"
 ARA_SUMMARY = OUTPUT_DIR / "replay_ara" / "summary.json"
 FORCEBENCH_GRID = OUTPUT_DIR / "forcebench_settle.json"
 SIM_SUMMARY = OUTPUT_DIR / "summary.json"
+# Committed snapshots, used when the generated files above are missing (fresh clone,
+# offline demo). See attempts/fixtures/demo/README.md.
+SNAPSHOT_DIR = ROOT / "attempts" / "fixtures" / "demo"
+SNAPSHOTS = {
+    ARA_STORE: SNAPSHOT_DIR / "ara.jsonl",
+    ARA_SUMMARY: SNAPSHOT_DIR / "replay_ara_summary.json",
+    FORCEBENCH_GRID: SNAPSHOT_DIR / "forcebench_settle.json",
+}
 LIVE_WALLET = 10.0
 LIVE_PRICE = 1.0
 TEST_SEED = 0
 # The simulated sweeps call this world "coulomb".
 SIM_WORLD_ALIASES = {"coulomb": "coulomb_easy"}
 SOLVERS = ("bayes_lite", "random_menu")
+
+
+def _source(path: Path) -> tuple[Path, bool]:
+    """The generated file if it exists, else its committed snapshot. (path, is_snapshot)"""
+    if path.exists() or path not in SNAPSHOTS:
+        return path, False
+    snap = SNAPSHOTS[path]
+    return (snap, True) if snap.exists() else (path, False)
 
 
 def _read_json(path: Path) -> dict | None:
@@ -45,12 +61,13 @@ def _relative(path: Path) -> str:
 
 
 def ara_attempts() -> list[dict]:
-    if not ARA_STORE.exists():
+    store, _ = _source(ARA_STORE)
+    if not store.exists():
         return []
     from dm.store import AttemptStore
 
     rows = []
-    for r in AttemptStore(ARA_STORE).load():
+    for r in AttemptStore(store).load():
         extra = r.extra or {}
         rows.append({
             "model": r.solver.removeprefix("ara:"),
@@ -70,7 +87,8 @@ def ara_attempts() -> list[dict]:
 
 
 def ara_data() -> dict:
-    summary = _read_json(ARA_SUMMARY)
+    summary_path, snapshot = _source(ARA_SUMMARY)
+    summary = _read_json(summary_path)
     sim = _read_json(SIM_SUMMARY) or {}
     sim_clearing = {
         source: {SIM_WORLD_ALIASES.get(w, w): v for w, v in worlds.items()}
@@ -81,6 +99,7 @@ def ara_data() -> dict:
         return {"available": False, "attempts": attempts, "sim_clearing": sim_clearing}
     return {
         "available": True,
+        "snapshot": snapshot,
         "attribution": "ARA Labs (AgentNativeResearchLab), CC BY 4.0",
         "attribution_url": "https://huggingface.co/AgentNativeResearchLab",
         "caveat": summary["caveat"],
@@ -102,9 +121,11 @@ def ara_data() -> dict:
 def forcebench_data() -> dict:
     from dm.venues.forcebench import WORLDS
 
-    grid = _read_json(FORCEBENCH_GRID)
+    grid_path, snapshot = _source(FORCEBENCH_GRID)
+    grid = _read_json(grid_path)
     out = {"worlds": list(WORLDS), "solvers": list(SOLVERS), "seeds": [0, 1, 2, 3, 4],
-           "wallet": LIVE_WALLET, "price": LIVE_PRICE, "available": grid is not None}
+           "wallet": LIVE_WALLET, "price": LIVE_PRICE, "available": grid is not None,
+           "snapshot": snapshot}
     if grid is None:
         return out
     cells: dict[tuple[str, str], list[dict]] = defaultdict(list)
