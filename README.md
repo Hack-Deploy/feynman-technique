@@ -20,12 +20,22 @@ true answer is known, so every payout can be checked.
 Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
+git clone --recurse-submodules https://github.com/Hack-Deploy/feynman-technique.git
+git submodule update --init  # if you cloned without --recurse-submodules
 uv sync                      # install Python 3.12 + dependencies into .venv
 uv run python run.py         # run all sweeps → output/{events,ledger,summary}.json
 uv run pytest                # run the test suite
 uv run python app.py         # results app at http://localhost:8000
 uv run python report.py      # same dashboard as one file: output/report.html
 ```
+
+`uv sync` installs the two DiscoverPhysics packages (`PhysicsSchool`, `ScienceAgent`) from the
+submodule as editable path dependencies (see `[tool.uv.sources]` in `pyproject.toml`), plus
+`requests`, which `scienceagent` imports but does not declare. Never edit files under
+`vendor/`; wrap them in `dm/` instead.
+
+If `uv sync` fails with `Distribution not found at: …/vendor/discovery-agents/PhysicsSchool`,
+the submodule is not initialised: run `git submodule update --init`.
 
 `app.py` opens a page with buttons for the simulation and the tests, and shows
 the results: the prize each world needs, agent balances payment by payment,
@@ -80,6 +90,10 @@ measured market outcomes.
 | `app.py` | Local results app: bounty form, run buttons, dashboard |
 | `bounty.py` | Bounty → Claude experiment design → bid decision (rule applied in code) |
 | `report.py`, `report_template.html` | Dashboard data and page; `report.py` also exports `output/report.html` |
+| `dm/` | Real-attempt code: types, attempt store, outcome sources |
+| `vendor/discovery-agents/` | DiscoverPhysics, pinned submodule; never edit |
+| `attempts/fixtures/` | Committed fixture attempt pools |
+| `PLAN.md` / `CLAUDE.md` | Plan for real attempts; standing rules |
 | `data/table{1,2,3}_*.csv` | Source tables: explanation scores, model pass@1, MDA pass rates |
 | `data/success_table.csv` | Per-world pass probabilities (`p = score^γ`, γ fit to pass@1); built by `data/build_success_table.py`. Used as the `power` odds source in Track A. |
 | `config.yaml` | Intended run parameters (not yet read by the runner) |

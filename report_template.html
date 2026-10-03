@@ -18,6 +18,8 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 va
 .lw1 { font: 700 18px/1 var(--sans); letter-spacing: -0.01em; }
 .lw2 { font: 700 13px/1 var(--cond); letter-spacing: 0.22em; text-transform: uppercase; color: #9A9A96; }
 .mast .page { font: 600 13px var(--cond); letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A96; }
+.realnav { display: none; color: #fff !important; text-decoration: none; border-bottom: 2px solid var(--red); }
+.app .realnav { display: inline; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 96px; }
 
 .bar { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; padding: 20px 0; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper); z-index: 2; }
@@ -87,13 +89,16 @@ td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
 pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(--mono); white-space: pre-wrap; margin: 0; }
 .empty { color: var(--ink-2); font-style: italic; padding: 14px 0; }
-@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { position: static; } }
+.prov { margin: 14px 0 0; font: 600 12px var(--cond); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.prov::before { content: "● "; color: var(--red); }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { position: static; } #clearing, #balances { overflow-x: auto; } #clearing svg, #balances svg { min-width: 720px; } }
 </style>
 </head>
 <body>
 <header class="mast"><div class="in">
   <a class="logo" href="index.html"><svg width="33" height="25" viewBox="0 0 33 25" aria-hidden="true"><rect x="1" y="1" width="31" height="23" rx="4" fill="none" stroke="#fff" stroke-width="1.6"/><g fill="none" stroke="#fff" stroke-width="1"><circle cx="7" cy="7" r="2.1"/><circle cx="13.5" cy="7" r="2.1"/><circle cx="20" cy="7" r="2.1"/><circle cx="26.5" cy="7" r="2.1"/><circle cx="7" cy="13" r="2.1"/><circle cx="13.5" cy="13" r="2.1"/><circle cx="20" cy="13" r="2.1" fill="#fff"/><circle cx="26.5" cy="13" r="2.1"/><circle cx="7" cy="19" r="2.1"/><circle cx="13.5" cy="19" r="2.1"/><circle cx="20" cy="19" r="2.1"/><circle cx="26.5" cy="19" r="2.1"/></g></svg><span class="lw1">Discovery</span><span class="lw2">Market</span></a>
-  <span class="page">Simulation results</span>
+  <span class="page">Simulated (published pass rates)</span>
+  <a class="page realnav" href="/real">Real attempts →</a>
 </div></header>
 
 <main class="wrap">
@@ -158,9 +163,10 @@ pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(-
   <div class="ctl"><label>Prize per world (credits)</label><div class="seg" id="segPrize"></div></div>
   <div class="ctl"><label>Seed</label><div class="seg" id="segSeed"></div></div>
 </div>
+<p class="prov" id="prov"></p>
 
 <h2>Prize needed to solve each world</h2>
-<p class="sub">The smallest prize that got each world solved, in at least one seed. Red marks the three worlds the paper calls hidden structure: particles, mass or dimensions outside the AI's direct view.</p>
+<p class="sub">The smallest prize that got each world solved in at least 3 of 5 seeds. Red marks the three worlds the paper calls hidden structure: particles, mass or dimensions outside the AI's direct view.</p>
 <div id="clearing"></div>
 
 <h2>Agent balances over time</h2>
@@ -303,6 +309,8 @@ function drawLedger() {
 }
 
 function render() {
+  $("prov").textContent = DATA.provenance ? DATA.provenance.label : "";
+  $("prov").dataset.kind = DATA.provenance ? DATA.provenance.kind : "";
   seg($("segSource"), DATA.sources, "source");
   seg($("segPrize"), DATA.prizes, "prize");
   seg($("segSeed"), DATA.seeds, "seed");

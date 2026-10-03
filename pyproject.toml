@@ -8,6 +8,11 @@ dependencies = [
     "anthropic>=1.11.0",
     "numpy>=1.26",
     "pandas>=2.2",
+    "scipy>=1.11",
+    # DiscoverPhysics (vendor/discovery-agents, pinned submodule)
+    "physchool",
+    "scienceagent",
+    "requests>=2.31",  # imported by scienceagent.llm_client but not declared
 ]
 
 [dependency-groups]
@@ -18,5 +23,10 @@ dev = [
 [tool.uv]
 package = false
 
+[tool.uv.sources]
+physchool = { path = "vendor/discovery-agents/PhysicsSchool", editable = true }
+scienceagent = { path = "vendor/discovery-agents/ScienceAgent", editable = true }
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,3 @@
+[submodule "vendor/discovery-agents"]
+	path = vendor/discovery-agents
+	url = https://github.com/SampsonML/discovery-agents

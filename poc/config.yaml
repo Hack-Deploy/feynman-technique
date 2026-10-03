@@ -1,0 +1,123 @@
+# DiscoverPhysics market: human-editable settings (see slides.html, "How it works").
+# A researcher posts a hypothesis, resolution criteria and a prize. The AI scientist designs
+# experiments, states its chance of a clear answer, bids or walks away, pays the lab, and is
+# paid the prize only for a clear, correct answer. Failed runs go into the public record.
+#
+# The agent sees: hypothesis, resolution criteria, prize, every price below, and the public
+# record of earlier failed runs. It never sees `answer`.
+
+# ---------------------------------------------------------------- protocol
+max_rounds: 16        # rounds per hypothesis (paper default)
+noise_std: 0.075      # absolute Gaussian noise on observed positions (paper default)
+default_prize: 100    # for any hypothesis without its own prize
+budget: null          # optional cap on total spend per agent per hypothesis; null = none.
+                      # Experiments that would exceed it are refused; round fees are always charged.
+
+# Shown with every hypothesis, after its own resolution criteria.
+payout_rule: >-
+  The prize is paid only for a clear verdict (supported or refuted) that meets the resolution
+  criteria and matches the true law of this world. An inconclusive or wrong verdict is no clear
+  result: no prize, and the run goes into the public record.
+
+# ---------------------------------------------------------------- costs (credits, placeholders)
+round_fee: 10         # every round, whatever the agent does in it
+
+# Per experiment the simulator runs successfully:
+#   per_experiment
+#   + per_measurement      x number of measurement_times
+#   + per_time_unit        x duration (or the last measurement time if no duration)
+#   + per_particle         x particles the agent places (probe count, or `particles` below)
+#   + per_custom_property  x properties set away from the default 1.0 (p1, p2, probe_masses)
+experiment_costs:
+  per_experiment: 1
+  per_measurement: 1
+  per_time_unit: 1
+  per_particle: 1
+  per_custom_property: 1
+
+# ---------------------------------------------------------------- hypotheses
+# answer: supported | refuted  (hidden; checked against the vendor's true law for the world)
+hypotheses:
+  - id: gravity-inverse-square
+    world: gravity
+    hypothesis: In this simulated world, gravity between particles falls off as 1/r², as in Newtonian physics.
+    resolution_criteria: >-
+      Measure the probe's acceleration toward the source at three or more separations spanning at least a factor of 3 (for example r = 2 to 6), with p1 and p2 fixed, and fit a ∝ r^-n. Supported if n is within 0.2 of 2; refuted if n differs from 2 by more than 0.2. The uncertainty on n must be below 0.1 given the position noise (σ = 0.075).
+    answer: refuted        # 2D Laplacian: force falls off as 1/r
+    prize: 100
+  - id: oscillator-time-varying
+    world: oscillator
+    hypothesis: In this simulated world, the strength of gravity between particles changes over time.
+    resolution_criteria: >-
+      Compare the probe's acceleration at the same separation from the source at two or more times at least 1 time unit apart (within one run or across identical runs). Supported if, after correcting for any change in separation, the accelerations differ by more than 3 times their uncertainty; refuted if they agree within 10% at every time compared across at least 5 time units.
+    answer: supported      # G(t) = 5 cos(pi t / 2)
+    prize: 100
+  - id: dark-matter-unseen-pull
+    world: dark_matter
+    hypothesis: In this simulated world, unseen particles exert a gravitational pull on the visible particles.
+    resolution_criteria: >-
+      Predict the probes' accelerations from the visible particles alone (each a source of equal, fitted strength) and compare with the measured accelerations at three or more probe locations. Supported if the unexplained acceleration exceeds 3 times its uncertainty at two or more locations; refuted if the visible particles explain every measured acceleration within that uncertainty.
+    answer: supported      # 10 hidden particles, source coupling 5
+    prize: 100
+  - id: yukawa-screened
+    world: yukawa
+    hypothesis: In this simulated world, beyond a few units of distance the pull on the probe weakens much faster than any 1/r law, as if screened.
+    resolution_criteria: >-
+      Measure the force on the probe at three or more separations spanning at least r = 1 to 6, and compute F(r)·r at each. Supported if F(r)·r falls by more than a factor of 2 from the shortest to the longest separation; refuted if F(r)·r stays constant within 20%. Each F must have uncertainty below 10%.
+    answer: supported      # screened Poisson, lambda = 2
+    prize: 100
+  - id: coulomb-source-strength
+    world: coulomb_easy
+    hypothesis: In this simulated world, the force on the probe grows with the source particle's property p1.
+    resolution_criteria: >-
+      Run the same probe launch with p1 at two or more values at least a factor of 3 apart, all other inputs fixed. Supported if the magnitude of the probe's acceleration rises with p1 by more than 3 times its uncertainty; refuted if it changes by less than that uncertainty.
+    answer: supported      # magnitude proportional to |p1|
+    prize: 100
+  - id: fractional-p2-inertia
+    world: fractional
+    hypothesis: In this simulated world, the probe's acceleration is inversely proportional to its own property p2.
+    resolution_criteria: >-
+      Run the same probe launch with p2 at two or more values at least a factor of 3 apart, all other inputs fixed. Supported if acceleration × p2 is the same within 15% for every p2; refuted if it differs by more than 15% between any two.
+    answer: supported      # F = -grad(phi) / p2
+    prize: 100
+  - id: extra-dimensions-short-range
+    world: extra_dimensions
+    hypothesis: In this simulated world, at distances well below 0.5 the force falls off faster with distance than it does at long range.
+    resolution_criteria: >-
+      Measure the force at three or more separations below 0.5 and three or more above 2, and fit F ∝ r^-n separately in each range. Supported if n at short range exceeds n at long range by more than 0.3; refuted if the two agree within 0.3. Each n must have uncertainty below 0.15.
+    answer: supported      # 1/r^2 for r << 0.5, 1/r for r >> 0.5
+    prize: 100
+  - id: circle-ordinary-gravity
+    world: circle
+    hypothesis: In this simulated world, the ring particles interact through the same 1/r force as ordinary 2D gravity.
+    resolution_criteria: >-
+      Use ring runs at two or more radii at least a factor of 2 apart, and fit the ring's motion with a pairwise force F ∝ r^-n (n and strength fitted). Supported if n is within 0.15 of 1; refuted if n differs from 1 by more than 0.15. The uncertainty on n must be below 0.1.
+    answer: refuted        # fractional Laplacian, alpha = 0.75
+    prize: 100
+    particles: 11          # the agent sets the ring, not individual particles
+  - id: three-species-repulsion
+    world: three_species
+    hypothesis: In this simulated world, some of the particles repel the probes.
+    resolution_criteria: >-
+      Measure probe accelerations near particles at three or more locations. Supported if at least one probe accelerates away from a nearby particle by more than 3 times its uncertainty, in a way the pull of all other particles cannot explain; refuted if attraction alone explains every measured acceleration within that uncertainty.
+    answer: supported      # one species has source coupling -2
+    prize: 100
+  - id: ether-outward-push
+    world: ether
+    hypothesis: In this simulated world, particles are pushed outward in proportion to their distance from the centre.
+    resolution_criteria: >-
+      Place probes at three or more distances from the centre in at least two different directions, and measure the part of each probe's acceleration not explained by central attraction. Supported if that part points away from the centre and grows in proportion to distance (within 20%); refuted if it does not point away from the centre or does not scale with distance.
+    answer: refuted        # uniform drift along +y, not radial
+    prize: 100
+  - id: hubble-outward-push
+    world: hubble
+    hypothesis: In this simulated world, particles are pushed outward in proportion to their distance from the centre.
+    resolution_criteria: >-
+      Place probes at three or more distances from the centre in at least two different directions, and measure the part of each probe's acceleration not explained by central attraction. Supported if that part points away from the centre and grows in proportion to distance (within 20%); refuted if it does not point away from the centre or does not scale with distance.
+    answer: supported      # Hubble flow H r, H = 0.05
+    prize: 100
+
+# ---------------------------------------------------------------- public record of failed runs
+ledger:
+  max_entries: 10            # most recent failed or withdrawn runs shown per hypothesis
+  max_data_chars: 6000       # experiment data per entry is cut beyond this

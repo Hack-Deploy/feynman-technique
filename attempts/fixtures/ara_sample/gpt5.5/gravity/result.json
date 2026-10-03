@@ -1,0 +1,60 @@
+{
+ "world": "gravity",
+ "engine": "nbody",
+ "model": "cc-session",
+ "noise_std": 0.155216,
+ "noise_seed": 0,
+ "law": "def discovered_law(pos1, pos2, p1, p2, velocity2, duration, **params):\n    \"\"\"\n    Particle 1 creates a central attractive two-dimensional field.\n    The field strength scales as p1 while particle 2's inertia scales as p2.\n    The radial profile is a softened logarithmic-potential force, close to inverse radius.\n    \"\"\"\n    import math\n    from scipy.integrate import solve_ivp\n\n    G = params.get(\"G\", 0.15)\n    core = params.get(\"core\", 0.15)\n    q = params.get(\"q\", 1.0)\n\n    x0 = float(pos2[0])\n    y0 = float(pos2[1])\n    vx0 = float(velocity2[0])\n    vy0 = float(velocity2[1])\n    strength = G * float(p1) / float(p2)\n    core2 = core * core\n\n    def rhs(t, y):\n        x, yp, vx, vy = y\n        r2 = x * x + yp * yp + core2\n        if r2 < 1e-12:\n            r2 = 1e-12\n        denom = r2 ** q\n        ax = -strength * x / denom\n        ay = -strength * yp / denom\n        return [vx, vy, ax, ay]\n\n    sol = solve_ivp(rhs, (0.0, float(duration)), [x0, y0, vx0, vy0], method=\"RK45\", rtol=1e-4, atol=1e-4)\n    xf, yf, vxf, vyf = sol.y[:, -1]\n    return [float(xf), float(yf)], [float(vxf), float(vyf)]\n\ndef fit_parameters():\n    return {\n        \"G\": {\"init\": 0.15, \"bounds\": [0.02, 0.6]},\n        \"core\": {\"init\": 0.15, \"bounds\": [0.0, 2.0]},\n        \"q\": {\"init\": 1.0, \"bounds\": [0.8, 1.2]}\n    }",
+ "evaluation": {
+  "mean_pos_error": 0.0004922668664938154,
+  "max_pos_error": 0.002812781292345083,
+  "per_case": [
+   0.00021696613947851036,
+   0.0009210272262523113,
+   0.00033880723375062443
+  ],
+  "passed": true,
+  "fit": {
+   "declared_params": {
+    "G": {
+     "init": 0.15,
+     "bounds": [
+      0.02,
+      0.6
+     ]
+    },
+    "core": {
+     "init": 0.15,
+     "bounds": [
+      0.0,
+      2.0
+     ]
+    },
+    "q": {
+     "init": 1.0,
+     "bounds": [
+      0.8,
+      1.2
+     ]
+    }
+   },
+   "fitted_params": {
+    "G": 0.14430737173164085,
+    "core": 0.0,
+    "q": 0.9623741320951533
+   },
+   "loss_before": 0.04393273327020694,
+   "loss_after": 0.04265792441668733,
+   "error": null
+  },
+  "explanation": {
+   "agent_explanation": "Particle 1 sources a central attractive field centered at the origin, and particle 2 accelerates along that field with coupling proportional to p1 / p2. The field is the softened 2D/log-potential form: acceleration is proportional to minus the displacement vector divided by approximately r squared, giving an inverse-radius force magnitude away from the core. The trajectory data showed no velocity-dependent force; initial velocity only sets the inertial state propagated by this central ODE.",
+   "optimal_explanation": "Two particles interact through a static scalar field obeying the 2D Poisson equation, \u2207\u00b2\u03c6 = source, where particle 1 sources the field with strength p1 and particle 2 is accelerated by -\u2207\u03c6 divided by its inertia p2. Because the Laplacian Green's function is logarithmic in 2D, the resulting attractive force falls off as 1/r rather than 1/r\u00b2.",
+   "judge_model": "claude-opus-4-6",
+   "score": 0.9,
+   "raw_score": 9,
+   "reasoning": "The student correctly identifies a static central attractive field (explicitly noting no velocity-dependent force and inertial propagation), captures the p1/p2 coupling structure (coupling proportional to p1/p2 with p2 as inertial state), invokes the 2D/log-potential form, and crucially states the force magnitude goes as inverse-radius (1/r) rather than 1/r\u00b2 \u2014 the vector form \"-displacement/r\u00b2\" is indeed consistent with a 1/r force magnitude. The only shortfall from a perfect score is that the governing operator is described only via the \"2D/log-potential\" shorthand rather than being explicitly named as the Laplacian/Poisson equation, though this is nearly semantically equivalent to the logarithmic Green's function.\n\n<score>9</score>",
+   "error": null
+  }
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "events.json": "15a18d1e64956834201f6f9ecbd518ce5eb47c7d425f7b98ece9319814c17ae0",
+  "ledger.json": "a36adf6a39ce84ed00b619b9604488a8e75ba425fae7a92a1052a1c6fedcadff",
+  "summary.json": "f2eae377837f970634e613654a79dc2eb4d508814fa96543e14f7cc313898699",
+  "_note": "sha256 of run.py outputs produced by main's own code at 85b6090. The branch engine must reproduce these."
+}

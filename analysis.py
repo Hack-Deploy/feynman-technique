@@ -10,6 +10,7 @@ derived from published benchmark scores, not measured market outcomes.
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -460,6 +461,9 @@ def _build_verdicts(h1_results, h2_results, h3_results,
 def save_summary(summary: dict, output_dir: Path) -> None:
     """Save summary.json."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    with open(output_dir / "summary.json", "w") as f:
+    path = output_dir / "summary.json"
+    tmp = path.with_name(path.name + f".tmp{os.getpid()}")
+    with open(tmp, "w") as f:
         json.dump(summary, f, indent=2)
+    os.replace(tmp, path)
     print(f"Saved summary to {output_dir / 'summary.json'}")
