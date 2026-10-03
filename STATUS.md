@@ -234,8 +234,8 @@
     seed launch D0 = action 3, free). One launch per round, priced per launch, budget 8,
     σ = 0.03 (MDA Table 7), vendor nbody executors unchanged. `run_attempt(...) ->
     SubmittedAttempt` writes a deterministic transcript to `attempts/transcripts/forcebench/`.
-    `SubmittedAttempt` is a local stand-in until Phase 2 adds it to `dm/types.py` (the module
-    imports the real one when present).
+    It returns a `dm.types.SubmittedAttempt` (the Phase 2 type; the earlier local stand-in was
+    removed when the branch merged real-attempts).
   - `dm/solvers/_inference.py` (shared), `bayes_lite.py`, `random_menu.py`: library of 5 families
     (power k/r^p, log k/r, Yukawa k·K1(r/λ)/λ, time-modulated k·cos(ωt+φ)/r, crossover
     k1/r + k2/r²) × 3 charge roles (p1/p2, p1, p1·p2) = 15 models, sign of k free.
@@ -251,7 +251,7 @@
     vendor default cases, nMSE = mean_pos_error / `_WORLD_VARS`; nan/inf counts as a fail), a
     1/r-with-fitted-k baseline (vendor `fit_parameters` on the attempt's paid training data), and
     the 6 × 5 × 2 grid (`uv run python -m tests.forcebench_local`). This is NOT the oracle. The
-    final check through `dm.settle` waits for Phase 2.
+    final check through `dm.settle` is `tests/forcebench_settle.py` (see below).
 - **Check**: menu = Table 5; wallet exact-fraction and 1000 × 0.1 conservation; insufficient
   wallet → partial attempt still submitted; charges = experiments × price; conservation in
   every attempt; byte-identical transcripts for the same (world, seed); laws equal the fitted
@@ -272,7 +272,8 @@
   *the other coulomb seeds chose crossover/p1 with |k1| < 0.03, k2 ≈ −1, the right law inside
   a nesting family. That tie with power/p1 is why coulomb's p̄ ≈ 0.5.) Wall time per attempt: bayes_lite mean 11.5 s (5–22 s), random_menu mean
   29.4 s (7–62 s); a local score takes 0.3–1.4 s.
-- **Result**: ✅ PASS for the offline checks. The `dm.settle` (hidden-case) check is pending Phase 2.
+- **Result**: ✅ PASS for the offline checks. Hidden-case check through `dm.settle`: see
+  "Settle check" below.
 - **Findings**:
   - The pass threshold is weak on these cases. A plain 1/r law with fitted k passes yukawa
     (nMSE 0.003–0.056), fractional (0.010–0.069) and oscillator (0.003–0.012) in every seed, and
@@ -290,4 +291,41 @@
     bayes_lite picks Yukawa (λ ≈ 1.3–1.6) in 5/5 seeds, with low stated p (0.12–0.44). It stops
     after 1–2 launches because no menu launch separates these models by more than the noise.
     random_menu's picks are spread across families (p̄ 0.25).
-||||||| cdff8ad
+- **Settle check, scored via dm.settle (Phase 2 WIP @ aa9928d)**:
+  `uv run python -m tests.forcebench_settle` (about 6 min, 6 processes). There is one
+  preregistration per world, `prereg_for("forcebench", world, 0)`, from the V1 hidden design:
+  tangential launches at r0 ∈ U[3, 6] and t = 1..10, with p1 ∈ {3, 4, 5} or p2 ∈ {3, 5} cases. Each attempt from
+  the 6 × 5 × 2 grid goes through `settle(prereg, attempt)`. The 1/r-with-fitted-k baseline is
+  settled on the same preregistration, carrying the same attempt's paid `training`. The grid ran
+  at a3ab9a2; `dm/oracle`, `dm/settle.py`, `dm/types.py`, venue and solvers are unchanged at aa9928d.
+  `prereg_for` and `settle` accept forcebench and match the Phase 2 spec. No worker errors,
+  timeouts or non-finite scores; `public_tests` is False everywhere.
+
+  | world | bayes_lite pass | id. | 1/r+fit pass (bayes data) | random_menu pass | id. | 1/r+fit pass (random data) |
+  |---|---|---|---|---|---|---|
+  | gravity | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+  | yukawa | 5/5 | 4/5 | 0/5 | 5/5 | 3/5 | 1/5 |
+  | coulomb_easy | 5/5 | 2/5 | 0/5† | 5/5 | 2/5 | 0/5† |
+  | oscillator | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+  | fractional | 5/5 | 0/5 | 0/5 | 5/5 | 0/5 | 2/5 |
+  | extra_dimensions | 4/5 | 0/5 | 0/5 | 5/5 | 0/5 | 4/5 |
+
+  Solver nMSE ranges:
+  - bayes_lite: gravity ≤ 0.0006, yukawa ≤ 0.011, fractional 0.008–0.014,
+    extra_dimensions 0.030–0.133 (seed 2 fails).
+  - random_menu: fractional 0.002–0.049, extra_dimensions 0.004–0.031.
+
+  Baseline nMSE:
+  - yukawa 0.27–0.30 on bayes data (0.016–0.30 on random data).
+  - fractional 0.22–0.31 on bayes data (0.058–0.25 on random data).
+  - oscillator 0.005–0.042.
+
+  †coulomb_easy is not in the oracle's `FIT_WORLDS` (mirrors the vendor), so the baseline's k
+  is never fitted there: it stays at its init 0.1 (nMSE 1.04), and that cell is not a fitted-k
+  result. Mean wall time per attempt: 21.4 s (max 66.5 s); settle takes 1.9 s (max 4.5 s).
+  - The hidden design fixes most of the threshold problem: 1/r now fails yukawa, fractional
+    and coulomb on bayes_lite's data. It still passes oscillator 10/10, and extra_dimensions
+    4/5 on random_menu's data. This matches the extra_dimensions blind spot in the Phase 2 notes.
+  - fractional still passes with the wrong family: both solvers submit non-power-2 laws
+    (mostly Yukawa λ ≈ 1.3–1.6) and pass 5/5. This is the yukawa–fractional degeneracy listed in
+    the Phase 2 open issues.
