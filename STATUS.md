@@ -225,6 +225,16 @@
   - ARA verdict vs numeric-only: 19 records pass numerically but fail ARA's explanation
     threshold (none the other way); listed in `output/ara_import_report.json`.
 
+## Phase 4 fix: ARA import under the hardened `AttemptRecord` (2026-10-03)
+- **Built**: on top of PR #13's `dm/importers/ara._json_safe` (non-finite floats in `extra` and
+  `llm_usage` → `"inf"`/`"-inf"`/`"nan"`), `finite_or_none` keeps `verdict.explanation_score`
+  finite or `None` (both importers). `verdict.normalised_mse` was already `None` for non-finite values.
+- **Check**: every imported record survives strict `canonical_json` and `from_dict`.
+  `uv run python -m dm.importers.ara --offline && uv run python -m dm.replay ara` (plus
+  `--verdict ara`) reproduce PR #6's `summary.json` exactly, including clearing prizes.
+  A store written by PR #6 holds `Infinity` and no longer loads; regenerate it.
+- **Result**: ✅ PASS
+
 ## Phase 5: ForceBench venue and offline solvers (branch `phase5/forcebench`)
 - **Built**:
   - `dm/wallet.py`: `Wallet(owner, balance)`, credits held as integer milli-credits (so 3 × 0.1

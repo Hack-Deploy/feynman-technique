@@ -243,6 +243,7 @@ def test_vendor_runs_import(tmp_path):
     assert y.verdict["explanation_score"] == 0.4
     dv = recs[("m2", "gravity")]
     assert dv.verdict["normalised_mse"] is None and not dv.passed
+    assert dv.extra["mean_pos_error"] == "inf" and dv.extra["nmse_raw"] == "inf"
 
 
 def test_vendor_runs_store_roundtrip(tmp_path):
@@ -252,3 +253,16 @@ def test_vendor_runs_store_roundtrip(tmp_path):
     assert ara.write_store(recs, out) == 0
     ids = {r.attempt_id for r in AttemptStore(out).load()}
     assert ids == {r.attempt_id for r in recs}
+
+
+def test_json_safe_and_finite_or_none():
+    assert ara._json_safe({"a": [math.inf, {"b": -math.inf}], "c": math.nan, "d": 1.5}) == {
+        "a": ["inf", {"b": "-inf"}], "c": "nan", "d": 1.5}
+    assert ara.finite_or_none(math.inf) is None and ara.finite_or_none(True) is None
+    assert ara.finite_or_none(0.5) == 0.5
+
+
+def test_records_round_trip_strict_json(imported):
+    from dm.types import AttemptRecord, canonical_json
+    for r in imported[0].values():
+        assert AttemptRecord.from_dict(json.loads(canonical_json(r.to_dict()))) == r
