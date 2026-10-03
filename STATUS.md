@@ -183,26 +183,30 @@
   |---|---|---|---|---|---|---|---|---|---|---|---|
   | gravity | 100 | 22 | 100 | 5/5 | 2.0 | 0.53 | 100 | 5/5 | 3.4 | 0.60 | 100 / 100 |
   | yukawa | 100 | 33 | 100 | 4/5 | 2.0 | 0.44 | 100 | 3/5 | 6.0 | 0.58 | 100 / 100 |
-  | coulomb_easy | 56 | 22 | 100 | 2/5* | 2.0 | 0.50 | 100 | 2/5* | 4.2 | 0.49 | 0 / 60 |
+  | coulomb_easy | 56 | 22 | 100 | 2/5* | 2.0 | 0.49 | 100 | 2/5* | 4.2 | 0.49 | 0 / 60 |
   | oscillator | 100 | 33 | 100 | 5/5 | 1.0 | 1.00 | 100 | 5/5 | 2.8 | 0.99 | 100 / 100 |
   | fractional | 100 | 56 | 100 | 0/5 | 1.4 | 0.24 | 100 | 0/5 | 4.0 | 0.25 | 100 / 100 |
-  | extra_dimensions | 100 | 22 | 100 | n/a | 2.2 | 0.95 | 100 | n/a | 5.2 | 0.76 | 0 / 80 |
+  | extra_dimensions | 100 | 22 | 100 | n/a | 2.2 | 0.94 | 100 | n/a | 5.2 | 0.76 | 0 / 80 |
 
   (pass = % of 5 seeds with nMSE < 0.1; id. = top family+role matches the truth;
-  *the other coulomb seeds chose crossover/p1 with k1 ≈ 0, k2 ≈ −1, i.e. the right law in a
-  nesting family.) Wall time per attempt: bayes_lite mean 11.5 s (5–22 s), random_menu mean
+  *the other coulomb seeds chose crossover/p1 with |k1| < 0.03, k2 ≈ −1, the right law inside
+  a nesting family. That tie with power/p1 is why coulomb's p̄ ≈ 0.5.) Wall time per attempt: bayes_lite mean 11.5 s (5–22 s), random_menu mean
   29.4 s (7–62 s); a local score takes 0.3–1.4 s.
 - **Result**: ✅ PASS for the offline checks. The `dm.settle` (hidden-case) check is pending Phase 2.
 - **Findings**:
-  - The pass threshold is weak on these cases. A plain 1/r law with fitted k passes yukawa,
-    fractional, gravity and oscillator in every seed, so the pass rates on those worlds say little
-    about whether a solver found the law. Use the id. column.
+  - The pass threshold is weak on these cases. A plain 1/r law with fitted k passes yukawa
+    (nMSE 0.003–0.056), fractional (0.010–0.069) and oscillator (0.003–0.012) in every seed, and
+    extra_dimensions in 4/5 seeds when it is fitted on random_menu's data. So the pass rates on
+    those worlds say little about whether a solver found the law. Use the id. column. The
+    baseline fails coulomb and extra_dimensions on bayes_lite's data: those attempts are only
+    2–3 launches, centred on r0 = 1.5 and p1 = p2 = 2.
   - The vendor `coulomb_easy` world is **repulsive**, with a = |p1|/r² and no effect from p2 (the
     probe's force charge is fixed at 1). This contradicts its docstring and mission text.
     Not fixed; we score against the simulator.
   - Vendor softening: force magnitude uses r_eff = √(r² + 0.05²), direction uses unsoftened r;
     the solvers match.
   - The library cannot represent extra_dimensions (KK image sum) exactly: crossover
-    approximates it. fractional (exactly 0.16/r² = power p = 2) is mostly mis-identified as
-    Yukawa (λ ≈ 1.4), with low stated p (0.12–0.44). The solvers stop after 1–2 launches
-    because no menu launch separates these models by more than the noise.
+    approximates it. fractional (exactly 0.16/r², i.e. power p = 2) is never identified.
+    bayes_lite picks Yukawa (λ ≈ 1.3–1.6) in 5/5 seeds, with low stated p (0.12–0.44). It stops
+    after 1–2 launches because no menu launch separates these models by more than the noise.
+    random_menu's picks are spread across families (p̄ 0.25).
