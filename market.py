@@ -108,6 +108,10 @@ class CostModel(Protocol):
         """Return the maximum possible cost for one attempt."""
         ...
 
+    def expected_cost(self, agent: str, world: str) -> float:
+        """Return the expected cost of one attempt (used by the bid rule)."""
+        ...
+
 
 # ---------------------------------------------------------------------------
 # Concrete cost models
@@ -134,6 +138,9 @@ class TrackACostModel:
     def max_cost(self, agent: str, world: str) -> float:
         return self.rounds_max * self.cost_per_round
 
+    def expected_cost(self, agent: str, world: str) -> float:
+        return (self.rounds_min + self.rounds_max) / 2 * self.cost_per_round
+
 
 class TrackCCostModel:
     """Track C: fixed experiments per attempt × price per experiment."""
@@ -155,6 +162,9 @@ class TrackCCostModel:
     def max_cost(self, agent: str, world: str) -> float:
         exps = self.experiments_per_attempt[agent]
         return exps * self.price_per_experiment
+
+    def expected_cost(self, agent: str, world: str) -> float:
+        return self.experiments_per_attempt[agent] * self.price_per_experiment
 
 
 # ---------------------------------------------------------------------------
@@ -278,7 +288,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                 if accounts[acct] < max_c:
                     continue
                 belief_mean = beliefs[agent][world].mean
-                expected_cost = _expected_cost(cfg.cost_model, agent, world)
+                expected_cost = cfg.cost_model.expected_cost(agent, world)
                 if belief_mean * prize > expected_cost:
                     bids.append((agent, world))
 
@@ -373,7 +383,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                         "probability_source": cfg.probability_source,
                         "track": cfg.track,
                     },
-                    outcome={"passed": True, "metric": true_p},
+                    outcome={"passed": True, "metric": None},
                     effort={
                         "rounds": cost_detail.get("rounds"),
                         "experiments": cost_detail.get("experiments"),
@@ -406,7 +416,7 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
                         "probability_source": cfg.probability_source,
                         "track": cfg.track,
                     },
-                    outcome={"passed": False, "metric": true_p},
+                    outcome={"passed": False, "metric": None},
                     effort={
                         "rounds": cost_detail.get("rounds"),
                         "experiments": cost_detail.get("experiments"),
@@ -459,22 +469,6 @@ def run_market(cfg: MarketRun) -> tuple[list[Event], list[LedgerRow]]:
         f"Escrow not zero at end: {accounts['escrow']}"
 
     return events, ledger
-
-
-def _expected_cost(cost_model: CostModel, agent: str, world: str) -> float:
-    """Compute expected cost for the bid rule.
-
-    For Track A: (4+16)/2 * 1 = 10.
-    For Track C: experiments * price.
-    """
-    if isinstance(cost_model, TrackACostModel):
-        return (cost_model.rounds_min + cost_model.rounds_max) / 2 * cost_model.cost_per_round
-    elif isinstance(cost_model, TrackCCostModel):
-        exps = cost_model.experiments_per_attempt[agent]
-        return exps * cost_model.price_per_experiment
-    else:
-        # Fallback: max cost as conservative estimate
-        return cost_model.max_cost(agent, world)
 
 
 def _check_conservation(accounts: dict[str, float], expected: float,

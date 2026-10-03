@@ -53,3 +53,35 @@
 - H3 holds by construction: `llm_opus_unthrottled` reuses mda's pass rates.
 - Disclosed ledger rows don't update other agents' beliefs (Stage 3).
 - Ledger `outcome.metric` stores the hidden true probability.
+
+---
+
+# Real attempts (branch `real-attempts`; plan in `PLAN.md`)
+
+## Phase 0: hygiene and vendor (2026-10-03)
+- **Built**:
+  - `vendor/discovery-agents` submodule pinned at `450818fa81c61ed0030351ee7f634c9e09d412bc`;
+    installed by `uv sync` as editable path deps (`physchool`, `scienceagent`) plus `requests`
+    (undeclared vendor import) and `scipy`. New deps pulled in by the vendor: jax, anthropic,
+    openai, pyyaml.
+  - `.gitignore`: short version; ignores `attempts/*` except `attempts/fixtures/`, and
+    `vendor/**/results/`.
+  - Leak fixed: simulated ledger rows now store `outcome.metric = null` (was the true probability).
+  - `CostModel.expected_cost()` on both cost models; `market._expected_cost` and its
+    `isinstance` dispatch removed.
+  - `tests/fixtures/baseline_sha256.json`: hashes of `run.py` outputs after this phase, the
+    reference for Phase 1's byte-identity check.
+- **Check**:
+  - Old vs new code: `events.json` and `summary.json` byte-identical; `ledger.json` identical
+    except `metric` → `null` (1,413 rows).
+  - Smoke test builds `gravity` (nbody, σ = 0.075) and runs one experiment through the vendor
+    executor.
+  - Facts verified for later phases: the 1/r fixture (k = 1/2π) scores mean_pos_error 0.0000 on
+    gravity and 0.9850 on yukawa (default cases); `np.var` of flattened noise-free test
+    positions reproduces the vendor's `_WORLD_VARS` exactly for the six two-particle worlds.
+  - 63 tests passed (57 existing + 6 new).
+- **Result**: ✅ PASS
+- **Conflicts with the task prompt**: recorded in `PLAN.md` §1 (C1–C14). The main ones: the
+  normalising variances are in the vendor repo (`run_benchmark._WORLD_VARS`); ForceBench is
+  only in MDA arXiv v1–v3 (cited as v3); ARA used relative noise σ = 0.075·√Var(world) while
+  the vendor default is absolute 0.075; ARA `episode.json` does record experiment counts.

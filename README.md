@@ -20,10 +20,16 @@ true answer is known, so every payout can be checked.
 Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
+git submodule update --init  # fetch DiscoverPhysics into vendor/discovery-agents (pinned)
 uv sync                      # install Python 3.12 + dependencies into .venv
 uv run python run.py         # run all sweeps → output/{events,ledger,summary}.json
 uv run pytest                # run the test suite
 ```
+
+`uv sync` installs the two DiscoverPhysics packages (`PhysicsSchool`, `ScienceAgent`) from the
+submodule as editable path dependencies (see `[tool.uv.sources]` in `pyproject.toml`), plus
+`requests`, which `scienceagent` imports but does not declare. Never edit files under
+`vendor/`; wrap them in `dm/` instead.
 
 A full run takes about a second. `output/` is not committed; regenerate it.
 
