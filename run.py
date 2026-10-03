@@ -36,7 +36,7 @@ def main():
     print("Phase 2: Running Track A sweeps...")
     print("  Agents: opus-4.7, gpt-5.5, sonnet-4.6, qwen3.5-397b")
     print("  Prizes: 5, 20, 50, 100, 200")
-    print("  Sources: raw, calibrated")
+    print("  Sources: raw, calibrated, power")
     print("  Seeds: 0-4")
     results_a = run_all_track_a()
     print(f"  → {len(results_a)} Track A runs completed.")

@@ -39,6 +39,30 @@ def load_table3(path: Path | None = None) -> pd.DataFrame:
     return df
 
 
+# success_table.csv uses display names; map them to the Table 1 names.
+SUCCESS_TABLE_MODELS = {
+    "Claude Opus 4.7": "opus-4.7",
+    "GPT-5.5": "gpt-5.5",
+    "Claude Sonnet 4.6": "sonnet-4.6",
+    "Qwen3.5-397B": "qwen3.5-397b",
+}
+SUCCESS_TABLE_WORLDS = {"Extra dims": "extra_dimensions"}
+
+
+def load_success_table(path: Path | None = None) -> pd.DataFrame:
+    """Load success_table.csv as a world x model table of pass probabilities.
+
+    Same shape and names as Table 1, so it can stand in for it.
+    """
+    p = path or DATA_DIR / "success_table.csv"
+    df = pd.read_csv(p)
+    df["model"] = df["model"].map(SUCCESS_TABLE_MODELS)
+    df["world"] = df["world"].map(
+        lambda w: SUCCESS_TABLE_WORLDS.get(w, w.lower().replace(" ", "_"))
+    )
+    return df.pivot(index="world", columns="model", values="pass_prob")
+
+
 def load_config(path: Path | None = None) -> dict[str, Any]:
     """Load config.yaml without PyYAML – simple key-value + list parser."""
     p = path or ROOT_DIR / "config.yaml"
