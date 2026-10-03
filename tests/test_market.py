@@ -294,6 +294,16 @@ class TestP1LedgerDisclosure:
             else:
                 assert row.disclosed_at_tick == 200
 
+    def test_ledger_hides_true_probability(self):
+        """Public rows must not reveal the solver's hidden pass probability."""
+        cfg = _make_simple_run(seed=3, ticks=200, prize=50, p=0.37,
+                               starting_credits=500)
+        _, ledger = run_market(cfg)
+        assert ledger
+        for row in ledger:
+            assert set(row.outcome) == {"passed"}
+            assert 0.37 not in row.to_dict()["outcome"].values()
+
 
 class TestP1Refunds:
     """Prize refunds at end of run."""

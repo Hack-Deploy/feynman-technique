@@ -47,9 +47,14 @@
   from `data/build_success_table.py`; each model's mean p matches its pass@1.
 - README written; this log brought up to date.
 
+## Ledger leak fix (2026-10-03)
+- **Fixed**: ledger rows stored each solver's hidden true pass probability in
+  `outcome.metric`. Rows are public once disclosed, so that leaked the answer
+  the market is meant to discover. `outcome` now holds only `passed`.
+- **Checks**: `test_ledger_hides_true_probability`; 58 tests PASSED.
+
 ## Open issues
 - `success_table.csv` not yet used by the runner (Stage 1).
 - `config.yaml` is not read by the runner/analysis; values are hard-coded.
 - H3 holds by construction: `llm_opus_unthrottled` reuses mda's pass rates.
 - Disclosed ledger rows don't update other agents' beliefs (Stage 3).
-- Ledger `outcome.metric` stores the hidden true probability.
