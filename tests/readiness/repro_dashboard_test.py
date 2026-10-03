@@ -226,14 +226,13 @@ def test_report_embed_escapes_script_close(monkeypatch, tmp_path):
     assert rendered.count("</script>") == template.count("</script>")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="READINESS: dashboard must load no external hosts except cdnjs",
-)
 def test_report_has_no_external_hosts_except_cdnjs():
     template = (REPO_ROOT / "report_template.html").read_text()
+    # Anchor links navigate externally but do not load a host as part of the report.
     urls = re.findall(
-        r"""(?:src|href)=["'](https?://[^"']+)""", template, flags=re.IGNORECASE
+        r"""<(?!a\b)[a-z]+\b[^>]*?\b(?:src|href)=["'](https?://[^"']+)""",
+        template,
+        flags=re.IGNORECASE,
     )
     urls.extend(
         re.findall(
@@ -253,10 +252,6 @@ def test_report_has_no_external_hosts_except_cdnjs():
     assert all(urlsplit(url).hostname == "cdnjs.cloudflare.com" for url in urls)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="READINESS: dashboard balances must retain unknown solver names",
-)
 def test_report_balance_series_keeps_unknown_solvers():
     events = [
         {
