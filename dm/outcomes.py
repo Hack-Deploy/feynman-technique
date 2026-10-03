@@ -26,7 +26,12 @@ CostFn = Callable[[AttemptRecord], tuple[float, dict]]
 def rounds_cost(price_per_round: float = 1.0) -> CostFn:
     """Charge per round (ARA replays: rounds × 1 credit, comparable with Track A)."""
     def fn(r: AttemptRecord) -> tuple[float, dict]:
-        return r.rounds * price_per_round, {"rounds": r.rounds, "experiments": r.experiments}
+        return r.rounds * price_per_round, {
+            "rounds": r.rounds,
+            "experiments": r.experiments,
+            "count": r.rounds,
+        }
+    fn.charge_event = "round_charged"
     return fn
 
 
@@ -36,6 +41,7 @@ def experiments_cost(price_per_experiment: float) -> CostFn:
         return (r.experiments * price_per_experiment,
                 {"rounds": r.rounds, "experiments": r.experiments, "count": r.experiments})
     fn.price_per_experiment = price_per_experiment
+    fn.charge_event = "experiment_charged"
     return fn
 
 
@@ -44,16 +50,18 @@ def recorded_cost() -> CostFn:
     def fn(r: AttemptRecord) -> tuple[float, dict]:
         return r.lab_cost, {"rounds": r.rounds, "experiments": r.experiments,
                             "count": r.experiments}
+    fn.charge_event = "experiment_charged"
     return fn
 
 
 class ReplayPool:
     def __init__(self, records: list[AttemptRecord], cost_fn: CostFn,
                  charge_event: str | None = None, venue: str | None = None):
-        """``charge_event`` defaults to ``experiment_charged`` when the cost function
-        reports a ``count`` and ``round_charged`` otherwise. ``venue`` restricts the
-        pool to one venue; without it, mixing venues for one (solver, world) is an error
-        (a ForceBench gravity attempt is not a DiscoverPhysics gravity attempt)."""
+        """Use a cost function's ``charge_event`` attribute when available; otherwise
+        default to ``experiment_charged`` when its detail reports ``count`` and
+        ``round_charged`` otherwise. ``venue`` restricts the pool to one venue; without
+        it, mixing venues for one (solver, world) is an error (a ForceBench gravity
+        attempt is not a DiscoverPhysics gravity attempt)."""
         self.cost_fn = cost_fn
         seen_attempt_ids = set()
         price_per_experiment = getattr(cost_fn, "price_per_experiment", None)
@@ -85,9 +93,11 @@ class ReplayPool:
                              "pass venue=...")
         self.pool = dict(pool)
         if charge_event is None:
-            sample = next((rs[0] for rs in self.pool.values()), None)
-            has_count = sample is not None and "count" in cost_fn(sample)[1]
-            charge_event = "experiment_charged" if has_count else "round_charged"
+            charge_event = getattr(cost_fn, "charge_event", None)
+            if charge_event is None:
+                sample = next((rs[0] for rs in self.pool.values()), None)
+                has_count = sample is not None and "count" in cost_fn(sample)[1]
+                charge_event = "experiment_charged" if has_count else "round_charged"
         self.charge_event = charge_event
         self.remaining: dict[tuple[str, str], list[AttemptRecord]] = {}
         self.reset()
