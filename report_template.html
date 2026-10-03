@@ -18,6 +18,8 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 va
 .lw1 { font: 700 18px/1 var(--sans); letter-spacing: -0.01em; }
 .lw2 { font: 700 13px/1 var(--cond); letter-spacing: 0.22em; text-transform: uppercase; color: #9A9A96; }
 .mast .page { font: 600 13px var(--cond); letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A96; }
+.realnav { display: none; color: #fff !important; text-decoration: none; border-bottom: 2px solid var(--red); }
+.app .realnav { display: inline; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 96px; }
 
 .bar { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; padding: 20px 0; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper); z-index: 2; }
@@ -95,7 +97,8 @@ pre.verdict { background: var(--soft); padding: 16px 18px; font: 13px/1.55 var(-
 <body>
 <header class="mast"><div class="in">
   <a class="logo" href="index.html"><svg width="33" height="25" viewBox="0 0 33 25" aria-hidden="true"><rect x="1" y="1" width="31" height="23" rx="4" fill="none" stroke="#fff" stroke-width="1.6"/><g fill="none" stroke="#fff" stroke-width="1"><circle cx="7" cy="7" r="2.1"/><circle cx="13.5" cy="7" r="2.1"/><circle cx="20" cy="7" r="2.1"/><circle cx="26.5" cy="7" r="2.1"/><circle cx="7" cy="13" r="2.1"/><circle cx="13.5" cy="13" r="2.1"/><circle cx="20" cy="13" r="2.1" fill="#fff"/><circle cx="26.5" cy="13" r="2.1"/><circle cx="7" cy="19" r="2.1"/><circle cx="13.5" cy="19" r="2.1"/><circle cx="20" cy="19" r="2.1"/><circle cx="26.5" cy="19" r="2.1"/></g></svg><span class="lw1">Discovery</span><span class="lw2">Market</span></a>
-  <span class="page">Simulation results</span>
+  <span class="page">Simulated (published pass rates)</span>
+  <a class="page realnav" href="/real">Real attempts →</a>
 </div></header>
 
 <main class="wrap">

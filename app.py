@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import bounty
+import real_data
 import report
 
 ROOT = Path(__file__).resolve().parent
@@ -29,28 +30,51 @@ PORT = int(os.environ.get("PORT", "8000"))
 COMMANDS = {
     "/api/run": [sys.executable, "run.py"],
     "/api/test": [sys.executable, "-m", "pytest", "-q", "--color=no"],
+    "/api/real/grid": [sys.executable, "-m", "tests.forcebench_settle"],
 }
+# Commands run in order; the first failure stops the chain.
+CHAINS = {
+    "/api/real/replay": [
+        [sys.executable, "-m", "dm.importers.ara"],
+        [sys.executable, "-m", "dm.replay", "ara"],
+    ],
+}
+TIMEOUTS = {"/api/real/grid": 1800}
 STATIC = {"/index.html": "index.html"}
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 _BUSY = threading.Lock()
 
 
-def run_command(cmd: list[str]) -> dict:
+def run_command(cmd: list[str], timeout: int = 600) -> dict:
     start = time.time()
+    env = {**os.environ, "PYTHONPATH": str(ROOT)}
     try:
         proc = subprocess.run(
-            cmd, cwd=ROOT, capture_output=True, text=True, timeout=600
+            cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout, env=env
         )
     except subprocess.TimeoutExpired:
         return {
             "ok": False,
             "seconds": round(time.time() - start, 1),
-            "output": "Timed out after 600 s.",
+            "output": f"Timed out after {timeout} s.",
         }
     return {
         "ok": proc.returncode == 0,
         "seconds": round(time.time() - start, 1),
         "output": ANSI.sub("", proc.stdout + proc.stderr).strip(),
+    }
+
+
+def run_chain(cmds: list[list[str]]) -> dict:
+    results = []
+    for cmd in cmds:
+        results.append(run_command(cmd))
+        if not results[-1]["ok"]:
+            break
+    return {
+        "ok": all(r["ok"] for r in results) and len(results) == len(cmds),
+        "seconds": round(sum(r["seconds"] for r in results), 1),
+        "output": "\n\n".join(r["output"] for r in results),
     }
 
 
@@ -96,6 +120,13 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/", "/report"):
             html = (ROOT / "report_template.html").read_text()
             self._send(html.encode(), "text/html; charset=utf-8")
+        elif path == "/real":
+            self._send((ROOT / "real.html").read_bytes(), "text/html; charset=utf-8")
+        elif path == "/api/real":
+            try:
+                self._json(real_data.build_real_data())
+            except Exception as exc:
+                self._json({"error": f"could not read real-attempt outputs: {exc}"}, 503)
         elif path == "/api/data":
             try:
                 events, ledger, summary = report.load_outputs()
@@ -126,7 +157,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"ok": False, "error": "Could not read the form."}, 400)
                 return
             self._json(bounty.post_bounty(str(body.get("hypothesis", "")), str(body.get("criterion", "")), prize))
-        elif path in COMMANDS:
+        elif path == "/api/real/attempt":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length) or b"{}")
+                world, solver, seed = str(body["world"]), str(body["solver"]), int(body["seed"])
+            except (ValueError, TypeError, KeyError):
+                self._json({"ok": False, "error": "Could not read the request."}, 400)
+                return
+            if not _BUSY.acquire(blocking=False):
+                self._json({"ok": False, "error": "Another run is in progress; try again when it finishes."}, 409)
+                return
+            try:
+                self._json(real_data.run_forcebench_attempt(world, solver, seed))
+            except ValueError as exc:
+                self._json({"ok": False, "error": str(exc)}, 400)
+            except Exception as exc:
+                self._json({"ok": False, "error": f"The attempt failed: {exc}"}, 500)
+            finally:
+                _BUSY.release()
+        elif path in COMMANDS or path in CHAINS:
             if not _BUSY.acquire(blocking=False):
                 self._json(
                     {
@@ -140,7 +190,10 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             try:
-                self._json(run_command(COMMANDS[path]))
+                if path in CHAINS:
+                    self._json(run_chain(CHAINS[path]))
+                else:
+                    self._json(run_command(COMMANDS[path], TIMEOUTS.get(path, 600)))
             finally:
                 _BUSY.release()
         else:

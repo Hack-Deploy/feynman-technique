@@ -329,3 +329,22 @@
   - fractional still passes with the wrong family: both solvers submit non-power-2 laws
     (mostly Yukawa λ ≈ 1.3–1.6) and pass 5/5. This is the yukawa–fractional degeneracy listed in
     the Phase 2 open issues.
+
+## Phase 8 (partial): "Real attempts" page in the results app (2026-10-03)
+
+- `real.html` at `/real`, fed by `real_data.py` via `GET /api/real`. The original page is now
+  labelled "Simulated (published pass rates)" and links to it.
+- Run an attempt: `POST /api/real/attempt` runs one ForceBench attempt (world, solver, seed),
+  settles it through `dm.settle` on the hidden cases and shows the charges, the purchased data,
+  the submitted law, the verdict, whether the law has the true form, and credit conservation.
+  Offline, no API key, about 20 s. Uses the existing `_BUSY` lock and host/origin checks.
+- ARA replay: reads `attempts/ara.jsonl` and `output/replay_ara/summary.json`. Shows clearing
+  prizes next to the simulated ones, profit and bids per model at each prize, lab revenue, and
+  all 88 attempts (filterable), with the one-attempt caveat and ARA attribution.
+- ForceBench grid: reads `output/forcebench_settle.json`. Shows pass, right-law and 1/r-baseline
+  counts per solver and world.
+- Missing outputs show a button that runs the generating command (`/api/real/replay`,
+  `/api/real/grid`).
+- "Right law" uses `identify_model` from `tests/forcebench_local.py` (local reporting only).
+- Check: `tests/test_real_app.py` 11 passed with `--runslow`; full suite 387 passed, 4 skipped,
+  14 xfailed.
