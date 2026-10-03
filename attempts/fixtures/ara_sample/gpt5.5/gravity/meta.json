@@ -1,0 +1,26 @@
+{
+ "agent": "codex-55",
+ "world": "gravity",
+ "archived_at": "2026-07-15T04:33:50",
+ "harness": "codex",
+ "harness_model": "gpt-5.5",
+ "rounds": 14,
+ "total_cost_usd": 0.0658,
+ "total_duration_s": 329.1,
+ "bridge_errors": 0,
+ "tokens": {
+  "input_tokens": 6095493,
+  "cached_input_tokens": 5515264,
+  "output_tokens": 140875,
+  "reasoning_output_tokens": 63149
+ },
+ "model": "cc-session",
+ "engine": "nbody",
+ "noise_std": 0.155216,
+ "noise_seed": 0,
+ "mean_pos_error": 0.0004922668664938154,
+ "max_pos_error": 0.002812781292345083,
+ "explanation_score": 0.9,
+ "judge_model": "claude-opus-4-6",
+ "agent_explanation": "Particle 1 sources a central attractive field centered at the origin, and particle 2 accelerates along that field with coupling proportional to p1 / p2. The field is the softened 2D/log-potential form"
+}

@@ -1,0 +1,28 @@
+{
+ "world": "coulomb_easy",
+ "engine": "nbody",
+ "model": "cc-session",
+ "noise_std": 0.154507,
+ "noise_seed": 0,
+ "law": "import numpy as np\nfrom scipy.integrate import solve_ivp\n\ndef discovered_law(pos1, pos2, p1, p2, velocity2, duration, **params):\n    \"\"\"Law of motion of particle 2 in this universe.\n\n    Particle 1 (fixed at pos1) and particle 2 carry charges q1 = p1 and q2 = -p2.\n    Particle 2 has unit mass and feels a Coulomb force with unit coupling constant:\n\n        a2 = q1*q2 * r_vec / r^3 = -(p1*p2) * r_vec / |r_vec|^3,\n\n    where r_vec = pos2 - pos1. Since q1 and q2 always have opposite signs, the force\n    is always attractive, with magnitude p1*p2 / r^2 (inverse-square central force).\n\n    Returns (final_pos2, final_velocity2) after `duration`.\n    \"\"\"\n    k = params.get(\"k\", 1.0)\n    x1, y1 = pos1\n\n    def rhs(t, s):\n        x, y, vx, vy = s\n        dx = x - x1\n        dy = y - y1\n        r = max(np.hypot(dx, dy), 1e-6)\n        a = -k * p1 * p2 / r**2\n        return [vx, vy, a * dx / r, a * dy / r]\n\n    s0 = [pos2[0], pos2[1], velocity2[0], velocity2[1]]\n    sol = solve_ivp(rhs, (0.0, duration), s0, rtol=1e-8, atol=1e-8)\n    xf, yf, vxf, vyf = sol.y[:, -1]\n    return [xf, yf], [vxf, vyf]",
+ "evaluation": {
+  "mean_pos_error": 0.4395080434636444,
+  "max_pos_error": 6.069440920315835,
+  "per_case": [
+   2.0725931717898787e-06,
+   0.6121401420430133,
+   0.7063819157547486
+  ],
+  "passed": false,
+  "fit": null,
+  "explanation": {
+   "agent_explanation": "This universe implements standard electrostatics (Coulomb's law) with unit coupling constant, in 2D, with the point charges interacting via the 3D inverse-square form.\n\n**The system.** The two scalar properties are charge magnitudes: particle 1 carries charge q1 = +p1 and particle 2 carries q2 = -p2 (the simulator's own `particle_charges` output confirmed [p1, -p2] in every run). Because the charges always have opposite signs, the interaction is always attractive. Particle 2 has unit mass, so its equation of motion is\n\n  **a\u2082 = -(p1\u00b7p2) \u00b7 r\u0302 / r\u00b2**,  with r\u0302, r the direction/distance from particle 1 (fixed at the origin) to particle 2.\n\n**Evidence.** (1) Static releases at r = 2, 4, 8 match the closed-form inverse-square free-fall solution at every checkpoint within the position noise (\u03c3\u22480.15); distance exponents 1 and 3 are excluded by many \u03c3, and coupling constants 0.5 or 2 would shift the r=4 collapse time from the observed \u22488.9 s to 12.6 s or 6.3 s. (2) Swapping p1\u2194p2 (3,1)\u2194(1,3) and (9,1)\u2194(1,9) leaves trajectories identical \u2014 the force is symmetric, \u221d p1\u00b7p2. (3) Circular orbits launched at exactly v = \u221a(p1p2/r) at two different radii stay circular with the predicted angular velocity for 2.5 rad \u2014 confirming k = 1 dynamically and ruling out any drag or velocity-dependent (magnetic-like) force. (4) An eccentric orbit closes with the Kepler period 2\u03c0\u221a(a\u00b3/p1p2) with no measurable precession \u2014 the exponent is exactly 2. (5) A fast flyby exits with the speed predicted by energy conservation (2.81 observed vs 2.77 predicted). (6) The law holds over r \u2208 [0.1, 9] and p1\u00b7p2 \u2208 [1, 100] with no short-range softening.\n\n**Measurement model.** Both channels carry Gaussian observation noise (position \u03c3 \u2248 0.15, velocity \u03c3 \u2248 0.45, calibrated from the fixed particle's readings).\n\n**Caveat.** Trajectories aimed exactly at the origin cross the r\u21920 singularity, where the training simulator's integrator injects energy (exit speeds \u2248 6\u20138\u00b7\u221a(p1p2)); those segments reflect the simulator's stepper rather than the physics \u2014 an MSE-fit sweep over four integrator configurations (adaptive tight/default tolerance, RK4 and Euler at dt=0.01) confirmed no standard stepper reproduces them, so the submitted law uses an accurate adaptive integration of the true dynamics, which matches all non-degenerate trajectories at the noise floor.",
+   "optimal_explanation": "Two particles interact through a central, attractive 1/r\u00b2 force, F = k \u00b7 p1 \u00b7 p2 / r\u00b2. Particle 1 is pinned at the origin and particle 2 (inertia 1) is accelerated along the line of separation with magnitude proportional to the product of the two charges. Underneath, the world uses standard Coulomb's law with hidden opposite signs (q_0 = +|p1|, q_1 = -|p2|), so attraction is guaranteed regardless of the input signs.",
+   "judge_model": "claude-opus-4-6",
+   "score": 1.0,
+   "raw_score": 10,
+   "reasoning": "The student correctly identifies a static central pairwise attractive inverse-square (1/r\u00b2) force, correctly casts p1 and p2 as charge magnitudes entering as a product (F \u221d p1\u00b7p2/r\u00b2), notes particle 1 is pinned at the origin with particle 2 having unit inertia, and even nails the hidden opposite-sign Coulomb structure (q1=+p1, q2=-p2) guaranteeing attraction, with a dynamically confirmed coupling constant k=1. This satisfies every element of the top band.\n\n<score>10</score>",
+   "error": null
+  }
+ }
+}

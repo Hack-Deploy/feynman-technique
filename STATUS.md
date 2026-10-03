@@ -175,3 +175,52 @@
   The docstring and mission describe an attractive F = k·p1·p2/r². The oracle scores against the
   simulator as it behaves; vendor code is not edited.
 - **Result**: ⏳ not yet checked; no Phase 2 tests committed yet.
+
+## Phase 4: ARA import and first real-data replay market (2026-10-03)
+- **Built**:
+  - `dm/importers/ara.py`: downloads `SCOREBOARD.md`, the file tree and per-world
+    `meta/result/episode.json` for the eight `discoverphysics-<model>-ara` datasets into
+    `attempts/cache/ara/<model>/` (git-ignored); runs offline from the cache (`--offline`).
+    Scoreboard parsed by header name. One `AttemptRecord` per (model, world), uuid5 id over
+    model + world + protocol, written to `attempts/ara.jsonl` (append-only, unchanged records
+    skipped). Pass = numeric only (scoreboard nMSE < 0.1); ARA's own verdict kept in `extra`.
+    Rounds tie-break: scoreboard, then meta (all three values in `extra.rounds_sources`).
+    Non-finite nMSE → `normalised_mse=None, passed=False` (raw string in `extra.nmse_raw`), so
+    the store never writes NaN/Infinity. Attribution (ARA Labs, CC BY 4.0) in every record.
+  - `dm/importers/vendor_runs.py`: same, for local vendor run JSONs
+    (`protocol="discoverphysics_native"`); tested on a hand-made fixture only.
+  - `dm/replay.py`: Track A sweep on `ReplayPool(records, rounds_cost(1.0),
+    charge_event="round_charged")` (same pool as `cost_model` and `outcome_source`), prizes
+    5/20/50/100/200 × seeds 0–4, 200 ticks, 100 credits, leave-one-out starting beliefs.
+    Generic clearing-prize rule (lowest prize solved in ≥3 of 5 seeds), per-solver profit/bid
+    tables and lab revenue computed from the event log. `--verdict ara` runs the sensitivity
+    sweep with ARA's rule.
+  - `attempts/fixtures/ara_sample/`: fable, gpt5.5, opus4.8-max (scoreboards + a few worlds).
+  - `REPORT_DRAFT.md`.
+- **Check**:
+  - Counts: 8 models × 11 worlds = 88 records, none missing.
+  - nMSE vs `mean_pos_error / _WORLD_VARS` (3 s.f.): disagreements listed below. fable/ether
+    has `mean_pos_error = inf` in meta.json and is cross-checked against
+    `posthoc_salvage.json` (agrees).
+  - Replay: `run_market` conservation plus `sum(compute_final_balances) == 0` in all 25 runs;
+    byte-identical `events.json`/`ledger.json`/`summary.json` across two processes;
+    no (solver, world) record drawn twice in a run; no agent balance below 0.
+  - Tests use only the offline fixture (network calls patched to fail). 142 tests passed
+    (100 existing + 42 new).
+- **Result**: ✅ PASS. Every world clears at 20 (extra_dimensions at 5) vs 50–200 for the
+  stand-ins. **Caveat:** one attempt per (model, world), so outcomes are identical in every
+  seed and the ≥3-of-5 rule is close to deterministic. See `REPORT_DRAFT.md`.
+- **Data disagreements**:
+  - nMSE, systematic: every `coulomb_easy` row (8): scoreboard/recomputed ratio ≈ 2.71, i.e.
+    ARA's Var ≈ 4.24 vs vendor 11.465. Scoreboard used. Flips fable/coulomb_easy
+    (0.104 fail vs 0.0383 recomputed).
+  - nMSE, last digit: gpt5.6-sol/dark_matter (0.0734 vs 0.07347), glm5.2/gravity (1.51e-05 vs
+    1.504e-05).
+  - Non-finite nMSE: gemini3.1-pro/ether, gemini3.1-pro/three_species (`inf`).
+  - Rounds, scoreboard = meta ≠ episode (episode one or two lower): opus4.8-max
+    ether (6/6/4), extra_dimensions (14/14/13), oscillator (13/13/12); kimi-k2.7 gravity,
+    three_species; gemini3.1-pro hubble, oscillator, three_species, yukawa; glm5.2 circle,
+    coulomb_easy, dark_matter, ether, extra_dimensions, fractional, oscillator, yukawa.
+  - gemini3.1-pro used 17 rounds on hubble and oscillator (cap is 16).
+  - ARA verdict vs numeric-only: 19 records pass numerically but fail ARA's explanation
+    threshold (none the other way); listed in `output/ara_import_report.json`.
