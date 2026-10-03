@@ -59,6 +59,14 @@
 - **Checks**: 3 new tests (known values, full coverage, order preserved);
   60 tests PASSED.
 
+## Results app (2026-10-03)
+- **Built**: `app.py` (local app: run simulation, run tests, view results) and
+  `report.py` + `report_template.html` (same dashboard, exportable as
+  `output/report.html`). Charts: clearing prize per world, agent balances
+  payment by payment, mean profit per prize, public ledger, verdicts.
+- **Checks**: `tests/test_report.py` checks dashboard balances and ledger
+  counts against `summary.json`; 62 tests PASSED.
+
 ## Open issues
 - `config.yaml` is not read by the runner/analysis; values are hard-coded.
 - H3 holds by construction: `llm_opus_unthrottled` reuses mda's pass rates.
