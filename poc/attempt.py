@@ -9,6 +9,7 @@ import datetime as _dt
 import json
 import math
 import re
+from typing import Callable
 
 from dm.types import SubmittedAttempt
 from poc import config as C
@@ -67,7 +68,9 @@ def runs(conversation_log: list[dict]) -> list[dict]:
 
 def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[dict],
                 cfg: C.Config | None = None, complete: Complete | None = None,
-                verbose: bool = False, world_spec: dict | None = None, rule: str = "market",
+                verbose: bool = False, world_spec: dict | None = None,
+                on_round: Callable[[dict], None] | None = None,
+                max_tokens: int = C.MAX_TOKENS, rule: str = "market",
                 experiments: bool = True) -> SubmittedAttempt:
     cfg = cfg or C.load()
     hyp = cfg.hypothesis(hypothesis_id)
@@ -89,8 +92,9 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
     account = Account(agent=model, hypothesis=hyp.id, budget=cfg.budget)
     agent = MarketAgent(
         cfg=cfg, hyp=hyp, account=account, ledger_entries=ledger_entries, complete=complete,
-        rule=rule, experiments=experiments, model=model, executor=executor, mission=world_spec["mission"],
-        max_tokens=C.MAX_TOKENS, verbose=verbose,
+        on_round=on_round, rule=rule, experiments=experiments,
+        model=model, executor=executor, mission=world_spec["mission"],
+        max_tokens=max_tokens, verbose=verbose,
         system_prompt_path=_abs_vendor(world_spec["system_prompt"]),
         instructions_path=_abs_vendor(world_spec["instructions"]),
         law_stub=world_spec["law_stub"], experiment_format=world_spec["experiment_format"],
@@ -158,3 +162,35 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
             "account_events": account.events,
         },
     )
+
+
+def prompt_chars(hyp_id: str, cfg: C.Config, ledger_entries: list[dict]) -> int:
+    """Prompt-size basis for a run, without making an LLM call or creating a trajectory log."""
+    from scienceagent.worlds import get_world
+
+    hyp = cfg.hypothesis(hyp_id)
+    world_spec = get_world(
+        hyp.world,
+        engine=C.ENGINE,
+        noise_std=cfg.noise_std,
+        noise_seed=0,
+    )
+    account = Account(agent="projection", hypothesis=hyp.id, budget=cfg.budget)
+    agent = MarketAgent(
+        cfg=cfg,
+        hyp=hyp,
+        account=account,
+        ledger_entries=ledger_entries,
+        complete=lambda **kwargs: "",
+        model="projection",
+        executor=world_spec["executor"],
+        mission=world_spec["mission"],
+        max_tokens=C.MAX_TOKENS,
+        verbose=False,
+        system_prompt_path=_abs_vendor(world_spec["system_prompt"]),
+        instructions_path=_abs_vendor(world_spec["instructions"]),
+        law_stub=world_spec["law_stub"],
+        experiment_format=world_spec["experiment_format"],
+        trajectory_logger=None,
+    )
+    return len(agent._system) + len(world_spec["mission"])

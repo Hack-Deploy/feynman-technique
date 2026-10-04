@@ -1,7 +1,6 @@
 """Adversarial regression tests for the simulation dashboard."""
 
 import hashlib
-import http.client
 import inspect
 import json
 import os
@@ -189,22 +188,11 @@ def test_app_command_failure_reported(app_server):
     assert "ran" in result["output"]
 
 
-def test_api_data_with_corrupt_output_returns_json_error(
-    app_server, monkeypatch, tmp_path
-):
-    (tmp_path / "summary.json").write_text("{}")
-    (tmp_path / "events.json").write_text('[{"a":')
-    (tmp_path / "ledger.json").write_text("[]")
-    monkeypatch.setattr(report, "OUTPUT_DIR", tmp_path)
-
-    try:
-        status, headers, body = _request(f"{app_server}/api/data")
-    except (ConnectionError, OSError, urllib.error.URLError, http.client.HTTPException) as error:
-        pytest.fail(f"expected an HTTP error response, connection failed: {error}")
-
-    assert status >= 500
+def test_removed_api_data_route_returns_404(app_server):
+    status, headers, body = _request(f"{app_server}/api/data")
+    assert status == 404
     assert "json" in headers.get("Content-Type", "").lower()
-    json.loads(body)
+    assert json.loads(body) == {"error": "not found"}
 
 
 def test_app_rejects_cross_origin_post(app_server):
@@ -238,14 +226,13 @@ def test_report_embed_escapes_script_close(monkeypatch, tmp_path):
     assert rendered.count("</script>") == template.count("</script>")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="READINESS: dashboard must load no external hosts except cdnjs",
-)
 def test_report_has_no_external_hosts_except_cdnjs():
     template = (REPO_ROOT / "report_template.html").read_text()
+    # Anchor links navigate externally but do not load a host as part of the report.
     urls = re.findall(
-        r"""(?:src|href)=["'](https?://[^"']+)""", template, flags=re.IGNORECASE
+        r"""<(?!a\b)[a-z]+\b[^>]*?\b(?:src|href)=["'](https?://[^"']+)""",
+        template,
+        flags=re.IGNORECASE,
     )
     urls.extend(
         re.findall(
@@ -265,10 +252,6 @@ def test_report_has_no_external_hosts_except_cdnjs():
     assert all(urlsplit(url).hostname == "cdnjs.cloudflare.com" for url in urls)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="READINESS: dashboard balances must retain unknown solver names",
-)
 def test_report_balance_series_keeps_unknown_solvers():
     events = [
         {
@@ -338,10 +321,9 @@ def test_readme_commands_exist():
 
 
 def test_pitch_pages_present():
-    for filename in ("index.html", "slides.html"):
-        path = REPO_ROOT / filename
-        assert path.is_file()
-        assert path.stat().st_size > 0
+    path = REPO_ROOT / "slides.html"
+    assert path.is_file()
+    assert path.stat().st_size > 0
 
     slides_pdf = REPO_ROOT / "slides.pdf"
     assert slides_pdf.is_file()
@@ -397,20 +379,12 @@ def test_replay_ledger_records_attempt_source():
     )
 
 
-def test_bounty_routes_reject_foreign_origin_and_host(app_server, monkeypatch):
-    calls = []
-
-    def fake_post_bounty(*args):
-        calls.append(args)
-        return {}
-
-    monkeypatch.setattr(app.bounty, "post_bounty", fake_post_bounty)
-
+def test_removed_bounty_routes_keep_origin_and_host_guard(app_server):
     status, _, body = _request(
         f"{app_server}/api/bounty",
         method="POST",
-        data=json.dumps({"hypothesis": "x", "criterion": "y", "prize": 1}).encode(),
-        headers={"Content-Type": "application/json", "Origin": "http://evil.example"},
+        data=b"{}",
+        headers={"Origin": "http://evil.example"},
     )
     assert status == 403
     assert json.loads(body) == {"error": "forbidden"}
@@ -421,4 +395,3 @@ def test_bounty_routes_reject_foreign_origin_and_host(app_server, monkeypatch):
     )
     assert status == 403
     assert json.loads(body) == {"error": "forbidden"}
-    assert calls == []

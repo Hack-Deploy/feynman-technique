@@ -44,13 +44,14 @@ class StubExecutor:
         return [{"pos2": [[3.0, 0.0]] * len(e["measurement_times"])} for e in exps]
 
 
-def make_agent(replies, cfg=CFG, ledger=()):
+def make_agent(replies, cfg=CFG, ledger=(), on_round=None):
     from poc.agent import MarketAgent
     vendor = C.VENDOR_ROOT / "PhysicsSchool" / "prompts"
     llm = ScriptedLLM(replies)
     account = Account(agent="m", hypothesis=HYP.id, budget=cfg.budget)
     agent = MarketAgent(
         cfg=cfg, hyp=HYP, account=account, ledger_entries=list(ledger), complete=llm,
+        on_round=on_round,
         model="m", executor=StubExecutor(), mission="mission", verbose=False,
         system_prompt_path=str(vendor / "_template_interactive.md"),
         instructions_path=str(vendor / "2particle_instructions.md"),
@@ -125,6 +126,25 @@ def test_experiment_then_verdict_charges_rounds_and_experiments():
     assert agent.outcome == "verdict" and agent.evidence == "n = 1.0 ± 0.05"
     assert [e["p_success"] for e in agent.conversation_log] == [0.6, 0.8]
     assert agent.executor.experiments == 1
+
+
+def test_round_callback_fires_once_after_each_round():
+    rounds = []
+    agent, _, _ = make_agent([run_exp(), VERDICT], on_round=lambda entry: rounds.append(entry["round"]))
+
+    agent.run()
+
+    assert rounds == [1, 2]
+
+
+def test_round_callback_errors_do_not_change_the_run(capsys):
+    def fail(_entry):
+        raise RuntimeError("callback failed")
+
+    agent, _, _ = make_agent([run_exp(), VERDICT], on_round=fail)
+
+    assert agent.run() == "refuted"
+    assert capsys.readouterr().err.count("on_round callback failed") == 2
 
 
 def test_walking_away_in_first_reply_is_free():

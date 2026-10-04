@@ -6,8 +6,7 @@ successes are never shown. Results are appended to attempts/poc_dp_bench.jsonl (
 
     uv run python -m poc.bench --fake                         # scripted LLM, no API calls
     uv run python -m poc.bench --baselines --seeds 0 1 2      # scripted agents, no API calls
-    ENABLE_LIVE=1 DM_MAX_USD=20 uv run python -m poc.bench \\
-        --models claude-sonnet-4-6 --seeds 0 1 2 --usd-per-call 0.05
+    ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.bench --models claude-sonnet-5-5 --seeds 0
 """
 
 from __future__ import annotations
@@ -16,15 +15,19 @@ import argparse
 import os
 import sys
 import uuid
+from dataclasses import replace
 
 from dm.store import AttemptStore
 from dm.types import AttemptRecord, SubmittedAttempt
-from poc import config as C
+from poc import config as C, spend
 from poc import protocol
-from poc.attempt import run_attempt
+from poc.attempt import prompt_chars, run_attempt
+from poc.llm import MeteredLLM
+from poc.spend import CapReached, SpendLedger
 
 
-def resolve(hyp: C.Hypothesis, s: SubmittedAttempt, cfg: C.Config | None = None) -> AttemptRecord:
+def resolve(hyp: C.Hypothesis, s: SubmittedAttempt, cfg: C.Config | None = None,
+            llm_usage: dict | None = None) -> AttemptRecord:
     """Judge a run with the independent checker and settle it under both reward rules."""
     from poc.checker import judge
     from poc.ledger import settle
@@ -43,7 +46,7 @@ def resolve(hyp: C.Hypothesis, s: SubmittedAttempt, cfg: C.Config | None = None)
         attempt_id=str(uuid.uuid5(uuid.NAMESPACE_URL, key)),
         source=s.source, protocol=s.protocol, venue=s.venue, world=s.world, solver=s.solver,
         seed=s.seed, stated_p_success=s.stated_p_success, rounds=s.rounds,
-        experiments=s.experiments, lab_cost=s.lab_cost, llm_usage=x.get("llm_usage") or {},
+        experiments=s.experiments, lab_cost=s.lab_cost, llm_usage=llm_usage or {},
         submitted_law=None,
         verdict={"passed": ruling.confirmed, "outcome": ruling.outcome,
                  "agent_verdict": x.get("agent_verdict"), "answer": hyp.answer,
@@ -84,21 +87,6 @@ def load_env(path=C.ENV_PATH) -> None:
             os.environ.setdefault(key.strip(), value)
 
 
-def _check_spend(n_runs: int, cfg: C.Config, usd_per_call: float | None) -> None:
-    """CLAUDE.md rule 1: no paid calls without ENABLE_LIVE=1 and DM_MAX_USD; print projection."""
-    if os.environ.get("ENABLE_LIVE") != "1" or not os.environ.get("DM_MAX_USD"):
-        sys.exit("refusing paid calls: set ENABLE_LIVE=1 and DM_MAX_USD (or use --fake)")
-    if usd_per_call is None:
-        sys.exit("pass --usd-per-call (your estimate) so the projected spend can be checked")
-    max_calls = n_runs * (2 * cfg.max_rounds + 1)  # each round may need one re-prompt
-    projected = max_calls * usd_per_call
-    limit = float(os.environ["DM_MAX_USD"])
-    print(f"projected worst case: {n_runs} runs, {max_calls} calls, ${projected:.2f} "
-          f"(limit ${limit:.2f})")
-    if projected > limit:
-        sys.exit("projected spend exceeds DM_MAX_USD; nothing was run")
-
-
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--models", nargs="+", default=["fake"])
@@ -120,6 +108,10 @@ def main(argv: list[str] | None = None) -> None:
 
     from poc import baselines
 
+    if args.usd_per_call is not None:
+        print("deprecated: --usd-per-call is accepted but ignored; live spend uses "
+              "poc/live_models.yaml")
+
     cfg = C.load()
     hyps = [cfg.hypothesis(h) for h in args.hypotheses] if args.hypotheses else list(cfg.hypotheses)
     models = list(args.models)
@@ -135,25 +127,65 @@ def main(argv: list[str] | None = None) -> None:
     if not todo:
         return
 
-    complete = None
-    live = [m for m in models if not baselines.is_baseline(m) and not args.fake]
+    live = sorted({m for _, m, _ in todo if not baselines.is_baseline(m) and not args.fake})
+    run_cfg = cfg
+    live_settings = None
+    spend_ledger = None
     if args.fake:
         from poc.fake_llm import ScriptedLLM
     if live:
         load_env()
-        if not os.environ.get("ANTHROPIC_API_KEY"):
+        if os.environ.get("ENABLE_LIVE") != "1":
+            sys.exit("refusing paid calls: set ENABLE_LIVE=1")
+        live_settings = spend.load_settings()
+        cap = spend.effective_cap(live_settings)
+        if cap is None:
+            sys.exit("refusing paid calls: DM_MAX_USD must be set to a positive amount")
+        unknown_models = sorted(set(live) - {model.id for model in live_settings.models})
+        if unknown_models:
+            sys.exit("refusing paid calls: model(s) not in poc/live_models.yaml: "
+                     + ", ".join(unknown_models))
+        if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
             sys.exit("ANTHROPIC_API_KEY is not set: put it in poc/.env (see poc/.env.example)")
-        _check_spend(sum(1 for t in todo if t[1] in live), cfg, args.usd_per_call)
+        run_cfg = replace(cfg, max_rounds=live_settings.max_rounds)
+        spend_ledger = SpendLedger(cap=cap)
 
     for hyp, model, seed in todo:
+        ledger = public_record(records, hyp, run_cfg) if args.record else []
+        max_tokens = C.MAX_TOKENS
+        usage = None
         if baselines.is_baseline(model):
             complete = baselines.make(model, cfg, hyp, seed)
         elif args.fake:
             complete = ScriptedLLM.default()
-        ledger = public_record(records, hyp, cfg) if args.record else []
-        submitted = run_attempt(model, hyp.id, seed, ledger, cfg=cfg, complete=complete,
-                                verbose=args.verbose, rule=args.rule, experiments=experiments)
-        record = resolve(hyp, submitted, cfg)
+        else:
+            model_price = spend.price(live_settings, model)
+            projection = spend.project_run_usd(
+                model_price, prompt_chars(hyp.id, run_cfg, ledger), live_settings.max_rounds,
+                live_settings.max_tokens, live_settings.chars_per_token,
+                live_settings.data_chars_per_round)
+            print(f"projected worst case for {hyp.id}/{model}: "
+                  f"${projection['usd']:.6f} (effective cap ${spend_ledger.cap:.6f})")
+            try:
+                spend_ledger.admit_run(projection["usd"])
+            except CapReached as exc:
+                print(f"spend cap reached; stopping live grid: {exc}")
+                break
+            complete = MeteredLLM(model, model_price, spend_ledger,
+                                  f"bench:{hyp.id}:{model}:{args.rule}:{seed}")
+            max_tokens = live_settings.max_tokens
+        cfg_for_run = cfg if baselines.is_baseline(model) or args.fake else run_cfg
+        try:
+            submitted = run_attempt(model, hyp.id, seed, ledger, cfg=cfg_for_run,
+                                    complete=complete, verbose=args.verbose,
+                                    max_tokens=max_tokens, rule=args.rule,
+                                    experiments=experiments)
+        except CapReached as exc:
+            print(f"spend cap reached; stopping live grid: {exc}")
+            break
+        if isinstance(complete, MeteredLLM):
+            usage = complete.usage
+        record = resolve(hyp, submitted, cfg_for_run, llm_usage=usage)
         store.append([record])
         records.append(record)
         st = record.extra["settlements"]
@@ -162,7 +194,6 @@ def main(argv: list[str] | None = None) -> None:
               f"verdict {record.verdict['agent_verdict']!s:12s} spent {record.lab_cost:6g} "
               f"market {st['market']['profit']:+8.1f} naive {st['naive']['profit']:+8.1f} "
               f"flags {flags}")
-
 
 if __name__ == "__main__":
     main()

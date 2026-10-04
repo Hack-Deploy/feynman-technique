@@ -1,8 +1,11 @@
 """The oracle: preregisters hidden tests, then scores submitted laws against them.
 
 Independent of solvers by construction: only ``dm.settle`` may import this
-package (enforced by a test), and submitted code runs only in a subprocess with
-a wall-clock timeout, no network and no API keys in its environment.
+package (enforced by a test). Scoring uses two processes: a trusted worker that
+holds the hidden cases' ground truth and never runs submitted code, and a sandbox
+child that runs the law on initial conditions only, without the simulator, the
+vendor sources, subprocesses, network, API keys or the oracle secret (see
+``_worker.py`` and ``_sandbox.py``). The whole score has a wall-clock timeout.
 
 Settlement is numeric: normalised MSE < threshold on the hidden cases, where the
 MSE is the vendor evaluator's ``mean_pos_error`` and the normaliser is frozen in
@@ -11,11 +14,14 @@ the preregistration. The explanation score is optional and never settles.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import math
 import os
 import subprocess
 import sys
+import warnings
 from functools import lru_cache
 from pathlib import Path
 
@@ -31,14 +37,39 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 _SECRET_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 
 
-@lru_cache(maxsize=64)
+SECRET_ENV = "DM_ORACLE_SECRET"
+
+
+def oracle_salt(venue: str, world: str, test_seed: int) -> str:
+    """Secret salt for one preregistration: HMAC-SHA256(DM_ORACLE_SECRET, ids).
+
+    Mixed into both the hidden-case generator and the committed record, so the
+    hidden cases cannot be recovered by regenerating candidates from the public code
+    and matching the published commitment. Same secret → same salt, cases and
+    commitment on every rerun. Revealing the salt at close does not reveal the
+    secret. Returns "" (with a warning) when the secret is not set.
+    """
+    secret = os.environ.get(SECRET_ENV, "")
+    if not secret:
+        warnings.warn(f"{SECRET_ENV} is not set: hidden test cases are unsalted and can be "
+                      "brute-forced from the public commitment", stacklevel=3)
+        return ""
+    msg = f"{ORACLE_VERSION}|{venue}|{world}|{test_seed}".encode()
+    return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+
+
 def make_prereg(venue: str, world: str, test_seed: int) -> Preregistration:
     """Generate the hidden test set for (venue, world, test_seed) and freeze it."""
     if venue not in VENUES:
         raise ValueError(f"unknown venue {venue!r}")
     if venue == "forcebench" and world not in TWO_PARTICLE_WORLDS:
         raise ValueError(f"ForceBench has only two-particle worlds, not {world!r}")
-    cases, norm_var, public = hidden_cases(world, test_seed)
+    return _make_prereg(venue, world, test_seed, oracle_salt(venue, world, test_seed))
+
+
+@lru_cache(maxsize=128)
+def _make_prereg(venue: str, world: str, test_seed: int, salt: str) -> Preregistration:
+    cases, norm_var, public = hidden_cases(world, test_seed, salt)
     return Preregistration(
         question_id=f"{venue}/{world}",
         venue=venue,
@@ -48,6 +79,7 @@ def make_prereg(venue: str, world: str, test_seed: int) -> Preregistration:
         norm_variance=float(norm_var),
         oracle_version=ORACLE_VERSION,
         public_tests=public,
+        salt=salt,
     )
 
 
@@ -80,7 +112,7 @@ def score(prereg: Preregistration, law_source: str | None,
         return verdict
 
     job = {"world": prereg.world, "test_cases": prereg.test_cases,
-           "law_source": law_source, "training": training or []}
+           "law_source": law_source, "training": training or [], "timeout_s": timeout_s}
     try:
         proc = subprocess.run(
             [sys.executable, "-m", "dm.oracle._worker"],

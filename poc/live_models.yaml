@@ -1,0 +1,20 @@
+# Claude models for live runs. Prices: USD per million tokens.
+source:
+  models: https://platform.claude.com/docs/en/about-claude/models/overview
+  pricing: https://platform.claude.com/docs/en/about-claude/pricing
+  checked: "2026-10-03"
+models:
+  - {label: Claude Sonnet 5.5, id: claude-sonnet-5-5, input: 2, output: 10}
+  - {label: Claude Sonnet 5,   id: claude-sonnet-5,   input: 2, output: 10}
+  - {label: Claude Opus 5.5,   id: claude-opus-5-5,   input: 4, output: 20}
+  - {label: Claude Haiku 4.5,  id: claude-haiku-4-5-20251001, input: 1, output: 5}
+live:
+  max_usd: 5
+  max_rounds: 3
+  max_tokens: 3072
+projection:
+  chars_per_token: 3.0
+  data_chars_per_round: 8000
+demo_grid:
+  hypotheses: [hubble-outward-push, gravity-inverse-square]
+  seeds: [0]

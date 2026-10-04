@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 
 class ScriptedLLM:
     def __init__(self, replies: list[str]):
@@ -29,3 +31,70 @@ class ScriptedLLM:
             "<verdict>supported</verdict><estimate>n = 2 ± 0.1</estimate>"
             "<evidence>Scripted reply, no experiments.</evidence>",
         ])
+
+
+_TWO_PARTICLE_WORLDS = {
+    "gravity", "yukawa", "coulomb_easy", "oscillator", "fractional", "extra_dimensions",
+}
+
+
+def estimate_block(hyp, value: float = 1.0) -> str:
+    """A placeholder <estimate> block naming every quantity of ``hyp``."""
+    lines = "\n".join(f"{q.name} = {value:g}" for q in hyp.quantities)
+    return f"<estimate>\n{lines}\n</estimate>"
+
+
+def scripted_experiment(hyp, cfg) -> dict:
+    if hyp.world in _TWO_PARTICLE_WORLDS:
+        return {
+            "p1": 1,
+            "p2": 1,
+            "pos2": [3, 0],
+            "velocity2": [0, 0],
+            "measurement_times": [0.5, 1, 2],
+        }
+
+    from scienceagent.worlds import get_world
+    from poc import config as C
+
+    world_spec = get_world(
+        hyp.world,
+        engine=C.ENGINE,
+        noise_std=cfg.noise_std,
+        noise_seed=0,
+    )
+    formatted = world_spec["experiment_format"]
+    start = formatted.find("[", formatted.find("<run_experiment>"))
+    if start < 0:
+        raise ValueError(f"no scripted experiment format for {hyp.world}")
+    experiments, _ = json.JSONDecoder().raw_decode(formatted[start:])
+    if not experiments:
+        raise ValueError(f"no scripted experiment example for {hyp.world}")
+    experiment = experiments[0]
+    experiment["measurement_times"] = [1.0, 2.0]
+    return experiment
+
+
+def scripted_transport(replies, usage_fn=None):
+    replies = list(replies)
+    if not replies:
+        raise ValueError("need at least one reply")
+    call_count = 0
+
+    def transport(model, system, messages, max_tokens):
+        nonlocal call_count
+        text = replies[min(call_count, len(replies) - 1)]
+        call_count += 1
+        usage = (
+            usage_fn(system, messages, text)
+            if usage_fn is not None
+            else {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0,
+            }
+        )
+        return text, usage
+
+    return transport

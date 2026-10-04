@@ -1,8 +1,7 @@
 """Adversarial readiness tests for the replay market, analysis and calibration
 (area: live-market). Everything is recomputed from the event log.
 
-Tests marked ``xfail(strict=True)`` document a bug or gap found on ``real-attempts``;
-they start failing (XPASS) once it is fixed, so the marker must then be removed.
+The tests document bugs and regression guarantees found on ``real-attempts``.
 """
 
 from __future__ import annotations
@@ -295,23 +294,19 @@ class TestAnalysisOnReplayRuns:
         assert clearing["coulomb_easy"] is None  # slow's only attempt fails
         assert clearing["gravity"] is not None
 
-    @pytest.mark.xfail(strict=True, reason="GAP: compute_clearing_prizes only knows "
-                       "track_a_/track_c_ run_id templates; any other track silently "
-                       "returns None ('never') for every world")
     def test_analysis_clearing_prizes_match_log_for_replay(self):
         events = [e for p, z, s, ev, _ in sweep() if p == 1.0 for e in ev]
         mine = {w: clearing_from_log(events, w, PRIZES, SEEDS, 1.0) for w in WORLDS}
-        got = compute_clearing_prizes(events, WORLDS, PRIZES, list(SEEDS),
-                                      track="replay", price=1.0)
+        got = compute_clearing_prizes(
+            events, WORLDS, PRIZES, list(SEEDS), track="replay", price=1.0,
+            run_id_template="replay_fixture_price{price}_prize{prize}_seed{seed}")
         assert got == mine
 
-    @pytest.mark.xfail(strict=True, reason="BUG: build_full_summary on replay-only "
-                       "events emits a Track C H3 verdict ('NOT SUPPORTED ... mda=0.0') "
-                       "computed from no data")
     def test_summary_does_not_invent_verdicts_for_missing_tracks(self):
         ev, led = _run(ReplayPool(_records(), experiments_cost(0.5)), prize=60)
         s = build_full_summary(ev, led)
         assert "NOT SUPPORTED" not in s["verdicts"]["h3"]
+        assert s["verdicts"]["h3"].startswith("UNAVAILABLE")
 
     def test_summary_counts_both_charge_types_as_lab_revenue(self):
         recs = _records()
@@ -382,9 +377,6 @@ class TestCalibrationFromEvents:
         cs = [e for e in ev if e["type"] == "confidence_stated"]
         assert cs and all((e.get("detail") or {}).get("p_source") == "belief" for e in cs)
 
-    @pytest.mark.xfail(strict=True, reason="GAP: events carry the replayed record id but "
-                       "not the market attempt id (ledger uuid5), so a verdict cannot be "
-                       "joined to its ledger row except by (tick, agent, world)")
     def test_events_link_to_ledger_rows(self):
         ev, led = _run(ReplayPool(_records(), experiments_cost(0.5)), prize=500)
         ids = {r["attempt_id"] for r in led}
@@ -429,37 +421,39 @@ class TestPreregLifecycle:
             before = json.dumps([e for e in ev if e["seq"] < revealed[0]["seq"]])
             assert f'"SECRET_CASE": "{w}"' not in before
 
-    @pytest.mark.xfail(strict=True, reason="GAP: verdict_issued.commitment is copied from "
-                       "the replayed record, not checked against the commitment the market "
-                       "posted for that world; a record scored under another prereg settles")
     def test_verdict_commitment_matches_market_prereg(self):
         pr = _preregs()
-        ev, _ = _run(ReplayPool(_records(), experiments_cost(1)), prize=500, preregs=pr)
+        records = [
+            AttemptRecord(**{
+                **record.to_dict(),
+                "verdict": {
+                    **record.verdict,
+                    "prereg_commitment": pr[record.world].commitment(),
+                },
+            })
+            for record in _records()
+        ]
+        ev, _ = _run(ReplayPool(records, experiments_cost(1)), prize=500, preregs=pr)
         for e in ev:
             if e["type"] == "verdict_issued":
-                assert e.get("commitment") == pr[e["world"]].commitment()
+                assert e["detail"]["prereg_match"] is True
+
+        with pytest.raises(ValueError, match="not scored against"):
+            _run(ReplayPool(_records(), experiments_cost(1)), prize=500, preregs=pr)
 
 
 # ------------------------------------------------------------ engine guards
 
 class TestEngineGuards:
 
-    @pytest.mark.xfail(strict=True, reason="BUG: bid rule/affordability uses cfg.cost_model "
-                       "while charges come from cfg.outcome_source; if they differ, agents "
-                       "go negative and the charge event type is wrong (market.py:376-426)")
     def test_mismatched_cost_model_cannot_overdraw(self):
         pool = ReplayPool(_records(), experiments_cost(5.0))
-        ev, _ = _run(pool, prize=500, cost_model=TrackACostModel())
-        bal = compute_final_balances(ev)
-        assert all(v >= 0 for k, v in bal.items() if k.startswith("agent:"))
+        with pytest.raises(ValueError, match="prices its own attempts"):
+            _run(pool, prize=500, cost_model=TrackACostModel())
 
-    @pytest.mark.xfail(strict=True, reason="BUG: negative lab_cost is accepted; the lab "
-                       "pays the agent and ends negative (no validation in AttemptRecord/"
-                       "ReplayPool/run_market)")
     def test_negative_cost_rejected(self):
-        bad = [AttemptRecord(**{**r.to_dict(), "lab_cost": -10.0}) for r in _records()]
-        with pytest.raises((ValueError, AssertionError)):
-            _run(ReplayPool(bad, recorded_cost()), prize=500)
+        with pytest.raises(ValueError, match="lab_cost"):
+            AttemptRecord(**{**_records()[0].to_dict(), "lab_cost": -10.0})
 
     def test_every_collected_bid_leaves_an_event(self):
         # One solver, two worlds, enough for one 41-credit attempt but not two.
@@ -473,13 +467,14 @@ class TestEngineGuards:
                 dropped.append(seed)
         assert not dropped, f"bids silently dropped in seeds {dropped}"
 
-    @pytest.mark.xfail(strict=True, reason="BUG: a non-finite normalised_mse (ARA has "
-                       "'inf' rows) flows into ledger/event JSON as bare Infinity, which "
-                       "is not valid JSON for the dashboard (JSON.parse rejects it)")
     def test_non_finite_metric_is_json_safe(self):
-        recs = [AttemptRecord(**{**r.to_dict(), "verdict": {**r.verdict,
-                                                           "normalised_mse": math.inf}})
-                if not r.passed else r for r in _records()]
+        recs = _records()
+        record = next(r for r in recs if not r.passed)
+        object.__setattr__(
+            record,
+            "verdict",
+            {**record.verdict, "normalised_mse": math.inf},
+        )
         ev, led = _run(ReplayPool(recs, experiments_cost(0.5)), prize=500)
         json.dumps(ev, allow_nan=False)
         json.dumps(led, allow_nan=False)
@@ -522,23 +517,24 @@ class TestStore:
         AttemptStore(p).append([self._rec(1)])
         with p.open("a") as f:
             f.write('{"attempt_id": "r2", "sour')
-        assert [r.attempt_id for r in AttemptStore(p).load()] == ["r1"]
+        with pytest.warns(UserWarning, match="truncated final line"):
+            assert [r.attempt_id for r in AttemptStore(p).load()] == ["r1"]
 
-    @pytest.mark.xfail(strict=True, reason="BUG: store writes non-finite floats as bare "
-                       "Infinity/NaN (json.dumps default allow_nan=True, dm/store.py:28)")
     def test_store_writes_strict_json(self, tmp_path):
         p = tmp_path / "i.jsonl"
-        AttemptStore(p).append([self._rec(1, verdict={"normalised_mse": math.inf,
-                                                      "passed": False})])
-        json.loads(p.read_text(), parse_constant=lambda c: (_ for _ in ()).throw(
-            ValueError(c)))
+        record = self._rec(1)
+        object.__setattr__(
+            record,
+            "verdict",
+            {**record.verdict, "normalised_mse": math.inf},
+        )
+        with pytest.raises(ValueError):
+            AttemptStore(p).append([record])
 
-    @pytest.mark.xfail(strict=True, reason="GAP: AttemptRecord.from_dict silently drops "
-                       "unknown keys, so a record written by a newer schema loses data "
-                       "when read and re-appended (dm/types.py:92)")
     def test_unknown_fields_round_trip(self):
         d = {**self._rec(1).to_dict(), "schema_version": 2}
-        assert AttemptRecord.from_dict(d).to_dict().get("schema_version") == 2
+        with pytest.raises(ValueError, match="schema_version"):
+            AttemptRecord.from_dict(d)
 
 
 # ------------------------------------------------------------ ARA-shaped pools (C12)
@@ -574,7 +570,8 @@ class TestAraShapedPool:
         for e in ev:
             if e["type"] == "round_charged":
                 rec = next(r for r in recs if r.attempt_id == e["attempt_id"])
-                assert e["amount"] == rec.rounds and "count" not in e
+                assert e["amount"] == rec.rounds
+                assert type(e["count"]) is int and e["count"] == rec.rounds
             if e["type"] == "verdict_issued":
                 rec = next(r for r in recs if r.attempt_id == e["attempt_id"])
                 assert e["detail"]["passed"] == rec.verdict["passed"]
