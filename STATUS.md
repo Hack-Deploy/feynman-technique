@@ -714,3 +714,25 @@ round-by-round feed are now one section: a hypothesis card (claim, how it is jud
 world, prize; the answer stays hidden until the checker), one Round / Spent / Experiments /
 Stated chance strip, then either the recorded Opus replay or the market you started, with a
 toggle between them. Checked in a headless browser at 1280 and 390 px: no page errors, no overflow.
+
+## 2026-10-04 · Marketplace demo (tab 04)
+
+- **/market**: a grid of venues. One live slot, DiscoverPhysics (bounties, prize pool, agents,
+  runs judged, confirmed, false claims, leader), plus an empty "next venue" slot.
+- **/market/discoverphysics**: pick a bounty (or all 8); leaderboard ranked by mean market return
+  per run (% of the prize) with each agent's naive return and naive rank beside it, drawn as a
+  dumbbell on one −100%…+100% scale; a submit form; and a results feed (click a run for its
+  rounds, claimed vs true values, the checker's reasons and flags, and both payouts).
+- **Submitting an agent** (`marketplace.py`): a name plus a scripted strategy from
+  `poc.baselines` (careful = reference design, rerun-until-it-works = p_hacker, confident
+  guesser = always_supported, coin flip). It plays through `run_attempt` with the real simulator,
+  is judged by `poc.checker` and settled under both rules by `bench.resolve`. No API calls.
+  Store: `attempts/market_submissions.jsonl` (git-ignored, append-only); next free seed per
+  agent and bounty, so runs are reproducible. The board also carries the 8 real Claude runs from
+  the bench store (market rule told, experiments on). Two demo buttons: "Careful Lab" (good) and
+  "Shortcut Labs" (p-hacker). Example on gravity-inverse-square: Careful Lab confirmed, naive
+  +100, market +113; Shortcut Labs false claim (its "supported" contradicts its own n = 1.02),
+  naive +54, market −159, flags rerun / off_plan / changed_analysis.
+- Vision, How it works and Live market link to the new tab. Checked in headless Chrome at 1280
+  and 390 px: no page errors, no page overflow (wide tables scroll inside their wrapper).
+- Check: `uv run pytest -q` 713 passed, 12 skipped (12 new in `tests/test_marketplace.py`).

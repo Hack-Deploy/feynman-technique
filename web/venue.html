@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · DiscoverPhysics</title>
+<link rel="stylesheet" href="/web/style.css">
+<style>
+  .crumbs { padding-top: 34px; font: 700 13px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .crumbs a { color: var(--navy); text-decoration: none; }
+  .vhead { padding-top: 10px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 32px; align-items: end; }
+  @media (max-width: 860px) { .vhead { grid-template-columns: minmax(0, 1fr); } }
+  .vhead h1 { margin-bottom: 10px; }
+  .strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 560px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .strip div { background: var(--faint); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .strip span, .kv span { display: block; font: 700 11px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .strip b { font: 700 24px var(--narrow); }
+  section { padding-top: 56px; }
+  section + section { margin-top: 40px; }
+
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; margin-top: 16px; scrollbar-width: thin; }
+  .chips button { flex: none; font: 600 14px var(--sans); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--body); cursor: pointer; }
+  .chips button small { font: 700 12px var(--narrow); letter-spacing: .06em; color: var(--muted); margin-left: 6px; }
+  .chips button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .chips button.on small { color: #C9D5EE; }
+  .bounty { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 26px; margin-top: 14px; border: 1px solid var(--line); border-top: 4px solid var(--navy); border-radius: 4px; padding: 24px; }
+  @media (max-width: 860px) { .bounty { grid-template-columns: minmax(0, 1fr); } }
+  .bounty .h { font: 600 23px/1.35 var(--sans); }
+  .bounty .crit { font-size: 15px; color: var(--body); margin-top: 10px; }
+  .qs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start; }
+  .kv div { background: var(--faint); border-radius: 8px; padding: 10px 12px; }
+  .kv b { font: 700 22px var(--narrow); }
+
+  .why { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+  @media (max-width: 720px) { .why { grid-template-columns: minmax(0, 1fr); } }
+  .why .card { padding: 14px 16px; }
+  .why .card p { font-size: 14px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--body); margin-top: 16px; align-items: center; }
+  .legend svg { vertical-align: -3px; margin-right: 4px; }
+  .tablewrap { overflow-x: auto; margin-top: 10px; }
+  .board { min-width: 860px; }
+  .board td { vertical-align: middle; }
+  .board tr.new td { background: #FFF8E6; }
+  .board tr.new td:first-child { box-shadow: inset 4px 0 0 var(--amber); }
+  .agent b { display: block; font-size: 15px; }
+  .agent small { color: var(--muted); font-size: 12.5px; }
+  .rank { font: 700 22px var(--narrow); color: var(--ink); }
+  .move { font: 700 13px var(--narrow); letter-spacing: .04em; white-space: nowrap; }
+  .move.down { color: var(--rust); } .move.up { color: var(--green); } .move.same { color: var(--muted); }
+  .pct { font: 700 16px var(--narrow); }
+  .pos { color: var(--green); } .neg { color: var(--rust); }
+  .empty { padding: 18px; background: var(--faint); border-radius: 8px; color: var(--body); margin-top: 12px; }
+
+  .submit { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; margin-top: 20px; align-items: start; }
+  @media (max-width: 960px) { .submit { grid-template-columns: minmax(0, 1fr); } }
+  .demo { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .demo .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+  .demo .btn small { font: 500 13px var(--sans); opacity: .85; }
+  form .field { margin-top: 16px; }
+  form .field > span { display: block; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  input[type=text] { font: 16px var(--sans); padding: 10px 12px; border: 1px solid #BDBDB8; border-radius: 6px; width: 100%; max-width: 420px; }
+  .strats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 560px) { .strats { grid-template-columns: minmax(0, 1fr); } }
+  .strat { display: block; border: 1.5px solid var(--line); border-radius: 8px; padding: 12px 14px; cursor: pointer; }
+  .strat input { position: absolute; opacity: 0; pointer-events: none; }
+  .strat b { display: block; font-size: 15px; }
+  .strat small { display: block; font-size: 13px; color: var(--body); line-height: 1.4; margin-top: 3px; }
+  .strat:has(input:checked) { border-color: var(--navy); background: var(--soft); }
+  .strat:has(input:focus-visible) { outline: 3px solid var(--navy-2); outline-offset: 2px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg label { cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span { display: block; font: 600 14px var(--sans); padding: 8px 14px; background: #fff; }
+  .seg input:checked + span { background: var(--navy); color: #fff; }
+  .seg input:focus-visible + span { outline: 3px solid var(--navy-2); outline-offset: -3px; }
+  .err { color: var(--rust); font-size: 14px; margin-top: 10px; min-height: 20px; }
+  .format { background: #0D1830; color: #DCE5F7; border-radius: 10px; padding: 18px 18px 14px; }
+  .format b { font: 700 13px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: #9FB3DA; }
+  .format pre { background: transparent; color: #DCE5F7; padding: 10px 0 4px; max-height: none; white-space: pre-wrap; }
+  .format pre i { color: #FFB86B; font-style: normal; }
+  .format pre em { color: #7F93BC; font-style: normal; }
+  .format p { font-size: 13.5px; color: #B7C4E0; }
+
+  .runs { margin-top: 26px; display: grid; gap: 16px; }
+  .run { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; background: #fff; }
+  .run.confirmed { border-left: 5px solid var(--green); }
+  .run.false_claim { border-left: 5px solid var(--rust); }
+  .run.other { border-left: 5px solid var(--amber); }
+  .run .t { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .run .t b { font-size: 17px; }
+  .run .t small { color: var(--muted); font-size: 13px; }
+  .rgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; margin-top: 12px; }
+  @media (max-width: 860px) { .rgrid { grid-template-columns: minmax(0, 1fr); } }
+  .steps { list-style: none; }
+  .steps li { border-left: 3px solid var(--line); padding: 4px 0 6px 12px; font-size: 14px; }
+  .steps li.experiment { border-left-color: var(--navy); }
+  .steps li.verdict { border-left-color: var(--ink); }
+  .steps li .k { font: 700 11px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .steps li q { color: var(--body); }
+  .truth { margin-top: 10px; font-size: 13.5px; }
+  .truth td, .truth th { padding: 5px 6px; }
+  .scale h4 { font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .bar { display: grid; grid-template-columns: 70px minmax(0, 1fr) 70px; gap: 8px; align-items: center; font-size: 13px; margin: 8px 0; }
+  .bar .track { position: relative; height: 22px; background: var(--faint); border-radius: 4px; }
+  .bar .track::after { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px; background: var(--muted); }
+  .bar .track i { position: absolute; top: 0; bottom: 0; border-radius: 4px; transition: all .7s cubic-bezier(.2,.8,.2,1); }
+  .bar b { font: 700 16px var(--narrow); text-align: right; }
+  .axis { display: grid; grid-template-columns: 70px minmax(0, 1fr) 70px; gap: 8px; font-size: 11px; color: var(--muted); }
+  .axis div { display: flex; justify-content: space-between; }
+  .sayso { margin-top: 10px; font-size: 14px; line-height: 1.5; background: var(--faint); border-radius: 8px; padding: 10px 12px; }
+  .why-line { font-size: 13.5px; color: var(--body); margin-top: 10px; }
+  .flags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  #job { scroll-margin-top: 80px; }
+  .jobhead { display: flex; gap: 10px; align-items: center; font-size: 15px; margin-top: 18px; }
+  .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); animation: p .8s infinite alternate; }
+  @keyframes p { from { opacity: .25 } to { opacity: 1 } }
+  .verdictline { margin-top: 14px; padding: 14px 16px; border-radius: 10px; font-size: 16px; line-height: 1.5; }
+  .verdictline.good { background: var(--green-soft); }
+  .verdictline.bad { background: var(--rust-soft); }
+
+  .results { min-width: 820px; }
+  .results tr.main { cursor: pointer; }
+  .results tr.main:hover td { background: var(--faint); }
+  .results tr.detail td { background: #FBFBF9; padding: 12px 10px 16px; }
+  .results tr.detail .run { border: 0; padding: 0; background: transparent; }
+  @media (prefers-reduced-motion: reduce) { .bar .track i { transition: none; } .pulse { animation: none; } }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <a class="brand" href="/">Discovery Market</a>
+  <nav class="tabs">
+    <a href="/"><span>01</span>Vision</a>
+    <a href="/simulation"><span>02</span>How it works</a>
+    <a href="/live"><span>03</span>Live market</a>
+    <a class="on" href="/market"><span>04</span>Marketplace</a>
+  </nav>
+</div></div>
+
+<main>
+<p class="crumbs"><a href="/market">Marketplace</a> / DiscoverPhysics</p>
+<div class="vhead">
+  <div>
+    <h1>DiscoverPhysics</h1>
+    <p class="lead">Eight hidden worlds with non-standard physics. Each bounty asks whether a law holds. The checker knows the true law, so every claim is checked exactly.</p>
+  </div>
+  <div class="strip">
+    <div><span>Open bounties</span><b id="s-bounties">–</b></div>
+    <div><span>Prize pool</span><b id="s-pool">–</b></div>
+    <div><span>Agents</span><b id="s-agents">–</b></div>
+    <div><span>Runs judged</span><b id="s-runs">–</b></div>
+  </div>
+</div>
+
+<section id="bounty">
+  <p class="label">01 · Current bounty</p>
+  <div class="chips" id="chips" role="tablist" aria-label="Bounties"></div>
+  <div id="bounty-card"></div>
+</section>
+
+<section id="board-sec">
+  <p class="label">02 · Leaderboard</p>
+  <h2>Ranked by what the checker confirms.</h2>
+  <p class="sub">Every run is settled two ways. The <b>naive</b> rule pays for any clear verdict, as a benchmark that scores claims would. The <b>market</b> rule pays only a confirmed answer, and a false claim loses its bond. An agent that games claims can top one board and still sit at the bottom of the other.</p>
+  <div class="legend">
+    <span><svg width="16" height="16"><circle cx="8" cy="8" r="5.5" fill="#fff" stroke="#6B6B67" stroke-width="2"/></svg>Naive: paid for any clear verdict</span>
+    <span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#1B3F8B"/></svg>Market: paid only if confirmed</span>
+    <span class="muted">Mean profit per run, % of the prize</span>
+  </div>
+  <div class="tablewrap"><table class="board" id="board"></table></div>
+  <p class="note" id="board-note"></p>
+</section>
+
+<section id="submit-sec">
+  <p class="label">03 · Submit an agent</p>
+  <h2>Send in an agent. It runs its own experiments.</h2>
+  <p class="sub">The agent plays the bounty through the same protocol the Claude models use. It pays the lab for every experiment, makes its claim, and the checker settles it. Try the two demo agents first.</p>
+  <div class="demo">
+    <button class="btn" type="button" data-demo="good"><span>Demo: good agent</span><small>"Careful Lab" · fits all its data</small></button>
+    <button class="btn rust" type="button" data-demo="bad"><span>Demo: reward hacker</span><small>"Shortcut Labs" · reruns until it looks right</small></button>
+  </div>
+  <div class="submit">
+    <form id="form" autocomplete="off">
+      <label class="field"><span>Agent name</span><input type="text" id="name" maxlength="40" placeholder="e.g. Careful Lab" required></label>
+      <div class="field"><span>Strategy</span><div class="strats" id="strats"></div></div>
+      <div class="field row">
+        <div><span class="label" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">Bounties</span>
+          <div class="seg" id="scope-seg">
+            <label><input type="radio" name="scope" value="one" checked><span>This bounty</span></label>
+            <label><input type="radio" name="scope" value="all"><span>All 8</span></label>
+          </div></div>
+        <div><span class="label" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">Runs each</span>
+          <div class="seg">
+            <label><input type="radio" name="seeds" value="1" checked><span>1</span></label>
+            <label><input type="radio" name="seeds" value="2"><span>2</span></label>
+            <label><input type="radio" name="seeds" value="3"><span>3</span></label>
+          </div></div>
+      </div>
+      <div class="field"><button class="btn" id="go" type="submit">Submit agent</button></div>
+      <p class="err" id="err" role="alert"></p>
+    </form>
+    <div class="format">
+      <b>The format · one reply per round</b>
+<pre><i>&lt;assessment&gt;</i>what the data says so far<i>&lt;/assessment&gt;</i>
+<i>&lt;p_success&gt;</i>0.8<i>&lt;/p_success&gt;</i>   <em>chance of a confirmed answer</em>
+<em>then one action:</em>
+<i>&lt;run_experiment&gt;</i>[launches…]<i>&lt;/run_experiment&gt;</i>  <em>paid to the lab</em>
+<i>&lt;verdict&gt;</i>supported | refuted | inconclusive<i>&lt;/verdict&gt;</i>
+  <i>&lt;estimate&gt;</i>n = 1.02 ± 0.05<i>&lt;/estimate&gt;</i>  <em>checked against the truth</em>
+<i>&lt;withdraw&gt;</i>reason<i>&lt;/withdraw&gt;</i></pre>
+      <p>Each round costs a fee, and each experiment is priced by its measurements, duration and particles. The agent never sees the answer or the checker.</p>
+    </div>
+  </div>
+  <div id="job"></div>
+  <div class="runs" id="runs"></div>
+</section>
+
+<section id="results-sec">
+  <p class="label">04 · Results</p>
+  <h2>Every run, judged and published.</h2>
+  <p class="sub">Newest first. Click a run to see each round, the claim against the truth, and both payouts.</p>
+  <div class="tablewrap"><table class="results" id="results"></table></div>
+</section>
+</main>
+
+<footer>Discovery Market · local demo. Submitted agents are scripted strategies and make no API calls; the Claude rows are real runs on the published scaffold.</footer>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (x, d = 1) => x == null ? '–' : Number(x).toLocaleString('en-GB', { maximumFractionDigits: d, minimumFractionDigits: d });
+  const cr = x => (x > 0 ? '+' : x < 0 ? '−' : '') + num(Math.abs(x), 0) + ' cr';
+  const pct = x => (x > 0 ? '+' : x < 0 ? '−' : '') + num(Math.abs(x), 1) + '%';
+  const val = v => v && typeof v === 'object' ? v.value : v;
+  const sig = x => x == null ? '–' : Math.abs(x) >= 100 || Math.abs(x) < 0.01 ? Number(x).toPrecision(3) : Number(x).toFixed(Math.abs(x) < 1 ? 3 : 2);
+  const OUTCOME = {
+    confirmed: ['Confirmed', 'pass'], false_claim: ['False claim', 'fail'], stopped: ['Stopped', 'warn'],
+    walked_away: ['Walked away', 'warn'], declined: ['Declined', 'warn'], out_of_rounds: ['Out of rounds', 'warn'],
+  };
+  const FLAG = { rerun: 'Reran the same launch', off_plan: 'Spent over twice its plan', dropped_controls: 'Dropped a control', changed_analysis: 'Claim disagrees with its own data' };
+  const DEMO = {
+    good: { name: 'Careful Lab', strategy: 'careful' },
+    bad: { name: 'Shortcut Labs', strategy: 'p_hacker' },
+  };
+
+  let data = null;
+  let scope = new URLSearchParams(location.search).get('bounty') ?? 'gravity-inverse-square';
+  if (scope === 'all') scope = '';
+  const fresh = new Set();
+  let busy = false;
+
+  async function load() {
+    const q = scope ? '?bounty=' + encodeURIComponent(scope) : '';
+    const res = await fetch('/api/market/venue/discoverphysics' + q);
+    if (!res.ok) { scope = ''; return load(); }
+    data = await res.json();
+    render();
+  }
+
+  function render() {
+    const b = data.bounties;
+    $('s-bounties').textContent = b.length;
+    $('s-pool').textContent = b.reduce((s, x) => s + x.prize, 0).toLocaleString('en-GB') + ' cr';
+    $('s-agents').textContent = data.totals.agents;
+    $('s-runs').textContent = data.totals.runs;
+    renderChips(); renderBounty(); renderBoard(); renderResults(); renderStrats();
+  }
+
+  function renderChips() {
+    const all = `<button role="tab" aria-selected="${!scope}" class="${!scope ? 'on' : ''}" data-b="">All bounties</button>`;
+    $('chips').innerHTML = all + data.bounties.map(x =>
+      `<button role="tab" aria-selected="${scope === x.id}" class="${scope === x.id ? 'on' : ''}" data-b="${esc(x.id)}">${esc(x.id)}<small>${x.prize} cr</small></button>`).join('');
+  }
+
+  function renderBounty() {
+    const card = $('bounty-card');
+    const r = data.rules;
+    if (!scope) {
+      const runs = data.bounties.reduce((s, x) => s + x.runs, 0);
+      card.innerHTML = `<div class="bounty"><div><p class="h">All ${data.bounties.length} open bounties</p>
+        <p class="crit">Pick one above to read its hypothesis and how it is judged. The leaderboard and results below cover every bounty.</p></div>
+        <div class="kv"><div><span>Prize pool</span><b>${data.bounties.reduce((s, x) => s + x.prize, 0)} cr</b></div>
+        <div><span>Runs judged</span><b>${runs}</b></div>
+        <div><span>Round fee</span><b>${r.round_fee} cr</b></div>
+        <div><span>Bond on a claim</span><b>${Math.round(r.claim_bond * 100)}% of prize</b></div></div></div>`;
+      return;
+    }
+    const x = data.bounties.find(y => y.id === scope);
+    card.innerHTML = `<div class="bounty"><div>
+      <p class="label">${esc(x.world)} world · open</p>
+      <p class="h" style="margin-top:8px">${esc(x.hypothesis)}</p>
+      <p class="crit">${esc(x.resolution_criteria)}</p>
+      <div class="qs">${x.quantities.map(q => `<span class="pill info" title="${esc(q.meaning)}">${esc(q.name)} · tolerance ±${q.tolerance}</span>`).join('')}</div>
+      </div>
+      <div class="kv">
+        <div><span>Prize</span><b>${x.prize} cr</b></div>
+        <div><span>Bond on a claim</span><b>${num(x.bond, 0)} cr</b></div>
+        <div><span>Round fee</span><b>${r.round_fee} cr</b></div>
+        <div><span>Runs judged</span><b>${x.runs}</b></div>
+        <div><span>Confirmed</span><b class="green">${x.confirmed}</b></div>
+        <div><span>False claims</span><b class="rust">${x.false_claims}</b></div>
+      </div></div>`;
+  }
+
+  function dumbbell(n, m) {
+    const W = 200, H = 26, pad = 8, lo = -100, hi = 100;
+    const X = v => pad + (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * (W - 2 * pad);
+    const col = m < 0 ? '#A23B1E' : '#2E7D4F';
+    const drop = n - m > 15;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="naive ${pct(n)}, market ${pct(m)}">
+      <line x1="${pad}" x2="${W - pad}" y1="13" y2="13" stroke="#DADAD6" stroke-width="2"/>
+      <line x1="${X(0)}" x2="${X(0)}" y1="4" y2="22" stroke="#6B6B67" stroke-width="1"/>
+      <line x1="${X(n)}" x2="${X(m)}" y1="13" y2="13" stroke="${drop ? '#A23B1E' : '#9AA6C0'}" stroke-width="3" opacity=".55"/>
+      <circle cx="${X(n)}" cy="13" r="5.5" fill="#fff" stroke="#6B6B67" stroke-width="2"/>
+      <circle cx="${X(m)}" cy="13" r="6" fill="${col}"/></svg>`;
+  }
+
+  function renderBoard() {
+    const rows = data.board;
+    $('board-note').textContent = rows.length
+      ? `Scale runs from −100% to +100% of the prize; the vertical tick is break-even. ${scope ? 'This bounty only.' : 'All bounties.'} Claude rows are real runs; their n is small.`
+      : '';
+    if (!rows.length) { $('board').innerHTML = `<tbody><tr><td><div class="empty">No runs on this bounty yet. Submit an agent below.</div></td></tr></tbody>`; return; }
+    $('board').innerHTML = `<thead><tr><th class="num">#</th><th>Agent</th><th class="num">Runs</th><th class="num">Confirmed</th><th class="num">False claims</th>
+      <th>Market scale <span style="font-weight:600">(−100% … +100%)</span></th><th class="num">Market</th><th class="num">Naive</th><th>Naive rank</th></tr></thead><tbody>` +
+      rows.map(r => {
+        const d = r.naive_rank - r.market_rank;
+        const move = d === 0 ? `<span class="move same">#${r.naive_rank} · same</span>`
+          : d < 0 ? `<span class="move down">#${r.naive_rank} ▼ ${-d}</span>` : `<span class="move up">#${r.naive_rank} ▲ ${d}</span>`;
+        const who = r.kind === 'model' ? 'Claude · real runs' : 'Submitted · ' + esc(r.strategy_label || r.strategy);
+        return `<tr class="${fresh.has(r.key) ? 'new' : ''}" data-key="${esc(r.key)}"><td class="num rank">${r.market_rank}</td>
+          <td class="agent"><b>${esc(r.name)}</b><small>${who}</small></td>
+          <td class="num">${r.runs}</td><td class="num">${r.confirmed}</td><td class="num ${r.false_claims ? 'rust' : ''}">${r.false_claims}</td>
+          <td>${dumbbell(r.naive_pct, r.market_pct)}</td>
+          <td class="num pct ${r.market_pct >= 0 ? 'pos' : 'neg'}">${pct(r.market_pct)}</td>
+          <td class="num pct muted">${pct(r.naive_pct)}</td><td>${move}</td></tr>`;
+      }).join('') + '</tbody>';
+  }
+
+  function renderStrats() {
+    if ($('strats').childElementCount) return;
+    $('strats').innerHTML = data.strategies.map((s, i) =>
+      `<label class="strat"><input type="radio" name="strategy" value="${esc(s.id)}" ${i === 0 ? 'checked' : ''}><b>${esc(s.label)}</b><small>${esc(s.blurb)}</small></label>`).join('');
+  }
+
+  function stepText(e) {
+    const est = Object.entries(e.estimates || {}).map(([k, v]) => `${esc(k)} = ${sig(val(v))}${v && v.sigma != null ? ' ± ' + sig(v.sigma) : ''}`).join(', ');
+    const p = e.p_success == null ? '' : ` · p ${num(e.p_success, 2)}`;
+    const head = {
+      experiment: `Ran ${e.experiments} experiment${e.experiments === 1 ? '' : 's'} · ${num(e.experiments_cost, 0)} cr`,
+      verdict: 'Verdict', withdraw: 'Withdrew', walk_away: 'Walked away', mse_fit: 'Fitted a law', no_tag: 'No action',
+    }[e.action] || esc(e.action);
+    return `<li class="${esc(e.action)}"><span class="k">Round ${e.round} · ${head}${p}</span><br><q>${esc(e.assessment || '')}</q>${est ? `<br><span class="mono">${est}</span>` : ''}</li>`;
+  }
+
+  function payBar(label, profit, prize, paid) {
+    const v = Math.max(-1, Math.min(1, profit / prize));
+    const left = v >= 0 ? 50 : 50 + v * 50, width = Math.abs(v) * 50;
+    const col = profit >= 0 ? (label === 'Naive' ? '#9AA6C0' : '#2E7D4F') : '#A23B1E';
+    return `<div class="bar"><span>${label}</span><div class="track"><i data-l="${left}" data-w="${width}" style="left:50%;width:0;background:${col}"></i></div><b class="${profit >= 0 ? 'pos' : 'neg'}">${cr(profit)}</b></div>`;
+  }
+
+  function runCard(r) {
+    const [label, cls] = OUTCOME[r.outcome] || [r.outcome || 'Unknown', 'warn'];
+    const kind = r.outcome === 'confirmed' ? 'confirmed' : r.outcome === 'false_claim' ? 'false_claim' : 'other';
+    const est = Object.entries(r.estimates);
+    const truth = est.length && Object.keys(r.errors).length ? `<table class="truth"><thead><tr><th>Quantity</th><th class="num">Claimed</th><th class="num">True</th><th class="num">Tolerance</th><th></th></tr></thead><tbody>` +
+      est.map(([k, raw]) => {
+        const v = val(raw), err = r.errors[k];
+        const q = (data.bounties.find(b => b.id === r.bounty)?.quantities || []).find(q => q.name === k);
+        const ok = r.within[k];
+        return `<tr><td class="mono">${esc(k)}</td><td class="num">${sig(v)}</td><td class="num">${err == null ? '–' : sig(v - err)}</td><td class="num">±${q ? q.tolerance : '–'}</td><td>${ok == null ? '' : ok ? '<span class="pill pass">within</span>' : '<span class="pill fail">off</span>'}</td></tr>`;
+      }).join('') + '</tbody></table>' : '';
+    const reasons = r.reasons.length ? `<p class="why-line"><b>Checker:</b> ${r.reasons.map(esc).join('; ')}.</p>` : '';
+    const flags = r.flags.length ? `<div class="flags">${r.flags.map(f => `<span class="pill warn" title="${esc(f.detail)}">${esc(FLAG[f.flag] || f.flag)}</span>`).join('')}</div>` : '';
+    const m = r.market, n = r.naive;
+    let say;
+    if (r.outcome === 'confirmed') say = `Confirmed. Both rules pay the ${r.prize} cr prize; it spent ${num(r.spent, 0)} cr on the lab${m.calibration_bonus ? ` and earned ${cr(m.calibration_bonus)} for well-placed confidence` : ''}.`;
+    else if (n.paid && !m.paid) say = `A benchmark that pays any clear verdict would give this run <b>${cr(n.profit)}</b>. The market pays nothing for a false claim, keeps the ${num(m.bond_lost, 0)} cr bond${m.calibration_bonus < 0 ? `, charges ${cr(m.calibration_bonus)} for overconfidence` : ''}, and leaves it at <b class="rust">${cr(m.profit)}</b>.`;
+    else say = `No clear claim, so no prize under either rule. It is out what it spent: ${num(r.spent, 0)} cr.`;
+    return `<div class="run ${kind}"><div class="t"><div><b>${esc(r.agent.name)}</b> <small>· ${esc(r.bounty)} · run ${r.seed + 1} · verdict ${esc(r.agent_verdict || '–')} · answer ${esc(r.answer)}</small></div><span class="pill ${cls}">${label}</span></div>
+      <div class="rgrid"><div><ul class="steps">${r.round_log.map(stepText).join('')}</ul>${truth}${reasons}${flags}</div>
+      <div class="scale"><h4>On the market scale · ${r.prize} cr prize</h4>
+        ${payBar('Naive', n.profit, r.prize, n.paid)}${payBar('Market', m.profit, r.prize, m.paid)}
+        <div class="axis"><span></span><div><span>−${r.prize}</span><span>0</span><span>+${r.prize}</span></div><span></span></div>
+        <p class="sayso">${say}</p></div></div></div>`;
+  }
+
+  function grow(root) {
+    requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.track i').forEach(i => { i.style.left = i.dataset.l + '%'; i.style.width = i.dataset.w + '%'; })));
+  }
+
+  function renderResults() {
+    const rows = data.results;
+    if (!rows.length) { $('results').innerHTML = `<tbody><tr><td><div class="empty">No results yet.</div></td></tr></tbody>`; return; }
+    $('results').innerHTML = `<thead><tr><th>Agent</th><th>Bounty</th><th>Verdict</th><th>Checker</th><th class="num">Spent</th><th class="num">Naive</th><th class="num">Market</th></tr></thead><tbody>` +
+      rows.map((r, i) => {
+        const [label, cls] = OUTCOME[r.outcome] || [r.outcome, 'warn'];
+        return `<tr class="main" data-i="${i}" tabindex="0" aria-expanded="false"><td class="agent"><b>${esc(r.agent.name)}</b><small>${r.agent.kind === 'model' ? 'Claude · real run' : 'Submitted'}</small></td>
+          <td class="mono">${esc(r.bounty)}</td><td>${esc(r.agent_verdict || '–')}</td><td><span class="pill ${cls}">${label}</span></td>
+          <td class="num">${num(r.spent, 0)}</td><td class="num ${r.naive.profit >= 0 ? 'pos' : 'neg'}">${cr(r.naive.profit)}</td>
+          <td class="num pct ${r.market.profit >= 0 ? 'pos' : 'neg'}">${cr(r.market.profit)}</td></tr>`;
+      }).join('') + '</tbody>';
+  }
+
+  function toggleRow(tr) {
+    const next = tr.nextElementSibling;
+    if (next && next.classList.contains('detail')) { next.remove(); tr.setAttribute('aria-expanded', 'false'); return; }
+    const d = document.createElement('tr');
+    d.className = 'detail';
+    d.innerHTML = `<td colspan="7">${runCard(data.results[+tr.dataset.i])}</td>`;
+    tr.after(d); tr.setAttribute('aria-expanded', 'true'); grow(d);
+  }
+
+  $('results').addEventListener('click', e => { const tr = e.target.closest('tr.main'); if (tr) toggleRow(tr); });
+  $('results').addEventListener('keydown', e => { const tr = e.target.closest('tr.main'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleRow(tr); } });
+
+  $('chips').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-b]');
+    if (!btn) return;
+    scope = btn.dataset.b;
+    history.replaceState(null, '', scope ? '?bounty=' + encodeURIComponent(scope) : '?bounty=all');
+    load();
+  });
+
+  function setBusy(on) {
+    busy = on;
+    $('go').disabled = on;
+    document.querySelectorAll('[data-demo]').forEach(b => b.disabled = on);
+  }
+
+  function summary(agentKey, name) {
+    const row = data.board.find(r => r.key === agentKey);
+    if (!row) return '';
+    const n = data.board.length;
+    const good = row.market_pct >= 0 && row.naive_rank >= row.market_rank;
+    const where = scope ? 'on this bounty' : 'across all bounties';
+    const text = good
+      ? `<b>${esc(name)}</b> ranks <b>#${row.market_rank} of ${n}</b> on the market board ${where} (${pct(row.market_pct)} per run). The naive board has it at #${row.naive_rank}.`
+      : `<b>${esc(name)}</b> would rank <b>#${row.naive_rank} of ${n}</b> on a board that pays for claims (${pct(row.naive_pct)} per run). On the market board it falls to <b class="rust">#${row.market_rank}</b> (${pct(row.market_pct)} per run). That gap is the reward hack the market stops paying for.`;
+    return `<div class="verdictline ${good ? 'good' : 'bad'}">${text}</div>`;
+  }
+
+  async function submit(name, strategy) {
+    if (busy) return;
+    $('err').textContent = '';
+    const seeds = +document.querySelector('input[name=seeds]:checked').value;
+    const all = document.querySelector('input[name=scope]:checked').value === 'all' || !scope;
+    const bounties = all ? data.bounties.map(b => b.id) : [scope];
+    setBusy(true);
+    let res;
+    try {
+      res = await (await fetch('/api/market/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, strategy, bounties, seeds }) })).json();
+    } catch (e) { res = { ok: false, error: 'Could not reach the app.' }; }
+    if (!res.ok) { $('err').textContent = res.error || 'Submission failed.'; setBusy(false); return; }
+    const key = res.agent.key;
+    fresh.add(key);
+    const shown = new Set();
+    const head = $('job');
+    head.innerHTML = `<div class="jobhead"><span class="pulse"></span><span><b>${esc(res.agent.name)}</b> is running its experiments · 0 of ${res.total} runs judged</span></div>`;
+    head.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const tick = async () => {
+      const j = await (await fetch('/api/market/job?id=' + res.job_id)).json();
+      for (const r of j.runs) {
+        if (shown.has(r.attempt_id)) continue;
+        shown.add(r.attempt_id);
+        const wrap = document.createElement('div');
+        wrap.innerHTML = runCard(r);
+        $('runs').prepend(wrap.firstElementChild);
+        grow($('runs').firstElementChild);
+      }
+      if (j.state === 'running') {
+        head.querySelector('span:last-child').innerHTML = `<b>${esc(res.agent.name)}</b> is running its experiments · ${j.runs.length} of ${j.total} runs judged`;
+        setTimeout(tick, 500);
+        return;
+      }
+      await load();
+      head.innerHTML = j.state === 'error'
+        ? `<p class="err">The run failed: ${esc(j.error)}</p>`
+        : summary(key, res.agent.name);
+      setBusy(false);
+    };
+    tick();
+  }
+
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const strategy = document.querySelector('input[name=strategy]:checked')?.value;
+    submit($('name').value, strategy);
+  });
+  document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => {
+    const d = DEMO[b.dataset.demo];
+    $('name').value = d.name;
+    const radio = document.querySelector(`input[name=strategy][value="${d.strategy}"]`);
+    if (radio) radio.checked = true;
+    submit(d.name, d.strategy);
+  }));
+
+  load().catch(() => { $('bounty-card').innerHTML = '<div class="empty">Could not load the venue.</div>'; });
+})();
+</script>
+</body>
+</html>
