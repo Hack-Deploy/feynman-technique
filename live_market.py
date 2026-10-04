@@ -156,12 +156,15 @@ def _run_row(record: AttemptRecord) -> dict:
     }
 
 
+def _is_real(record: AttemptRecord) -> bool:
+    """Played by a real model: not a baseline, the fake LLM or a scripted stand-in."""
+    return not (record.solver.startswith(("baseline:", "scripted")) or record.solver == "fake")
+
+
 def runs() -> dict:
-    live_records = _records(C.ATTEMPTS_PATH)
-    demo_records = _records(DEMO_PATH)
+    live_records = [record for record in _records(C.ATTEMPTS_PATH) if _is_real(record)]
     return {
         "live": [_run_row(record) for record in live_records],
-        "demo": [_run_row(record) for record in demo_records],
         "summary": poc_report.summarise(live_records) or {},
     }
 
@@ -413,10 +416,10 @@ def recorded() -> dict:
     settings = spend.load_settings()
     real_entries = live_cache.load(live_cache.RUNS_PATH)
     scripted_entries = live_cache.load(live_cache.SCRIPTED_PATH)
-    shown = real_entries if real_entries else scripted_entries
+    shown = real_entries
     real_count = len(real_entries)
     scripted_count = len(scripted_entries)
-    source = "real" if real_entries else "scripted" if scripted_entries else "none"
+    source = "real" if real_entries else "none"
     rows = []
     for entry in shown:
         record = AttemptRecord.from_dict(entry["record"])
@@ -443,7 +446,7 @@ def recorded() -> dict:
 
 
 def recorded_run(attempt_id: str) -> dict | None:
-    for path in (live_cache.RUNS_PATH, live_cache.SCRIPTED_PATH):
+    for path in (live_cache.RUNS_PATH,):
         for entry in live_cache.load(path):
             record = AttemptRecord.from_dict(entry["record"])
             if record.attempt_id != attempt_id:

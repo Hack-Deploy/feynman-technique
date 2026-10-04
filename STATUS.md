@@ -696,3 +696,13 @@ unchanged. Tab 04 and the separate /experiments page are gone (route now 404s; t
 The CSS is scoped (`.rr`, `.learn`, `.lverdict`, so `.round.verdict` cards are not hidden) and the
 scripts run in one IIFE. Both animations start when scrolled into view. Checked in a headless
 browser at 1280 and 390 px: three tabs, no page errors, no overflow from the new parts.
+
+## 2026-10-04 · /live lists real-model runs only
+
+`live_market.runs()` now drops baseline, fake-LLM and scripted runs (`_is_real`), so the
+public record and its "Leaderboard (real models)" show only the 8 real pilot runs (they used to
+sit beside 120 baseline, 24 fake and 3 scripted runs). The scripted-demo table is gone, and
+`recorded()` / `recorded_run()` no longer fall back to the scripted stand-in grid. Section 3 now
+says no real grid has been recorded yet. Nothing was deleted from the attempt stores; this is
+display only, and the market's public ledger (what models see) is unchanged. Tests updated:
+701 passed.

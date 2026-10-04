@@ -259,6 +259,7 @@
   <h2>Replay runs that were already played.</h2>
   <p class="sub">Every model got the same claims, the same prices and the same spending cap. Replays read saved results from this machine; nothing is sent to an AI model.</p>
   <div id="recBanner"><p class="wait">Loading…</p></div>
+  <div id="recBody">
   <h3 style="margin-top:22px">How the models compare</h3>
   <div class="cmp">
     <div id="recCompare"></div>
@@ -267,6 +268,7 @@
   </div>
   <h3 style="margin-top:26px">Pick a run to replay</h3>
   <div id="recRuns"></div>
+  </div>
   <div id="replay" style="display:none">
     <h3 id="repTitle" style="margin-top:26px"></h3>
     <div class="controls" style="margin-top:10px"><button class="btn sm" id="repPlay">Replay round by round</button><button class="btn ghost sm" id="repAll">Show all rounds</button></div>
@@ -292,7 +294,7 @@
 <section id="record">
   <p class="label rust">4 · The public record</p>
   <h2>Every run is kept, especially the failures.</h2>
-  <p class="sub">The next model sees the failed runs for its claim before it bids. Below: live runs with real models, then scripted demo runs.</p>
+  <p class="sub">The next model sees the failed runs for its claim before it bids. Below: runs played by real models only.</p>
   <div id="leader"></div>
   <div id="runs"><p class="wait">Loading…</p></div>
 </section>
@@ -424,7 +426,7 @@ async function loadRuns() {
   const names = Object.keys(m);
   $("#leader").innerHTML = names.length ? `<h3 style="margin-top:18px">Leaderboard (real models)</h3><table><tr><th>Model</th><th class="num">Runs</th><th class="num">Correct</th><th class="num">Calibration error (Brier, lower is better)</th><th class="num">Spent</th><th class="num">Profit</th></tr>` +
     names.map(k => `<tr><td>${esc(k)}</td><td class="num">${m[k].runs}</td><td class="num">${m[k].correct_verdicts}</td><td class="num">${m[k].brier_final_p ?? "–"}</td><td class="num">${n0(m[k].spent)}</td><td class="num">${n0(m[k].profit)}</td></tr>`).join("") + "</table>" : "";
-  $("#runs").innerHTML = runsTable(d.live || [], "Real-model runs") + runsTable(d.demo || [], "Scripted demo runs");
+  $("#runs").innerHTML = runsTable(d.live || [], "Real-model runs");
 }
 
 const COLORS = ["#1B3F8B", "#2E7D4F", "#A23B1E", "#B7791F", "#6B6B67", "#3D63B5"];
@@ -450,9 +452,11 @@ function calChart(cmp) {
 function renderRecorded(d) {
   REC = d;
   const real = d.source === "real";
-  $("#recBanner").innerHTML = d.source === "none" ? `<div class="banner scripted">No recorded runs yet.</div>` : real
-    ? `<div class="banner real"><span class="pill pass">real runs</span> ${d.real_count} runs played by real Claude models and saved on this machine. Model prices from Anthropic, checked ${esc(d.prices_checked)}.${d.scripted_count ? ` (${d.scripted_count} scripted demo runs are hidden.)` : ""}</div>`
-    : `<div class="banner scripted"><span class="pill warn">scripted demo · not real models</span> No real runs have been recorded yet, so this shows ${d.scripted_count} runs by pre-written stand-ins, one per model slot. They only show how the view works and say nothing about the real models. API cost is $0 because no model was called.</div>`;
+  $("#recBanner").innerHTML = real
+    ? `<div class="banner real"><span class="pill pass">real runs</span> ${d.real_count} runs played by real Claude models and saved on this machine. Model prices from Anthropic, checked ${esc(d.prices_checked)}.</div>`
+    : `<p class="wait">No full grid of real runs has been recorded yet. The real pilot runs are listed in the public record below.</p>`;
+  $("#recBody").hidden = !real;
+  if (!real) return;
   const cmp = d.comparison || [];
   $("#recCompare").innerHTML = `<table><tr><th>Model</th><th class="num">Runs</th><th class="num">Won</th><th class="num">Win rate</th><th class="num">Profit (credits)</th><th class="num">API cost</th><th class="num">Brier score</th></tr>` +
     cmp.map((m, i) => `<tr><td><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${esc(m.label)}</td><td class="num">${m.runs}</td><td class="num">${m.wins}</td><td class="num">${pct(m.win_rate)}</td>

@@ -595,13 +595,11 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
     status, body = _request(f"{app_server}/api/live/recorded")
     assert status == 200
     scripted = json.loads(body)
-    assert scripted["source"] == "scripted"
-    assert len(scripted["comparison"]) == 4
-    assert len(scripted["runs"]) == 4
-    for row, entry in zip(scripted["comparison"], scripted_entries):
-        record = AttemptRecord.from_dict(entry["record"])
-        expected = report.summarise([record])["models"][record.solver]["brier_final_p"]
-        assert row["brier"] == expected
+    assert scripted["source"] == "none"  # scripted stand-ins are never listed
+    assert scripted["scripted_count"] == 4
+    assert scripted["runs"] == []
+    scripted_id = scripted_entries[0]["record"]["attempt_id"]
+    assert _request(f"{app_server}/api/live/recorded/run?id={scripted_id}")[0] == 404
 
     real_entry = _resolved_entry(
         settings.models[0].id,
@@ -617,6 +615,9 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
     assert real["real_count"] == 1
     assert real["scripted_count"] == 4
     assert len(real["runs"]) == 1
+    record = AttemptRecord.from_dict(real_entry["record"])
+    row = next(r for r in real["comparison"] if r["runs"])
+    assert row["brier"] == report.summarise([record])["models"][record.solver]["brier_final_p"]
 
     attempt_id = real_entry["record"]["attempt_id"]
     status, body = _request(

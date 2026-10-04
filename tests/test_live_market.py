@@ -227,7 +227,9 @@ def test_scripted_http_run_and_seed_increment(app_server):
     status, _, body = _request(f"{app_server}/api/live/runs")
     assert status == 200
     records = json.loads(body)
-    assert len(records["demo"]) == 2
+    assert "demo" not in records  # scripted runs are kept on disk but not listed
+    assert len(AttemptStore(live_market.DEMO_PATH).load()) == 2
+    assert all(row["model"] != "scripted-demo" for row in records["live"])
     assert records["summary"] == live_market.runs()["summary"]
 
 
