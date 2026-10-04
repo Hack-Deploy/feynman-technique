@@ -799,3 +799,14 @@ toggle between them. Checked in a headless browser at 1280 and 390 px: no page e
   (only the missing favicon).
 - Check: `uv run pytest -q tests/test_marketplace.py tests/test_repo_agent.py` passed (no Python
   changed).
+
+## 2026-10-04 · A second recorded run: Opus 5.5 on fractional-2d-gravity
+
+One paid run (Opus 5.5, seed 1, up to 12 rounds, cap $11; actual $0.20, cumulative spend now
+$1.58), in `attempts/poc_dp_opus_loop.jsonl`. Harder than inverse-square: the true pull is about
+3x weaker (a3 = 0.018 against the same noise), so readings are noisy (one is negative). It still
+got there: refuted in 3 rounds with n = 2.0 ± 0.35 (true 2.00, window ±0.59), confirmed; naive
++35, market +40. `poc.animate --learning` now writes every recorded power-law run (the last per
+claim) as `{"runs": [...]}`. /live section 2 has one button per recorded run; the pull axis
+scales to each run's true law and readings, and the claim label (1/r, 1/r²) comes from the run.
+756 passed.

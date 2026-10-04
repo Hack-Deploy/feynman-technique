@@ -172,7 +172,7 @@
   <h2 id="watchTitle">Round by round.</h2>
   <p class="sub" id="watchLead"></p>
   <div class="viewbar">
-    <span class="mode" id="view"><button data-v="replay" class="on" id="vReplay">Recorded run</button><button data-v="live" id="vLive" disabled>Your market</button></span>
+    <span class="mode" id="view"><span id="vRuns"><button data-v="replay" data-run="0" class="on">Recorded run</button></span><button data-v="live" id="vLive" disabled>Your market</button></span>
   </div>
   <div id="claim"></div>
   <div class="kv row">
@@ -189,7 +189,7 @@
         <span><i class="dot"></i>Readings from its experiments</span>
         <span><i style="border-color:#B7791F"></i>Its current guess</span>
         <span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>True law (hidden from the model)</span>
-        <span><i style="border-color:#3D63B5;border-top-style:dotted"></i>The hypothesis, 1/r²</span>
+        <span><i style="border-color:#3D63B5;border-top-style:dotted"></i>The hypothesis, <span id="lClaimLaw">1/r²</span></span>
       </div>
     </figure>
     <div class="lside">
@@ -276,13 +276,13 @@ const n0 = v => v == null ? "–" : (Math.round(v * 10) / 10).toString();
 const ACTION = {experiment: "bought an experiment", mse_fit: "fitted a formula to its data", verdict: "gave its verdict",
   walk_away: "walked away", withdraw: "withdrew", no_tag: "reply had no action"};
 const OUTCOME = {verdict: "verdict", walked_away: "walked away", withdrawn: "withdrew", out_of_rounds: "ran out of rounds"};
-let INFO = null, MODE = "demo", POLL = null, VIEW = "replay", CLAIM = {}, REPLAY_CLAIM = null;
+let INFO = null, MODE = "demo", POLL = null, VIEW = "replay", CLAIM = {}, REPLAY_CLAIM = null, RUN_IX = 0;
 
 // section 2: one view at a time, the recorded run or the market you started
 function showView(v) {
   VIEW = v;
   $("#learn").hidden = v !== "replay"; $("#liveView").hidden = v !== "live";
-  document.querySelectorAll("#view button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  document.querySelectorAll("#view button").forEach(b => b.classList.toggle("on", b.dataset.v === v && (b.dataset.run == null || +b.dataset.run === RUN_IX)));
   if (v === "replay" && REPLAY_CLAIM) renderClaim(REPLAY_CLAIM);
   if (v === "replay" && window.replayRender) window.replayRender();
   if (v === "live") renderClaim(CLAIM);
@@ -523,7 +523,8 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 (() => {
   const GOLD = "#B7791F", GREEN = "#2E7D4F", BLUE = "#3D63B5", DOT = "#1B3F8B";
   const R_DUR = 3.4, TWEEN = 0.9, DOT_AT = 1.1, DOT_GAP = 0.35, CHECK_DUR = 3;
-  const CW = 640, CH = 380, ML = 58, MR = 16, MT = 14, MB = 44, RMIN = 1.5, RMAX = 7, AMAX = 0.16;
+  const CW = 640, CH = 380, ML = 58, MR = 16, MT = 14, MB = 44, RMIN = 1.5, RMAX = 7;
+  let AMAX = 0.16, ASTEP = 0.05;
   const X = r => ML + (r - RMIN) / (RMAX - RMIN) * (CW - ML - MR);
   const Y = a => CH - MB - a / AMAX * (CH - MB - MT);
   const NW = 320, NH = 170, NL = 36, NR = 12, NT = 12, NB = 26, NMIN = 0.4, NMAX = 2.6;
@@ -531,6 +532,7 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let L = null, guesses = [], T = 0, playing = false, last = null, total = 0, started = false;
 
   const law = (g, r) => g.a3 * Math.pow(3 / r, g.n);
+  const claimLaw = () => !L ? "1/r²" : L.expected.n === 2 ? "1/r²" : L.expected.n === 1 ? "1/r" : `1/r^${fmt(L.expected.n, 2)}`;
   const path = g => {
     let d = "";
     for (let r = RMIN; r <= RMAX + 1e-9; r += 0.05) d += `${d ? "L" : "M"}${X(r).toFixed(1)},${Y(Math.min(law(g, r), AMAX * 3)).toFixed(1)}`;
@@ -543,7 +545,7 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   function axes() {
     let g = `<defs><clipPath id="lclip"><rect x="${ML}" y="${MT}" width="${CW - ML - MR}" height="${CH - MT - MB}"/></clipPath></defs>`;
     for (let r = 2; r <= RMAX; r++) g += `<line x1="${X(r)}" x2="${X(r)}" y1="${MT}" y2="${CH - MB}" stroke="#E6E6E2"/><text x="${X(r)}" y="${CH - MB + 18}" font-size="12" fill="#6B6B67" text-anchor="middle">${r}</text>`;
-    for (const a of [0, 0.05, 0.1, 0.15]) g += `<line x1="${ML}" x2="${CW - MR}" y1="${Y(a)}" y2="${Y(a)}" stroke="#E6E6E2"/><text x="${ML - 8}" y="${Y(a) + 4}" font-size="12" fill="#6B6B67" text-anchor="end">${a.toFixed(2)}</text>`;
+    for (let a = 0; a <= AMAX + 1e-9; a += ASTEP) g += `<line x1="${ML}" x2="${CW - MR}" y1="${Y(a)}" y2="${Y(a)}" stroke="#E6E6E2"/><text x="${ML - 8}" y="${Y(a) + 4}" font-size="12" fill="#6B6B67" text-anchor="end">${+a.toFixed(4)}</text>`;
     g += `<text x="${(ML + CW - MR) / 2}" y="${CH - 6}" font-size="12" fill="#6B6B67" text-anchor="middle">distance from the source, r</text>`;
     g += `<text transform="translate(14 ${(MT + CH - MB) / 2}) rotate(-90)" font-size="12" fill="#6B6B67" text-anchor="middle">pull on the probe</text>`;
     return g;
@@ -551,12 +553,12 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function nAxes() {
     const N = L.rounds.length, nx = i => NL + (N > 1 ? i / (N - 1) : .5) * (NW - NL - NR - 8) + 4, ny = n => NH - NB - (n - NMIN) / (NMAX - NMIN) * (NH - NB - NT);
-    const t = L.true.n, tol = L.tolerance.n;
+    const t = L.true.n, tol = L.tolerance.n, below = L.expected.n < t;  // labels go on the free side
     let g = `<rect x="${NL}" y="${ny(t + tol)}" width="${NW - NL - NR}" height="${ny(t - tol) - ny(t + tol)}" fill="${GREEN}" opacity=".13"/>`;
     g += `<line x1="${NL}" x2="${NW - NR}" y1="${ny(t)}" y2="${ny(t)}" stroke="${GREEN}" stroke-dasharray="5 4" stroke-width="1.5"/>`;
-    g += `<text x="${NW - NR}" y="${ny(t - tol) + 13}" font-size="11" fill="${GREEN}" text-anchor="end">checker accepts ${fmt(t - tol, 2)}–${fmt(t + tol, 2)}</text>`;
+    g += `<text x="${NW - NR}" y="${below ? ny(t + tol) + 13 : ny(t - tol) + 13}" font-size="11" fill="${GREEN}" text-anchor="end">checker accepts ${fmt(t - tol, 2)}–${fmt(t + tol, 2)}</text>`;
     g += `<line x1="${NL}" x2="${NW - NR}" y1="${ny(L.expected.n)}" y2="${ny(L.expected.n)}" stroke="${BLUE}" stroke-dasharray="1 4" stroke-width="2"/>`;
-    g += `<text x="${NW - NR}" y="${ny(L.expected.n) - 6}" font-size="11" fill="${BLUE}" text-anchor="end">1/r² hypothesis</text>`;
+    g += `<text x="${NW - NR}" y="${ny(L.expected.n) + (below ? 14 : -6)}" font-size="11" fill="${BLUE}" text-anchor="end">${claimLaw()} hypothesis</text>`;
     for (const n of [0.5, 1, 1.5, 2, 2.5]) g += `<text x="${NL - 8}" y="${ny(n) + 4}" font-size="11" fill="#6B6B67" text-anchor="end">${n}</text>`;
     L.rounds.forEach((rd, i) => g += `<text x="${nx(i)}" y="${NH - 8}" font-size="11" fill="#6B6B67" text-anchor="middle">R${rd.round}</text>`);
     g += `<text x="6" y="${NT + 4}" font-size="11" fill="#6B6B67">n</text>`;
@@ -635,18 +637,18 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let g = `<line x1="8" x2="${W - 8}" y1="26" y2="26" stroke="#DADAD6"/>`;
     for (const n of [0.5, 1, 1.5, 2, 2.5]) g += `<line x1="${x(n)}" x2="${x(n)}" y1="24" y2="28" stroke="#DADAD6"/><text x="${x(n)}" y="38" font-size="10" fill="#6B6B67" text-anchor="middle">${n}</text>`;
     if (showTrue) g += `<rect x="${x(L.true.n - L.tolerance.n)}" y="6" width="${x(L.true.n + L.tolerance.n) - x(L.true.n - L.tolerance.n)}" height="20" fill="${GREEN}" opacity=".16"/>`;
-    g += `<line x1="${x(c)}" x2="${x(c)}" y1="2" y2="26" stroke="${BLUE}" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><text x="${x(c) + 4}" y="9" font-size="10" fill="${BLUE}">1/r²</text>`;
+    g += `<line x1="${x(c)}" x2="${x(c)}" y1="2" y2="26" stroke="${BLUE}" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><text x="${x(c) + 4}" y="9" font-size="10" fill="${BLUE}">${claimLaw()}</text>`;
     if (e) {
       if (e.sigma) g += `<line x1="${x(e.value - e.sigma)}" x2="${x(e.value + e.sigma)}" y1="17" y2="17" stroke="${GOLD}" stroke-width="3" stroke-linecap="round" opacity=".55"/>`;
       g += `<circle cx="${x(e.value)}" cy="17" r="5" fill="${GOLD}" stroke="#fff" stroke-width="1.5"/>`;
     }
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Its estimate of n with its error bar, against the 1/r² claim">${g}</svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Its estimate of n with its error bar, against the ${claimLaw()} claim">${g}</svg>`;
   }
   function stance(e) {
     if (!e || !e.sigma) return "";
     const off = Math.abs(e.value - L.expected.n) / e.sigma;
-    return off <= 1 ? `<p class="stance" style="color:var(--navy)">1/r² still inside its error bar</p>`
-      : `<p class="stance" style="color:var(--rust)">1/r² outside its error bar (${fmt(off, 2)}σ away)</p>`;
+    return off <= 1 ? `<p class="stance" style="color:var(--navy)">${claimLaw()} still inside its error bar</p>`
+      : `<p class="stance" style="color:var(--rust)">${claimLaw()} outside its error bar (${fmt(off, 2)}σ away)</p>`;
   }
   function renderTrail(at) {
     trailAt = at;
@@ -696,18 +698,33 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const li = e.target.closest("[data-i]"); if (li && L) jump(li.dataset.i);
   });
 
-  fetch("/web/data/learning.json").then(r => r.ok ? r.json() : Promise.reject(new Error(r.status))).then(d => {
-    L = d;
+  let RUNS = [];
+  function pick(k) {
+    const d = RUNS[k]; if (!d) return;
+    RUN_IX = k; L = d; trailAt = null;
     let g = null;
     guesses = d.rounds.map(rd => (rd.estimates.n && rd.estimates.a3) ? (g = {n: rd.estimates.n.value, a3: rd.estimates.a3.value}) : g);
     total = d.rounds.length * R_DUR + CHECK_DUR;
-    $("#watchLead").innerHTML = `A recorded real run. ${esc(d.agent)} had up to ${d.max_rounds} rounds. Each round it states its current guess for the law, then buys experiments and sees what comes back. It stopped after ${d.rounds.length} rounds, once the data had pinned the answer. Start a market above to watch a new run here.`;
-    $("#vReplay").textContent = `Recorded run · ${d.agent}`;
+    // pull axis: room for the true law and the readings (not a wild first guess), in round steps
+    const t2 = law(d.true, 2), reads = d.rounds.flatMap(rd => rd.points.map(p => p.a)).filter(a => a > 0 && a < 3 * t2);
+    const top = 1.4 * Math.max(t2, ...reads);
+    const raw = top / 3, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    ASTEP = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw); AMAX = ASTEP * Math.ceil(top / ASTEP);
+    $("#lClaimLaw").textContent = claimLaw();
+    const ok = d.outcome === "confirmed";
+    $("#watchLead").innerHTML = `A recorded real run. ${esc(d.agent)} had up to ${d.max_rounds} rounds. Each round it states its current guess for the law, then buys experiments and sees what comes back. It stopped after ${d.rounds.length} rounds${ok ? ", once the data had pinned the answer" : "; the checker did not accept its answer"}. Start a market above to watch a new run here.`;
     REPLAY_CLAIM = {id: d.hypothesis_id, hypothesis: d.hypothesis, prize: d.prize, model: `${d.agent} · seed ${d.seed}`, answer: null};
-    if (VIEW === "replay") renderClaim(REPLAY_CLAIM);
     $("#lSteps").innerHTML = d.rounds.map((rd, i) => `<button data-i="${i}">Round ${rd.round}</button>`).join("") + `<button data-i="${d.rounds.length}">Checker</button>`;
-    if (REDUCED) T = total;
-    render(); requestAnimationFrame(tick);
+    T = REDUCED ? total : 0;
+    showView("replay");
+    render();
+    if (started && !REDUCED) play();
+  }
+  fetch("/web/data/learning.json").then(r => r.ok ? r.json() : Promise.reject(new Error(r.status))).then(d => {
+    RUNS = d.runs || [d];
+    $("#vRuns").innerHTML = RUNS.map((r, k) => `<button data-v="replay" data-run="${k}">${esc(r.agent)} · ${esc(r.hypothesis_id)}</button>`).join("");
+    $("#vRuns").addEventListener("click", e => { const b = e.target.closest("[data-run]"); if (b) pick(+b.dataset.run); });
+    pick(0); requestAnimationFrame(tick);
     new IntersectionObserver((es, o) => { if (es[0].isIntersecting && !started && !REDUCED) { started = true; play(); o.disconnect(); } }, {threshold: .35}).observe($("#learn"));
   }).catch(() => { $("#view").hidden = true; $("#vLive").disabled = false; showView("live"); });
 })();

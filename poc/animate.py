@@ -209,10 +209,13 @@ def main(argv: list[str] | None = None) -> None:
                 and cfg.hypothesis(r.extra["hypothesis_id"]).world in POWER_LAW]
         if not recs:
             raise SystemExit(f"no real-model power-law run in {args.learning}")
+        latest = {r.extra["hypothesis_id"]: r for r in recs}  # the last run per claim
+        chosen = [latest[h.id] for h in cfg.hypotheses if h.id in latest]
         out = LEARNING_OUT
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(learning(recs[-1], cfg), separators=(",", ":"), allow_nan=False))
-        print(f"{recs[-1].solver} on {recs[-1].extra['hypothesis_id']} -> {out}")
+        out.write_text(json.dumps({"runs": [learning(r, cfg) for r in chosen]},
+                                  separators=(",", ":"), allow_nan=False))
+        print(", ".join(f"{r.solver} on {r.extra['hypothesis_id']}" for r in chosen), f"-> {out}")
         return
     record = hook_record(AttemptStore(args.store).load(lambda r: r.protocol == C.PROTOCOL), cfg)
     if record is None:
