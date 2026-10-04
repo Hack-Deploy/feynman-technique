@@ -5,10 +5,12 @@ No API calls (scripted LLM) and no simulator (stub executor)."""
 from __future__ import annotations
 
 import ast
+from copy import deepcopy
 import dataclasses
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from dm.types import SubmittedAttempt
@@ -45,6 +47,24 @@ class StubExecutor:
     def run(self, exps):
         self.calls.append(exps)
         return [{"pos2": [[3.0, 0.0]] * len(e["measurement_times"])} for e in exps]
+
+
+class FixedResultExecutor:
+    def __init__(self, output):
+        self.output = output
+
+    def run(self, exp_input):
+        return deepcopy(self.output)
+
+
+def make_metered_executor(inner, cfg=CFG, noise_seed=0):
+    from poc.agent import MeteredExecutor
+
+    account = Account(agent="m", hypothesis=HYP.id, budget=cfg.budget)
+    executor = MeteredExecutor(
+        inner, cfg, HYP, account, cfg.velocity_noise_std, noise_seed
+    )
+    return executor, account
 
 
 def make_agent(replies, cfg=CFG, ledger=(), on_round=None, buy_record_first=False):
@@ -88,6 +108,17 @@ def test_ledger_read_fee_defaults_and_rejects_negative(tmp_path):
     path.write_text(original.replace("read_fee: 30", "read_fee: -1"))
     with pytest.raises(ValueError, match="ledger.read_fee must be a finite number >= 0"):
         C.load(path)
+
+
+def test_velocity_noise_config_defaults_to_zero_and_loads_from_real_config(tmp_path):
+    assert CFG.velocity_noise_std == pytest.approx(0.05)
+    original = C.CONFIG_PATH.read_text()
+    path = tmp_path / "without-velocity-noise.yaml"
+    path.write_text("\n".join(
+        line for line in original.splitlines()
+        if not line.strip().startswith("velocity_noise_std:")
+    ))
+    assert C.load(path).velocity_noise_std == 0.0
 
 
 def test_experiment_price_itemised():
@@ -137,7 +168,129 @@ def test_prompt_shows_hypothesis_criteria_prize_costs_not_answer():
     assert f"{HYP.prize:g} credits" in block and "per measurement time" in block
     assert "any public-record fee included" in block
     assert "<buy_record/>" in block
+    assert "each observed position has independent Gaussian noise σ = 0.075" in block
+    assert "each observed velocity has independent Gaussian noise σ = 0.05" in block
+    assert (
+        "Results can be inconclusive. You may repeat any experiment (identical input, "
+        "in the same or a later round) to get a fresh, independent noisy reading; "
+        "each repeat is charged at the full price."
+    ) in block
     assert "answer" not in block.lower()
+
+
+def test_prompt_omits_zero_velocity_noise_and_repeat_option_without_noise():
+    position_only = protocol.market_block(
+        dataclasses.replace(CFG, velocity_noise_std=0.0), HYP
+    )
+    assert "each observed position has independent Gaussian noise σ = 0.075" in position_only
+    assert "each observed velocity has independent Gaussian noise" not in position_only
+    assert "You may repeat any experiment" in position_only
+
+    no_noise = protocol.market_block(
+        dataclasses.replace(CFG, noise_std=0.0, velocity_noise_std=0.0), HYP
+    )
+    assert "You may repeat any experiment" not in no_noise
+
+
+def test_metered_executor_zero_velocity_noise_returns_results_unchanged():
+    expected = [
+        {
+            "pos1": [[1.0, 2.0]],
+            "pos2": [[3.0, 4.0]],
+            "velocity1": [[0.1, 0.2]],
+            "velocity2": [[0.3, 0.4]],
+            "velocities": [[[0.5, 0.6]]],
+            "background_initial_velocities": [[7.0, 8.0]],
+        },
+        {"error": "experiment failed"},
+        "not a result object",
+    ]
+    cfg = dataclasses.replace(CFG, velocity_noise_std=0.0)
+    inner = FixedResultExecutor(expected)
+    metered, _ = make_metered_executor(inner, cfg)
+    rng_state = deepcopy(metered._vel_rng.bit_generator.state)
+
+    actual = metered.run([EXP])
+
+    assert actual == expected
+    assert inner.output == expected
+    assert metered._vel_rng.bit_generator.state == rng_state
+
+
+def test_metered_executor_velocity_noise_is_seeded_and_leaves_other_fields_alone():
+    expected = [
+        {
+            "pos1": [[1.0, 2.0]],
+            "pos2": [[3.0, 4.0]],
+            "positions": [[[5.0, 6.0]]],
+            "velocity1": [[0.1, 0.2]],
+            "velocity2": [[0.3, 0.4]],
+            "velocities": [[[0.5, 0.6]]],
+            "background_initial_velocities": [[7.0, 8.0]],
+            "error": None,
+        },
+        {"error": "experiment failed"},
+        "not a result object",
+    ]
+
+    def run(seed):
+        metered, _ = make_metered_executor(FixedResultExecutor(expected), noise_seed=seed)
+        return metered.run([EXP])
+
+    first = run(42)
+    repeated = run(42)
+    different_seed = run(43)
+
+    assert first == repeated
+    assert first != different_seed
+    for key in ("velocity1", "velocity2", "velocities"):
+        assert first[0][key] != expected[0][key]
+    for key in ("pos1", "pos2", "positions", "background_initial_velocities", "error"):
+        assert first[0][key] == expected[0][key]
+    assert first[1:] == expected[1:]
+
+
+def test_repeated_experiments_in_one_batch_get_fresh_readings_and_full_price():
+    from poc.agent import MeteredExecutor
+    from scienceagent.worlds import get_world
+
+    seed = 18
+    world = get_world(
+        HYP.world, engine=C.ENGINE, noise_std=CFG.noise_std, noise_seed=seed
+    )
+    account = Account(agent="m", hypothesis=HYP.id, budget=CFG.budget)
+    metered = MeteredExecutor(
+        world["executor"], CFG, HYP, account, CFG.velocity_noise_std, seed
+    )
+
+    results = metered.run([deepcopy(EXP), deepcopy(EXP)])
+
+    assert not np.array_equal(results[0]["pos2"], results[1]["pos2"])
+    assert not np.array_equal(results[0]["velocity2"], results[1]["velocity2"])
+    price, _ = experiment_price(EXP, CFG, HYP)
+    assert account.spent == pytest.approx(2 * price)
+
+
+def test_repeated_experiment_across_calls_gets_fresh_readings_and_full_price():
+    from poc.agent import MeteredExecutor
+    from scienceagent.worlds import get_world
+
+    seed = 19
+    world = get_world(
+        HYP.world, engine=C.ENGINE, noise_std=CFG.noise_std, noise_seed=seed
+    )
+    account = Account(agent="m", hypothesis=HYP.id, budget=CFG.budget)
+    metered = MeteredExecutor(
+        world["executor"], CFG, HYP, account, CFG.velocity_noise_std, seed
+    )
+
+    first = metered.run([deepcopy(EXP)])[0]
+    second = metered.run([deepcopy(EXP)])[0]
+
+    assert not np.array_equal(first["pos2"], second["pos2"])
+    assert not np.array_equal(first["velocity2"], second["velocity2"])
+    price, _ = experiment_price(EXP, CFG, HYP)
+    assert account.spent == pytest.approx(2 * price)
 
 
 # ------------------------------------------------------------------ agent loop

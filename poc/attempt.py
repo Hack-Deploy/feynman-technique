@@ -95,7 +95,7 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
         cfg=cfg, hyp=hyp, account=account, ledger_entries=ledger_entries, complete=complete,
         on_round=on_round, rule=rule, experiments=experiments,
         model=model, executor=executor, mission=world_spec["mission"],
-        max_tokens=max_tokens, verbose=verbose,
+        max_tokens=max_tokens, verbose=verbose, noise_seed=seed,
         system_prompt_path=_abs_vendor(world_spec["system_prompt"]),
         instructions_path=_abs_vendor(world_spec["instructions"]),
         law_stub=world_spec["law_stub"], experiment_format=world_spec["experiment_format"],
@@ -161,6 +161,7 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
             "experiment_costs": cfg.experiment_costs,
             "max_rounds": cfg.max_rounds,
             "noise_std": cfg.noise_std,
+            "velocity_noise_std": cfg.velocity_noise_std,
             "round_log": log,
             "runs": runs(agent.conversation_log),
             "ledger_seen": [e["id"] for e in ledger_entries] if agent.record_bought else [],
@@ -199,6 +200,7 @@ def prompt_chars(hyp_id: str, cfg: C.Config, ledger_entries: list[dict]) -> int:
         law_stub=world_spec["law_stub"],
         experiment_format=world_spec["experiment_format"],
         trajectory_logger=None,
+        noise_seed=0,
     )
     return (
         len(agent._system)

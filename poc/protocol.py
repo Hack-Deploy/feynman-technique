@@ -159,6 +159,22 @@ def market_block(cfg: Config, h: Hypothesis, rule: str = "market",
                  experiments: bool = True) -> str:
     c = cfg.experiment_costs
     budget = "none" if cfg.budget is None else f"{_fmt(cfg.budget)} credits for this hypothesis"
+    noise_note = (
+        "Measurements are noisy: each observed position has independent Gaussian noise "
+        f"σ = {_fmt(cfg.noise_std)}"
+    )
+    if cfg.velocity_noise_std > 0:
+        noise_note += (
+            " and each observed velocity has independent Gaussian noise "
+            f"σ = {_fmt(cfg.velocity_noise_std)}"
+        )
+    noise_note += "."
+    if cfg.noise_std > 0 or cfg.velocity_noise_std > 0:
+        noise_note += (
+            " Results can be inconclusive. You may repeat any experiment (identical input, in the "
+            "same or a later round) to get a fresh, independent noisy reading; each repeat is "
+            "charged at the full price."
+        )
     if not experiments:
         return f"""## THE BOUNTY (this overrides any conflicting instructions above)
 
@@ -197,6 +213,8 @@ experiments.
 
 **Quantities to estimate:**
 {quantities_block(h)}
+
+{noise_note}
 
 **Prize:** {_fmt(h.prize)} credits. {payout_text(cfg, h, rule)}
 

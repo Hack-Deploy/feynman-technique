@@ -188,6 +188,8 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     assert '"answer":' not in json.dumps(disabled)
     assert disabled["ledger_read_fee"] == C.load().ledger_read_fee
     assert all(hyp["solved_by"] is None for hyp in disabled["hypotheses"])
+    assert disabled["noise_std"] == C.load().noise_std
+    assert disabled["velocity_noise_std"] == C.load().velocity_noise_std
 
     secret = "test-secret-never-return"
     monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
@@ -212,7 +214,10 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     status, headers, body = _request(f"{app_server}/api/live/info")
     assert status == 200
     assert "json" in headers.get("Content-Type", "").lower()
-    assert json.loads(body)["live"]["enabled"] is True
+    api_info = json.loads(body)
+    assert api_info["live"]["enabled"] is True
+    assert api_info["noise_std"] == C.load().noise_std
+    assert api_info["velocity_noise_std"] == C.load().velocity_noise_std
 
 
 def _solved_record(hypothesis_id, solver="prior-solver"):
