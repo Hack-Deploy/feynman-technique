@@ -85,12 +85,14 @@ breaks results down by how many failed runs a run had seen.
 
 ## Share / warm start
 
-Set `HF_TOKEN` in `poc/.env` and either pass a dataset name or set `DM_HF_REPO`:
+The default dataset is public, so pulling it needs no token. `--repo ORG/NAME` overrides the
+default; `DM_HF_REPO` is an optional environment override. Set `HF_TOKEN` in `poc/.env` with
+write access to push:
 
 ```bash
-uv run python -m poc.hf_data push --repo ORG/NAME --dry-run
-uv run python -m poc.hf_data push --repo ORG/NAME
-uv run python -m poc.hf_data pull --repo ORG/NAME
+uv run python -m poc.hf_data push --dry-run
+uv run python -m poc.hf_data push
+uv run python -m poc.hf_data pull
 ```
 
 Push is private unless `--public` is supplied. The dry run makes no network calls;

@@ -189,10 +189,7 @@ _compact_round = live_cache.compact_round
 
 
 def _job_round_callback(job_id: str, metered: MeteredLLM | None = None):
-    seen_stop_reasons = 0
-
     def callback(entry: dict) -> None:
-        nonlocal seen_stop_reasons
         compact = live_cache.compact_round(
             entry,
             usd_so_far=metered.usd if metered is not None else None,
@@ -200,9 +197,7 @@ def _job_round_callback(job_id: str, metered: MeteredLLM | None = None):
         if metered is None:
             compact["cut_off"] = False
         else:
-            new_stop_reasons = metered.stop_reasons[seen_stop_reasons:]
-            compact["cut_off"] = "max_tokens" in new_stop_reasons
-            seen_stop_reasons = len(metered.stop_reasons)
+            compact["cut_off"] = metered.take_cut_off()
         with _LOCK:
             _JOBS[job_id]["rounds"].append(compact)
 

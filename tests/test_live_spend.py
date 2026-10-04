@@ -6,6 +6,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -312,6 +313,55 @@ def test_metered_llm_records_stop_reasons_and_defaults_to_16000_tokens(tmp_path)
 
     assert requests == [16000, 10]
     assert metered.stop_reasons == ["max_tokens", "end_turn"]
+    assert metered.take_cut_off() is True
+    assert metered.take_cut_off() is False
+
+
+def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
+    settings = spend.load_settings()
+    hyp = C.load().hypotheses[0]
+    settings = replace(
+        settings,
+        models=settings.models[:1],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=3,
+        max_tokens=32,
+    )
+    replies = iter((
+        ("", "max_tokens"),
+        (
+            "<assessment>No response content yet.</assessment><p_success>0.4</p_success>",
+            "end_turn",
+        ),
+        (
+            "<assessment>Evidence is sufficient.</assessment><p_success>0.7</p_success>"
+            "<verdict>supported</verdict><evidence>Offline response.</evidence>",
+            "end_turn",
+        ),
+    ))
+
+    def transport(_model, _system, _messages, _max_tokens):
+        text, stop_reason = next(replies)
+        return text, {
+            "input_tokens": 25,
+            "output_tokens": 0 if not text else 8,
+            "stop_reason": stop_reason,
+        }
+
+    cache = tmp_path / "cutoff-grid.jsonl"
+    messages = []
+    result = _run_grid(
+        settings,
+        cache,
+        SpendLedger(tmp_path / "cutoff-grid-spend.jsonl", cap=1),
+        lambda _model: transport,
+        out=lambda *parts: messages.append(" ".join(map(str, parts))),
+    )
+
+    assert result["done"] == 1, (result, messages)
+    rounds = live_cache.load(cache)[0]["rounds"]
+    assert [round_entry["cut_off"] for round_entry in rounds] == [True, False]
 
 
 def test_metered_llm_voids_provider_status_errors_and_keeps_unknown_reservations(

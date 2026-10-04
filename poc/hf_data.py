@@ -25,14 +25,15 @@ ALLOW_PATTERNS = (
     "attempts/transcripts/poc_dp/**",
     "attempts/poc_trajectories/**",
 )
+DEFAULT_HF_REPO = "arushisinha98/discovery-market-live"
 _SECRET_PATTERN = re.compile(rb"sk-ant-[A-Za-z0-9_-]{10,}")
 
 
 def _repo_id(repo: str | None) -> str:
-    resolved = (repo or os.environ.get("DM_HF_REPO", "")).strip()
-    if not resolved:
-        raise ValueError("set --repo ORG/NAME or DM_HF_REPO")
-    return resolved
+    for candidate in (repo, os.environ.get("DM_HF_REPO"), DEFAULT_HF_REPO):
+        if candidate and candidate.strip():
+            return candidate.strip()
+    return DEFAULT_HF_REPO
 
 
 def _is_allowlisted(relative: str) -> bool:
@@ -203,8 +204,6 @@ def pull(
     root = Path(root or C.ROOT)
     token = os.environ.get("HF_TOKEN", "").strip()
     if download is None:
-        if not token:
-            raise ValueError("HF_TOKEN must be set to pull a dataset")
         from huggingface_hub import snapshot_download
 
         download = snapshot_download

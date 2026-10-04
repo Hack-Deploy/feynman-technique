@@ -583,4 +583,7 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   `uv run pytest -q -p no:cacheprovider` — 698 passed, 3 skipped, 34 warnings.
 - Recorded-run replay also defaults missing legacy `cut_off` fields to false;
   `tests/test_live_market.py::test_scripted_http_run_and_seed_increment` passed.
+- Follow-up: cutoff tracking now lives in `MeteredLLM` and is consumed by both live and grid
+  callbacks; public Hugging Face pulls need no token, and the dataset defaults to
+  `arushisinha98/discovery-market-live`. README documents the cold-start pull and resume path.
 - No paid API calls were made and no vendor files were edited.

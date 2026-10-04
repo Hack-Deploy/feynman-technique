@@ -136,7 +136,8 @@ def test_dry_run_lists_sizes_without_api_calls(tmp_path):
     assert api.uploads == []
 
 
-def test_pull_archives_existing_files_then_copies_allowed_snapshot(tmp_path):
+def test_pull_archives_existing_files_then_copies_allowed_snapshot(tmp_path, monkeypatch):
+    monkeypatch.delenv("HF_TOKEN", raising=False)
     root = tmp_path
     local_runs = root / "attempts" / "fixtures" / "live" / "runs.jsonl"
     local_runs.parent.mkdir(parents=True)
@@ -169,6 +170,7 @@ def test_pull_archives_existing_files_then_copies_allowed_snapshot(tmp_path):
     assert calls[0]["repo_type"] == "dataset"
     assert calls[0]["revision"] == "stable"
     assert calls[0]["allow_patterns"] == list(hf_data.ALLOW_PATTERNS)
+    assert "token" not in calls[0]
     assert set(pulled) == {
         "attempts/fixtures/live/runs.jsonl",
         "attempts/fixtures/live/runs.summary.json",
@@ -181,8 +183,10 @@ def test_pull_archives_existing_files_then_copies_allowed_snapshot(tmp_path):
     assert not (root / "attempts" / "live_spend.jsonl").exists()
 
 
-def test_missing_repo_is_an_error(tmp_path, monkeypatch):
-    monkeypatch.delenv("DM_HF_REPO", raising=False)
+def test_repo_resolution_prefers_argument_then_environment_then_default(monkeypatch):
+    monkeypatch.setenv("DM_HF_REPO", "org/environment")
+    assert hf_data._repo_id("org/argument") == "org/argument"
+    assert hf_data._repo_id(None) == "org/environment"
 
-    with pytest.raises(ValueError, match="--repo ORG/NAME or DM_HF_REPO"):
-        hf_data.push(root=tmp_path, dry_run=True)
+    monkeypatch.delenv("DM_HF_REPO")
+    assert hf_data._repo_id(None) == hf_data.DEFAULT_HF_REPO

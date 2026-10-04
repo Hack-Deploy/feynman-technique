@@ -37,6 +37,22 @@ scripted and recorded examples.
 `uv sync` installs the DiscoverPhysics packages from the pinned submodule as editable
 dependencies. Never edit files under `vendor/`; wrap vendor behavior in project code.
 
+## Quick start with recorded data
+
+```bash
+git clone --recurse-submodules https://github.com/Hack-Deploy/feynman-technique.git
+cd feynman-technique
+uv sync
+uv run python -m poc.hf_data pull      # downloads arushisinha98/discovery-market-live
+uv run python app.py                   # open /live → Recorded runs
+```
+
+No Anthropic key is needed to view the recorded data. The default dataset is public, so no
+token is needed; `HF_TOKEN` is only needed for a private fork or copy, set in `poc/.env`
+with read access. Pull archives replaced local files under `attempts/archive/` and fills
+`attempts/fixtures/live/runs.jsonl`, which `/live` uses for Recorded runs. `poc.rerun_all`
+reads its cached run keys and `order_seed`, so completed runs are skipped and the plan resumes.
+
 ## Run the live market with your key
 
 The `/live` page's scripted and recorded modes make no API calls. To run real models,
@@ -58,17 +74,16 @@ cap (for example, set `DM_MAX_USD=50` in `poc/.env`) and an API key.
 
 ## Share / warm start
 
-Set `HF_TOKEN` in `poc/.env`; optionally set `DM_HF_REPO=ORG/NAME` to omit `--repo`.
-The push creates a private dataset by default and uploads only the allow-listed live records:
+To push data, set `HF_TOKEN` in `poc/.env` with write access. `--repo ORG/NAME` overrides
+the default dataset; `DM_HF_REPO` is an optional environment override.
 
 ```bash
-uv run python -m poc.hf_data push --repo ORG/NAME --dry-run
-uv run python -m poc.hf_data push --repo ORG/NAME
-uv run python -m poc.hf_data pull --repo ORG/NAME
+uv run python -m poc.hf_data push --dry-run
+uv run python -m poc.hf_data push
 ```
 
-`--dry-run` lists the upload files and sizes without network calls. Use `--public` only
-when you intend the dataset to be public. Pulling archives any local files it will replace.
+Push creates a private dataset unless `--public` is supplied and uploads only allow-listed
+live records. `--dry-run` lists files and sizes without network calls.
 
 ## How the simulation works
 

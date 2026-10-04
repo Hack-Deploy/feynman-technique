@@ -218,6 +218,11 @@ def test_fake_rerun_writes_order_metadata_and_conserves_credits(
     assert len(entries) == len(cfg.hypotheses) * len(settings.models)
     assert {entry["order_seed"] for entry in entries} == {23}
     assert {entry["order_position"] for entry in entries} == set(range(len(settings.models)))
+    assert all(
+        round_entry["cut_off"] is False
+        for entry in entries
+        for round_entry in entry["rounds"]
+    )
     for entry in entries:
         record = entry["record"]
         charges = sum(

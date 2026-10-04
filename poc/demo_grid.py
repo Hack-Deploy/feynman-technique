@@ -192,7 +192,9 @@ def run_grid(
         rounds = []
 
         def on_round(entry):
-            rounds.append(live_cache.compact_round(entry, usd_so_far=metered.usd))
+            compact = live_cache.compact_round(entry, usd_so_far=metered.usd)
+            compact["cut_off"] = metered.take_cut_off()
+            rounds.append(compact)
 
         try:
             public_entries = bench.public_record(cached_records, hyp, cfg)

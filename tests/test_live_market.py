@@ -403,10 +403,10 @@ def test_job_round_payload_caps_large_fields():
 def test_job_round_callback_marks_only_new_max_token_cutoffs():
     job_id = "cutoff"
     live_market._JOBS[job_id] = {"rounds": []}
-    metered = SimpleNamespace(usd=0.0, stop_reasons=[])
+    cutoffs = iter((True, False))
+    metered = SimpleNamespace(usd=0.0, take_cut_off=lambda: next(cutoffs))
     callback = live_market._job_round_callback(job_id, metered)
 
-    metered.stop_reasons.append("max_tokens")
     callback({"round": 1})
     callback({"round": 2})
 

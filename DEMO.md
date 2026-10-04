@@ -154,12 +154,13 @@ columns. Click a saved run and use **Replay round by round**.*
 *Optional operator prep: share the warm-start data with the project dataset.*
 
 ```bash
-uv run python -m poc.hf_data push --repo ORG/NAME --dry-run
-uv run python -m poc.hf_data push --repo ORG/NAME
-uv run python -m poc.hf_data pull --repo ORG/NAME
+uv run python -m poc.hf_data push --dry-run
+uv run python -m poc.hf_data push
+uv run python -m poc.hf_data pull
 ```
 
-> The upload is private by default and includes only the allow-listed live-market records.
+> The default dataset is public, so no token is needed to pull it. Push is private by default
+> and includes only allow-listed live-market records; `--repo ORG/NAME` overrides the default.
 > A new checkout can pull those records so Recorded runs and the next rerun start warm.
 
 If using the scripted demo, say: *"This one is a scripted stand-in so it's free to show; it always answers 'supported', so you'll see it lose on false claims — which is exactly what a loss should look like."*

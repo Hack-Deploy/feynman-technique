@@ -76,9 +76,15 @@ class MeteredLLM:
         }
         self.usd = 0.0
         self.stop_reasons = []
+        self._seen_stop_reasons = 0
         self._previous_messages: list[dict] | None = None
         self._previous_system: str | None = None
         self._previous_usage: dict | None = None
+
+    def take_cut_off(self) -> bool:
+        new_stop_reasons = self.stop_reasons[self._seen_stop_reasons:]
+        self._seen_stop_reasons = len(self.stop_reasons)
+        return "max_tokens" in new_stop_reasons
 
     def __call__(
         self,
