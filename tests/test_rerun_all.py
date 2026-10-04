@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 import pytest
 
 from dm.store import AttemptStore
-from poc import archive, bench, config as C, live_cache, rerun_all, spend
+from dm.types import AttemptRecord
+from poc import archive, bench, config as C, demo_grid, live_cache, rerun_all, spend
 from poc.spend import SpendLedger
 
 
@@ -72,18 +73,130 @@ def test_every_model_is_first_for_some_claim_across_seed_range():
     assert first_models == {model.id for model in settings.models}
 
 
-def test_order_runs_position_major():
+def test_order_runs_claim_major():
     cfg, settings = _configuration()
     order, claim_order, _ = rerun_all._order(settings, cfg, 0)
     claims = [hyp.id for hyp in cfg.hypotheses]
-    model_count = len(settings.models)
     expected = [
-        (claim, claim_order[claim][position], 0)
-        for position in range(model_count)
+        (claim, model_id, 0)
         for claim in claims
+        for model_id in claim_order[claim]
     ]
 
     assert order == expected
+
+
+def _cached_record(cfg, hypothesis_id, model_id, passed, order_seed, order_position):
+    hyp = cfg.hypothesis(hypothesis_id)
+    record = AttemptRecord(
+        attempt_id=f"{hypothesis_id}-{model_id}",
+        source="scripted",
+        protocol=C.PROTOCOL,
+        venue=C.VENUE,
+        world=hyp.world,
+        solver=f"scripted:{model_id}",
+        seed=0,
+        stated_p_success=0.7,
+        rounds=1,
+        experiments=0,
+        lab_cost=10,
+        verdict={
+            "passed": passed,
+            "agent_verdict": hyp.answer if passed else "inconclusive",
+            "answer": hyp.answer,
+        },
+        extra={"hypothesis_id": hypothesis_id, "outcome": "verdict"},
+    )
+    return {
+        "schema": 1,
+        "source": "scripted",
+        "key": {"model": model_id, "hypothesis_id": hypothesis_id, "seed": 0},
+        "record": record.to_dict(),
+        "rounds": [],
+        "usd": 0,
+        "order_seed": order_seed,
+        "order_position": order_position,
+    }
+
+
+def test_fake_grid_closes_a_claim_after_a_success(monkeypatch, tmp_path, capsys):
+    cfg, settings = _fake_configuration(monkeypatch)
+    hyp = next(hyp for hyp in cfg.hypotheses if hyp.answer == "supported")
+    settings = replace(settings, hypotheses=(hyp.id,), models=settings.models[:2], seeds=(0,))
+    first, second = (model.id for model in settings.models)
+    cache = tmp_path / "runs.jsonl"
+
+    result = demo_grid._run_fake_grid(
+        settings,
+        cache,
+        order=[(hyp.id, first, 0), (hyp.id, second, 0)],
+        show_preflight=False,
+    )
+
+    assert result["done"] == 1
+    assert result["closed"] == 1
+    assert len(live_cache.load(cache)) == 1
+    assert (
+        f"{hyp.id}: solved by scripted:{first}; off the market, skipping {second}"
+        in capsys.readouterr().out
+    )
+
+
+def test_fake_grid_runs_next_model_after_a_failure(monkeypatch, tmp_path):
+    cfg, settings = _fake_configuration(monkeypatch)
+    hyp = next(hyp for hyp in cfg.hypotheses if hyp.answer == "refuted")
+    settings = replace(settings, hypotheses=(hyp.id,), models=settings.models[:2], seeds=(0,))
+    first, second = (model.id for model in settings.models)
+    cache = tmp_path / "runs.jsonl"
+
+    result = demo_grid._run_fake_grid(
+        settings,
+        cache,
+        order=[(hyp.id, first, 0), (hyp.id, second, 0)],
+        show_preflight=False,
+    )
+
+    assert result["done"] == 2
+    assert result["closed"] == 0
+    assert [entry["key"]["model"] for entry in live_cache.load(cache)] == [first, second]
+
+
+def test_resume_skips_solved_claim_and_continues_open_claim(
+    monkeypatch, tmp_path, capsys
+):
+    cfg, settings = _fake_configuration(monkeypatch)
+    order_seed = 23
+    order, claim_order, _ = rerun_all._order(settings, cfg, order_seed)
+    solved_hyp, open_hyp = cfg.hypotheses
+    cache = tmp_path / "runs.jsonl"
+    for hyp, passed in ((solved_hyp, True), (open_hyp, False)):
+        first_model = claim_order[hyp.id][0]
+        live_cache.append(
+            cache,
+            _cached_record(
+                cfg, hyp.id, first_model, passed, order_seed, order_position=0
+            ),
+        )
+
+    rerun_all.main([
+        "--fake",
+        "--cache", str(cache),
+        "--store", str(tmp_path / "attempts.jsonl"),
+        "--transcripts", str(tmp_path / "transcripts"),
+    ])
+
+    entries = live_cache.load(cache)
+    solved_entries = [entry for entry in entries
+                      if entry["key"]["hypothesis_id"] == solved_hyp.id]
+    open_entries = [entry for entry in entries
+                    if entry["key"]["hypothesis_id"] == open_hyp.id]
+    assert len(solved_entries) == 1
+    assert len(open_entries) == 2
+    assert {
+        entry["key"]["model"] for entry in open_entries
+    } == set(claim_order[open_hyp.id])
+    assert {entry["order_seed"] for entry in entries} == {order_seed}
+    assert "Open claims: 1/2" in capsys.readouterr().out
 
 
 def test_cached_order_seed_resolution_rejects_mismatch_and_conflicts():
@@ -280,7 +393,13 @@ def test_purge_allows_a_new_order_seed(monkeypatch, tmp_path):
     ])
 
     entries = live_cache.load(runs)
-    assert len(entries) == len(cfg.hypotheses) * len(settings.models)
+    assert len(entries) == 3
+    assert sum(
+        entry["key"]["hypothesis_id"] == cfg.hypotheses[0].id for entry in entries
+    ) == 2
+    assert sum(
+        entry["key"]["hypothesis_id"] == cfg.hypotheses[1].id for entry in entries
+    ) == 1
     assert {entry["order_seed"] for entry in entries} == {4}
     assert len(AttemptStore(store).load()) == len(entries)
     archives = list((tmp_path / "attempts" / "archive").iterdir())
@@ -307,9 +426,9 @@ def test_fake_rerun_writes_order_metadata_and_conserves_credits(
     rerun_all.main(args)
 
     entries = live_cache.load(cache)
-    assert len(entries) == len(cfg.hypotheses) * len(settings.models)
+    assert len(entries) == len(cfg.hypotheses)
     assert {entry["order_seed"] for entry in entries} == {23}
-    assert {entry["order_position"] for entry in entries} == set(range(len(settings.models)))
+    assert {entry["order_position"] for entry in entries} == {0}
     assert all(
         round_entry["cut_off"] is False
         for entry in entries
@@ -328,6 +447,10 @@ def test_fake_rerun_writes_order_metadata_and_conserves_credits(
     summary = json.loads(live_cache.summary_path(cache).read_text())
     assert summary["order_seed"] == 23
     assert set(summary["claim_order"]) == {hyp.id for hyp in cfg.hypotheses}
+    assert all(
+        entry["key"]["model"] == summary["claim_order"][entry["key"]["hypothesis_id"]][0]
+        for entry in entries
+    )
 
     monkeypatch.setattr(
         rerun_all.secrets,

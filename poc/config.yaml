@@ -3,8 +3,8 @@
 # experiments, states its chance of a clear answer, bids or walks away, pays the lab, and is
 # paid the prize only for a clear, correct answer. Failed runs go into the public record.
 #
-# The agent sees: hypothesis, resolution criteria, prize, every price below, and the public
-# record of earlier failed runs. It never sees `answer`.
+# The agent sees: hypothesis, resolution criteria, prize, every price below, and an offer to buy
+# the public record of earlier failed runs. It never sees `answer`.
 
 # ---------------------------------------------------------------- protocol
 max_rounds: 16        # rounds per hypothesis (paper default)
@@ -119,5 +119,6 @@ hypotheses:
 
 # ---------------------------------------------------------------- public record of failed runs
 ledger:
+  read_fee: 30              # paid to the market, never refunded; the data remain opt-in
   max_entries: 10            # most recent failed or withdrawn runs shown per hypothesis
   max_data_chars: 6000       # experiment data per entry is cut beyond this

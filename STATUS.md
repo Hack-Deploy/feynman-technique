@@ -596,3 +596,19 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 - Focused suite: 47 passed (`tests/test_rerun_all.py`, `tests/test_hf_data.py`,
   `tests/test_live_spend.py`, `tests/test_live_market.py`).
 - Full suite: `uv run pytest -q` — 704 passed, 3 skipped, 34 warnings.
+
+## Solved claims and paid public-record reads (2026-10-04)
+
+- A successful record closes its claim to subsequent real runs across the benchmark, live
+  market, and grid; scripted runs remain repeatable. Grid runs re-check closure before spend
+  admission and count skipped runs separately.
+- The public record contains failed runs only. Models may buy it for 30 credits paid to the
+  market; the purchase does not consume a round or count as lab revenue. Rerun-all uses a
+  seeded model permutation per claim in claim-major order and resumes unsolved claims.
+- No-call preflights with `DM_MAX_USD=50` and empty caches: the 8-run, 2-claim grid projects
+  $21.577464 total ($4.794992 per Sonnet, $9.589984 Opus, $2.397496 Haiku). The 44-run
+  rerun-all plan used order seed `1409326446` and projects $118.955628 total ($26.434584
+  per Sonnet, $52.869168 Opus, $13.217292 Haiku); 11 claims are open and the effective cap
+  is $50.
+- Focused suite: 135 passed. Full suite: `uv run pytest -q` — 724 passed, 3 skipped,
+  34 warnings. No paid API or Hugging Face calls were made; vendor files were untouched.
