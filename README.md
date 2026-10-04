@@ -1,162 +1,65 @@
 # Discovery Market
 
-A market where AI scientists get paid only for clear results. A researcher posts
-a hypothesis and a prize; experiment designers bid when they expect a result to
-be worth the cost; labs are paid for experiments; and every attempt, including
-failures, is recorded. The judge pays only for a clear answer that passes its
-precommitted tests.
+**A market where AI scientists get paid only for answers that check out.**
 
-**Online:** <https://discovery-market.vercel.app>, a static, read-only copy of the app with
-the recorded runs. New paid runs start only from a local install. To update it:
+**Try it:** <https://discovery-market.vercel.app>
 
-```bash
-uv run python scripts/export_static.py                    # writes output/discovery-market/
-cd output/discovery-market && vercel deploy --prod
-```
+## The idea
 
-## The app
+AI models can now design and run experiments, but nobody pays for a correct scientific answer,
+and failed attempts usually disappear. Discovery Market prices the whole loop:
 
-The local app has three pages:
+- **Researchers** post a hypothesis and a prize.
+- **AI scientists** read the claim, state how likely they are to settle it, and bid only when
+  the prize is worth the cost. Every experiment they buy is paid to the lab.
+- **An independent judge** checks the answer against hidden ground truth. The prize is paid
+  only for a clear, correct result.
+- **Failures become a public record** that later models can buy before they bid.
 
-- **Pitch (`/`)** explains the market and the problem it addresses.
-- **How it works (`/simulation`)** walks through ForceBench for a general audience.
-  Its sixth section replays 88 published attempts by eight frontier models:
-  who solved what, the clearing prize per world, profit per model, and whether
-  the models knew their chances. The data are from
-  [ARA Labs (AgentNativeResearchLab)](https://huggingface.co/AgentNativeResearchLab), CC BY 4.0.
-- **Live market (`/live`)** defaults to free Hugging Face replays: choose any
-  imported claim and a model that ran it, then replay its recorded run.
-  An explicitly enabled paid mode starts new runs; the recorded-runs comparison
-  shows the full local cache when available.
+We run it on [DiscoverPhysics](https://github.com/SampsonML/discovery-agents), simulated worlds with non-standard physics,
+so every answer can be checked exactly.
 
-The picker reads `attempts/fixtures/live/runs.jsonl`: the real-model runs re-recorded on
-4 October 2026 with `poc.rerun_all` under the current claim protocol, up to 7 rounds per run.
-Earlier recorded runs are archived under `attempts/archive/` (git-ignored) and no longer shown.
+## What we built
 
-Each claim has **Success replay** and **Failure replay** tabs, where those outcomes
-exist. All recorded selections and live jobs share the same visualization, playback
-controls, estimates, reasoning trail, and result panel. Switch between motion over time
-and particle paths. Runs that released a probe at rest near a single source also get
-**Force versus distance**: pull readings derived from the recorded positions, the same
-launches replayed noise-free as the reference, and the claimed law where the claim names
-one (`poc/recorded_replay.py`, `law`).
+- **A live market** where real Claude models bid, buy noisy experiments, estimate the
+  quantities a claim depends on, and give a verdict.
+- **Round-by-round replays** of every run: the experiments, the pull readings against the
+  noise-free simulator, the model's estimates and reasoning, and the judge's ruling.
+- **A simulated market** built on published benchmark results, testing whether stronger
+  agents profit while weaker ones learn to stop bidding.
 
-Completed runs started from the form use the same round controls and hypothesis
-trail. Gravity claims replay the force law; other claims plot recorded inward
-motion against a noise-free replay of the same experiment and track the claim's
-reported quantity against its hidden reference. Scripted estimates are placeholders.
+## Results
 
-## Quick start
+We ran four Claude models (Opus 5.5, Sonnet 5.5, Sonnet 5, Haiku 4.5) on 8 claims, up to
+7 rounds each, for **$5.78** in API cost.
 
-Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
+- **Every claim was solved.** Each closed after its first correct answer, so the market needed
+  only 14 runs instead of 32.
+- **Opus 5.5 won all 4 claims it played.**
+- **Some runs paid and got nothing.** Two models said "supported" or "refuted" but their
+  estimates failed the judge. Two used all 7 rounds without committing to a verdict.
+- **Some models walked away.** Haiku 4.5 declined to bid on two claims.
 
-```bash
-git clone --recurse-submodules https://github.com/Hack-Deploy/feynman-technique.git
-cd feynman-technique
-uv sync
-uv run python app.py
-```
+## Pages
 
-Open <http://localhost:8000>. No API key is needed to browse the pages or use the
-scripted and recorded examples.
-
-`uv sync` installs the DiscoverPhysics packages from the pinned submodule as editable
-dependencies. Never edit files under `vendor/`; wrap vendor behavior in project code.
-
-## Quick start with recorded data
-
-```bash
-git clone --recurse-submodules https://github.com/Hack-Deploy/feynman-technique.git
-cd feynman-technique
-uv sync
-uv run python -m poc.hf_data pull      # downloads arushisinha98/discovery-market-live
-uv run python app.py                   # open /live → Recorded runs
-```
-
-No Anthropic key is needed to view the recorded data. The default dataset is public, so no
-token is needed; `HF_TOKEN` is only needed for a private fork or copy, set in `poc/.env`
-with read access. `pull` replaces the local allow-listed live record with the dataset snapshot,
-archiving the old files and directories under `attempts/archive/`. It fills
-`attempts/fixtures/live/runs.jsonl`, which `/live` uses for Recorded runs. `poc.rerun_all`
-reads its cached run keys and `order_seed`, so completed runs are skipped and the plan resumes.
-
-## Run the live market with your key
-
-The `/live` page's scripted and recorded modes make no API calls. To run real models,
-follow [the live-market instructions in `poc/README.md`](poc/README.md#run-the-live-market-with-your-key):
-they cover the no-key spend preflight, the multi-model grid, the configured $50 hard cap,
-committing recorded runs, and the persistent append-only spend ledger.
-
-The public record is opt-in: a model can pay 30 credits to read the failed runs for its
-claim. A successful solve closes that claim to later real runs. `poc.rerun_all` gives
-each claim its own seeded randomized model order in config order and stops that claim
-after its first successful solve; open claims resume at their next untried model.
-
-To preview the claim-major order and worst-case spend, or archive the current live record
-before starting a fresh order:
-
-```bash
-uv run python -m poc.rerun_all --preflight
-ENABLE_LIVE=1 uv run python -m poc.rerun_all --purge
-```
-
-The purge archives the live cache, summary, benchmark store, and transcripts; it never
-deletes them or touches the spend ledger. The run still requires a positive `DM_MAX_USD`
-cap (for example, set `DM_MAX_USD=50` in `poc/.env`) and an API key.
-
-## Share / warm start
-
-To push data, set `HF_TOKEN` in `poc/.env` with write access. `--repo ORG/NAME` overrides
-the default dataset; `DM_HF_REPO` is an optional environment override.
-
-```bash
-uv run python -m poc.hf_data push --dry-run
-uv run python -m poc.hf_data push
-```
-
-Push creates a private dataset unless `--public` is supplied and uploads only allow-listed
-live records. `--dry-run` lists files and sizes without network calls.
-Push replaces the dataset's allow-listed live data with yours; older versions stay in the
-dataset's commit history.
-
-## How the simulation works
-
-The original simulated market runs Tracks A and C. A researcher funds a prize per
-world into escrow; agents bid when `belief × prize > expected cost`; experiments are
-charged up front; and clear passes pay the prize. Failed attempts enter the ledger
-when a world closes. Unsolved prizes are refunded, and credit conservation is checked
-throughout. These probabilities are stand-ins derived from published benchmark
-scores, not measured market outcomes.
-
-| | Track A | Track C |
-|---|---|---|
-| Question | Do stronger agents profit while weaker ones stop bidding? (H1); what prize clears each world? (H2) | At equal accuracy, does needing fewer experiments earn more? (H3) |
-| Agents | opus-4.7, gpt-5.5, sonnet-4.6, qwen3.5-397b | mda, llm_opus, llm_opus_unthrottled |
-| Worlds | all 11 | 6 (from Table 3) |
-| Cost | 4–16 rounds × 1 credit | 8 or 41 experiments × price (0.25–2) |
-| Sweep | prize 5–200 × odds source × 5 seeds | prize 20–100 × price × 5 seeds |
-
-## Layout
-
-| Path | What |
+| Page | What it shows |
 |---|---|
-| `app.py`, `web/` | Three-page local app and its frontend assets |
-| `forcebench_demo.py` | One offline ForceBench attempt, run from the CLI |
-| `runner.py`, `market.py`, `analysis.py`, `run.py` | Simulated Track A/C market, sweeps, and analysis |
-| `report.py`, `report_template.html` | Legacy CLI export; not served by the app |
-| `slides.html` | Pitch deck; not part of the app |
-| `docs/` | Technical notes, review findings, and judge evaluation |
-| `poc/` | Live discovery-market implementation, spend controls, and instructions |
-| `dm/` | Attempt types, oracle, venues, replay, and market analysis |
-| `vendor/discovery-agents/` | Pinned DiscoverPhysics submodule; never edit |
-| `attempts/fixtures/` | Committed fixture attempt pools and recorded demo data |
-| `data/` | Published input tables and derived success probabilities |
-| `config.yaml` | Simulation and market parameters |
-| `tests/` | Engine, oracle, venue, live-market, and app tests |
-| `PLAN.md`, `STATUS.md` | Project plan and progress log |
-| [DEMO.md](DEMO.md) | Presenter script for the three pages |
+| [Pitch](https://discovery-market.vercel.app/) | The problem and the market |
+| [Live market](https://discovery-market.vercel.app/live) | Replays of the real-model runs, round by round |
+| [How it works](https://discovery-market.vercel.app/simulation) | The benchmark, and 88 published attempts by eight frontier models |
 
-## Contributing
+## Run it locally
 
-Work on a branch and open a pull request. Run `uv run pytest` before pushing.
-Add dependencies with `uv add <pkg>` (or `uv add --dev <pkg>`) and commit `uv.lock`.
+```bash
+git clone --recurse-submodules https://github.com/Hack-Deploy/feynman-technique.git
+cd feynman-technique && uv sync && uv run python app.py
+```
+
+Then open <http://localhost:8000>. See [docs/RUNNING.md](docs/RUNNING.md) for running real
+models, re-recording runs, publishing, and the project layout.
+
+## Credits
+
+- Worlds from DiscoverPhysics (Wiemann, Smith et al., 2026).
+- Published attempt data from
+  [ARA Labs (AgentNativeResearchLab)](https://huggingface.co/AgentNativeResearchLab), CC BY 4.0.
