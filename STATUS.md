@@ -736,3 +736,16 @@ toggle between them. Checked in a headless browser at 1280 and 390 px: no page e
 - Vision, How it works and Live market link to the new tab. Checked in headless Chrome at 1280
   and 390 px: no page errors, no page overflow (wide tables scroll inside their wrapper).
 - Check: `uv run pytest -q` 713 passed, 12 skipped (12 new in `tests/test_marketplace.py`).
+
+## 2026-10-04 · /live section 2: how its hypothesis changed
+
+- Under the recorded-run replay, a trail lists one row per round: what it did and what data it
+  had, its working law (a ∝ 1/r^n ± σ, with the change in n from the round before), a small bar
+  of n ± σ against the 1/r² claim ("still inside / outside its error bar, kσ away"), a₃, its
+  own reasoning, and its stated chance. Rows not yet reached show "not played yet"; the current
+  round is highlighted; clicking a row jumps the replay there. At the checker a final row shows
+  the hidden law, the accepted window (also drawn on every bar) and whether it won.
+- Reads only `web/data/learning.json`; no new data. Checked in headless Chrome at 1280 and 390 px:
+  no console errors; the trail stacks on phones. (The page's sideways scroll at 390 px, from the
+  top bar and leaderboard tables, predates this change.)
+- Check: `uv run pytest -q` 713 passed, 12 skipped.

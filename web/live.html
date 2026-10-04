@@ -79,6 +79,33 @@
   .lverdict { display: none; margin-top: 12px; background: #fff; border-radius: 8px; padding: 12px 14px; border-left: 4px solid var(--green); font-size: 15px; line-height: 1.5; }
   .lverdict.show { display: block; }
   .lverdict .nums { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font: 700 15px var(--narrow); }
+  .trail { margin-top: 28px; }
+  .trail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+  .trail-head h3 { margin: 0; }
+  .trail-head .note { margin: 0; }
+  #lTrail { list-style: none; margin-top: 12px; display: grid; gap: 8px; }
+  .tr { display: grid; grid-template-columns: 150px minmax(0, 230px) minmax(0, 1fr) 70px; grid-template-areas: "rn hyp why conf"; gap: 6px 18px; align-items: start;
+    padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; transition: background .3s, border-color .3s, opacity .3s; }
+  .tr:hover { background: var(--faint); }
+  .tr.now { border-left-color: var(--amber); background: var(--amber-soft); }
+  .tr.future { opacity: .45; }
+  .tr.check.ok { border-left-color: var(--green); background: var(--green-soft); }
+  .tr.check.bad { border-left-color: var(--rust); background: var(--rust-soft); }
+  .tr .rn { grid-area: rn; min-width: 0; }
+  .tr .rn b { display: block; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tr .rn .act { font-size: 14px; font-weight: 600; margin-top: 2px; }
+  .tr .rn .saw { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tr .hyp { grid-area: hyp; min-width: 0; }
+  .tr .law { font: 700 19px var(--narrow); color: var(--amber); }
+  .tr.check .law { color: var(--green); }
+  .tr .law small { font: 500 13px var(--sans); color: var(--muted); margin-left: 4px; }
+  .tr .delta { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--faint); font: 700 12px var(--narrow); color: var(--body); vertical-align: 2px; }
+  .tr .hyp svg { width: 100%; height: auto; display: block; margin-top: 4px; }
+  .tr .stance { font-size: 13px; margin-top: 2px; }
+  .tr .why { grid-area: why; min-width: 0; font-size: 15px; line-height: 1.5; }
+  .tr .conf { grid-area: conf; text-align: right; font: 700 20px var(--narrow); color: var(--navy); }
+  .tr .conf span { display: block; font: 700 10px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  @media (max-width: 860px) { .tr { grid-template-columns: minmax(0, 1fr) 64px; grid-template-areas: "rn conf" "hyp hyp" "why why"; } }
   @keyframes p { from { opacity: .25 } to { opacity: 1 } }
 </style>
 </head>
@@ -176,6 +203,10 @@
   <div class="controls" style="margin-top:12px">
     <button class="btn sm" id="lPlay">Play</button>
     <div class="steps" id="lSteps"></div>
+  </div>
+  <div class="trail">
+    <div class="trail-head"><h3>How its hypothesis changed</h3><p class="note">What it believed after each round, and why. Click a round to jump there.</p></div>
+    <ol id="lTrail"></ol>
   </div>
   </div>
   <div class="board" id="liveView" hidden>
@@ -585,6 +616,7 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
         <div class="nums"><span style="color:${L.naive >= 0 ? "var(--green)" : "var(--rust)"}">Naive ${sg(L.naive)}</span><span style="color:${L.market >= 0 ? "var(--green)" : "var(--rust)"}">Market ${sg(L.market)}</span><span style="color:var(--muted)">${L.spent} credits on the lab · $${(+L.usd).toFixed(2)} API</span></div>`;
     }
     document.querySelectorAll("#lSteps button").forEach(b => b.classList.toggle("on", +b.dataset.i === (inCheck ? N : idx)));
+    if (trailAt !== (inCheck ? N : idx)) renderTrail(inCheck ? N : idx);
 
     // the shared strip and the hypothesis card (answer revealed by the checker)
     if (VIEW !== "replay") return;
@@ -595,6 +627,55 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (REPLAY_CLAIM && !!REPLAY_CLAIM.answer !== inCheck) { REPLAY_CLAIM.answer = inCheck ? L.answer : null; renderClaim(REPLAY_CLAIM); }
   }
   window.replayRender = render;
+
+  // the trail: one row per round with the working law, its error bar against the claim, and its reasoning
+  let trailAt = null;
+  function nBar(e, showTrue) {
+    const W = 230, H = 40, x = n => 8 + (Math.min(NMAX, Math.max(NMIN, n)) - NMIN) / (NMAX - NMIN) * (W - 16), c = L.expected.n;
+    let g = `<line x1="8" x2="${W - 8}" y1="26" y2="26" stroke="#DADAD6"/>`;
+    for (const n of [0.5, 1, 1.5, 2, 2.5]) g += `<line x1="${x(n)}" x2="${x(n)}" y1="24" y2="28" stroke="#DADAD6"/><text x="${x(n)}" y="38" font-size="10" fill="#6B6B67" text-anchor="middle">${n}</text>`;
+    if (showTrue) g += `<rect x="${x(L.true.n - L.tolerance.n)}" y="6" width="${x(L.true.n + L.tolerance.n) - x(L.true.n - L.tolerance.n)}" height="20" fill="${GREEN}" opacity=".16"/>`;
+    g += `<line x1="${x(c)}" x2="${x(c)}" y1="2" y2="26" stroke="${BLUE}" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><text x="${x(c) + 4}" y="9" font-size="10" fill="${BLUE}">1/r²</text>`;
+    if (e) {
+      if (e.sigma) g += `<line x1="${x(e.value - e.sigma)}" x2="${x(e.value + e.sigma)}" y1="17" y2="17" stroke="${GOLD}" stroke-width="3" stroke-linecap="round" opacity=".55"/>`;
+      g += `<circle cx="${x(e.value)}" cy="17" r="5" fill="${GOLD}" stroke="#fff" stroke-width="1.5"/>`;
+    }
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Its estimate of n with its error bar, against the 1/r² claim">${g}</svg>`;
+  }
+  function stance(e) {
+    if (!e || !e.sigma) return "";
+    const off = Math.abs(e.value - L.expected.n) / e.sigma;
+    return off <= 1 ? `<p class="stance" style="color:var(--navy)">1/r² still inside its error bar</p>`
+      : `<p class="stance" style="color:var(--rust)">1/r² outside its error bar (${fmt(off, 2)}σ away)</p>`;
+  }
+  function renderTrail(at) {
+    trailAt = at;
+    const N = L.rounds.length, done = at >= N;
+    let seen = 0;
+    const rows = L.rounds.map((rd, i) => {
+      const fresh = rd.points.length; seen += fresh;
+      if (i > at) return `<li class="tr future" data-i="${i}"><div class="rn"><b>Round ${rd.round}</b><p class="saw">not played yet</p></div></li>`;
+      const e = rd.estimates.n, a3 = rd.estimates.a3, pe = i ? L.rounds[i - 1].estimates.n : null;
+      const saw = fresh ? `${fresh} new reading${fresh === 1 ? "" : "s"} at r = ${rd.points.map(p => fmt(p.r, 2)).join(", ")}`
+        : `no new data · ${seen} reading${seen === 1 ? "" : "s"} in hand`;
+      const delta = e && pe && Math.abs(e.value - pe.value) >= 0.01 ? `<span class="delta">n ${fmt(pe.value)} → ${fmt(e.value)}</span>` : "";
+      const law = e ? `a ∝ 1/r<sup>${fmt(e.value)}</sup>${e.sigma ? `<small>± ${fmt(e.sigma, 2)}</small>` : ""}${delta}` : "no estimate";
+      return `<li class="tr${i === at ? " now" : ""}" data-i="${i}">
+        <div class="rn"><b>Round ${rd.round}</b><p class="act">${action(rd)}</p><p class="saw">${saw}</p></div>
+        <div class="hyp"><div class="law">${law}</div>${nBar(e, done)}${stance(e)}${a3 ? `<p class="stance" style="color:var(--muted)">strength a₃ = ${fmt(a3.value, 2)}${a3.sigma ? ` ± ${fmt(a3.sigma, 1)}` : ""}</p>` : ""}</div>
+        <p class="why">“${esc(rd.assessment)}”</p>
+        <div class="conf">${rd.p_success != null ? Math.round(rd.p_success * 100) + "%" : "–"}<span>sure</span></div></li>`;
+    });
+    if (done) {
+      const ok = L.outcome === "confirmed", fin = L.rounds[N - 1].estimates.n;
+      rows.push(`<li class="tr check ${ok ? "ok" : "bad"}" data-i="${N}">
+        <div class="rn"><b>Checker</b><p class="act">Measures the hidden law</p><p class="saw">never shown to the model</p></div>
+        <div class="hyp"><div class="law">a ∝ 1/r<sup>${(+L.true.n).toFixed(2)}</sup><small>accepts ± ${L.tolerance.n}</small></div>${nBar(fin, true)}</div>
+        <p class="why"><b>${ok ? "Correct" : "Wrong"}.</b> It said <b>${esc(L.verdict)}</b>; the answer was <b>${esc(L.answer)}</b>. Its last estimate, n = ${fmt(fin && fin.value)}, is ${ok ? "inside" : "outside"} the green window.</p>
+        <div class="conf" style="color:${ok ? "var(--green)" : "var(--rust)"}">${ok ? "won" : "lost"}<span>prize</span></div></li>`);
+    }
+    $("#lTrail").innerHTML = rows.join("");
+  }
 
   function tick(t) {
     if (playing && VIEW !== "replay") { playing = false; $("#lPlay").textContent = "Play"; }
@@ -607,9 +688,12 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
   const play = () => { if (T >= total) T = 0; playing = true; $("#lPlay").textContent = "Pause"; };
   $("#lPlay").addEventListener("click", () => playing ? (playing = false, $("#lPlay").textContent = "Play") : play());
+  const jump = i => { T = +i * R_DUR + (+i < L.rounds.length ? .01 : 0); play(); render(); };
   $("#lSteps").addEventListener("click", e => {
-    const i = e.target.dataset && e.target.dataset.i; if (i == null) return;
-    T = +i * R_DUR + (+i < L.rounds.length ? .01 : 0); play(); render();
+    const i = e.target.dataset && e.target.dataset.i; if (i != null) jump(i);
+  });
+  $("#lTrail").addEventListener("click", e => {
+    const li = e.target.closest("[data-i]"); if (li && L) jump(li.dataset.i);
   });
 
   fetch("/web/data/learning.json").then(r => r.ok ? r.json() : Promise.reject(new Error(r.status))).then(d => {
