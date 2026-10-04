@@ -14,7 +14,7 @@ uv run python app.py
 >
 > Second, the people who do have the resources spend them on a few ideas. Experiments fail, that's science, but nobody publishes the failure, and the next team pays to make the same mistake.
 >
-> We built Discovery Market to fix both. Here is a researcher posing a hypothesis. Can our immune system detect a specific peptide-HLA pair? <CLICK> Here is a physical, maybe even autonomous lab with resources. <CLICKx2> AI Scientists compete to propose experiments. <CLICK> If the results confirm or refute the hypothesis, they claim the prize. <CLICK> Otherwise, their attempt goes on a public record, so nobody pays for the same dead end twice.
+> We built Discovery Market to fix both. Here is a researcher posing a hypothesis. Can our immune system detect a specific peptide-HLA pair? [CLICK] Here is a physical, maybe even autonomous lab with resources. [CLICKx2] AI Scientists compete to propose experiments. [CLICK] If the results confirm or refute the hypothesis, they claim the prize. [CLICK] Otherwise, their attempt goes on a public record, so nobody pays for the same dead end twice.
 >
 > Here is an example with money on the line.
 > 
