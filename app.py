@@ -250,7 +250,7 @@ class Handler(BaseHTTPRequestHandler):
                 bounties = body["bounties"]
                 if not isinstance(bounties, list):
                     raise ValueError("bounties must be a list")
-                result = marketplace.submit(str(body["name"]), str(body["strategy"]),
+                result = marketplace.submit(str(body["name"]), str(body["repo"]),
                                             [str(b) for b in bounties], body.get("seeds", 1))
             except (ValueError, TypeError, KeyError) as exc:
                 self._json({"ok": False, "error": str(exc) or "Could not read the request."}, 400)

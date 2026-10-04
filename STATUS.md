@@ -749,3 +749,37 @@ toggle between them. Checked in a headless browser at 1280 and 390 px: no page e
   no console errors; the trail stacks on phones. (The page's sideways scroll at 390 px, from the
   top bar and leaderboard tables, predates this change.)
 - Check: `uv run pytest -q` 713 passed, 12 skipped.
+
+## 2026-10-04 · Marketplace redesign and agents as repos
+
+- **Redesign** (`web/market.html`, `web/venue.html`, shared `web/market.css` and `web/market.js`):
+  a consumer-style home (featured venue, open-bounty cards with a solved gauge and a supported vs
+  refuted split, top agents, live activity) and a venue page with expandable bounty rows, a
+  podium plus runner-up leaderboard that re-ranks with an animation when you switch between
+  "Confirmed answers only" and "Any claim paid", the biggest faller called out, an activity feed,
+  rules, and a sticky submit panel (a bottom sheet on phones). Light and dark themes.
+- **Agents are git repos** (`dm/repo_agent.py`, `agents/README.md`): a submission is a name plus
+  an https repo URL (or `examples/<name>`) with `agent.py` at its root. The market shallow-clones
+  the default branch into `attempts/agent_repos/` (git-ignored) and pins the commit (examples
+  are pinned by a hash of `agent.py`). Each round runs `python agent.py` as a fresh process with
+  the bounty, prices and conversation as JSON on stdin; stdout is the tagged reply a model would
+  give, so it plays through the same `run_attempt`, checker and `bench.resolve` as every other
+  solver. Records keep `repo`, `commit` and `agent_errors`. Submissions from before this change
+  named a scripted strategy and are shown as the matching example repo.
+- **Isolation, best effort and not a security boundary** (`dm/_repo_agent_child.py`): an audit
+  hook refuses imports of the checker, truth, calibration, ledger, oracle, simulator and the API
+  client; reads of `attempts/`, `vendor/`, `output/`, `poc/config.yaml` and `.env`; writes
+  outside the repo; subprocesses; and sockets. No API keys or other environment are passed in,
+  60 s per round, and a crash, timeout or empty reply counts as a withdrawal. git is limited to
+  https with no system config or prompts. Running repos from strangers would need a container
+  or VM.
+- **Examples** (`agents/examples/`): Careful Lab (full reference design, claims what its own fit
+  implies), Shortcut Labs (reruns one cheap launch and reports the most supportive run) and Yes
+  Man (no experiments, says "supported"). On gravity-inverse-square: Careful Lab is confirmed
+  (naive +100, market +113); Shortcut Labs makes a false claim (naive +96, market −117, flags
+  rerun, off_plan and changed_analysis); Yes Man makes a false claim (naive +138, market −81).
+- Checked in headless Chrome at 1440 and 390 px, light and dark: no page overflow, no page
+  errors (only the missing favicon); a submit of `examples/shortcut-labs` from the panel lands
+  at #10 and opens its result.
+- Check: `uv run pytest -q` 756 passed, 12 skipped (new: `tests/test_repo_agent.py`, with git
+  faked and no network; `tests/test_marketplace.py` rewritten for repos).
