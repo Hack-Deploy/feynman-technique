@@ -16,6 +16,9 @@ html { scroll-behavior: smooth; }
 body { font: 17px/1.55 var(--sans); color: var(--ink); background: #fff; }
 svg text { font-family: var(--sans); }
 a { color: var(--navy); }
+/* No single trailing words: balance headings, avoid orphans in body text. */
+h1, h2, h3, .label { text-wrap: balance; }
+p, li, .lead, .sub, .note, .cap, figcaption { text-wrap: pretty; }
 
 /* Top bar */
 .topbar { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.96); backdrop-filter: blur(6px);
