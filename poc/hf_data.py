@@ -166,6 +166,10 @@ def push(
         for relative, path in files:
             out(f"{relative} ({path.stat().st_size} bytes)")
         out(f"README.md ({len(card.encode('utf-8'))} bytes)")
+        out(
+            "Remote allowlisted files not in this upload will be deleted "
+            "(kept in the dataset's commit history)."
+        )
         return [relative for relative, _ in files]
 
     if api is None:
@@ -188,6 +192,7 @@ def push(
             repo_type="dataset",
             folder_path=str(stage),
             commit_message=message,
+            delete_patterns=list(ALLOW_PATTERNS),
         )
     return [relative for relative, _ in files]
 

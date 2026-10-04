@@ -626,3 +626,9 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 - Focused suite: `uv run pytest -q tests/test_poc.py tests/test_live_market.py
   tests/test_rerun_all.py tests/test_live_spend.py` — 92 passed. No paid calls or vendor
   edits.
+
+## Hugging Face push replaces remote live data (2026-10-04)
+
+- Push deletes stale remote allow-listed live files in the upload commit while leaving
+  the dataset card and non-allow-listed files alone; older versions remain in commit history.
+- The dry-run output ends with a note that remote allow-listed files missing locally will be deleted.
