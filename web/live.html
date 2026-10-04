@@ -277,7 +277,7 @@ async function poll(id) {
     renderJob(j);
     if (j.state === "running") { POLL = setTimeout(() => poll(id), 1200); return; }
   } catch (e) { $("#result").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
-  $("#go").disabled = false;
+  renderHyp();
   loadRecorded();
 }
 $("#go").addEventListener("click", async () => {
@@ -292,7 +292,7 @@ $("#go").addEventListener("click", async () => {
     if (!s.ok) throw new Error(s.error || "could not start");
     location.hash = "watch";
     poll(s.job_id);
-  } catch (e) { $("#feed").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; $("#go").disabled = false; }
+  } catch (e) { $("#feed").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; renderHyp(); }
 });
 
 function runsTable(rows, title) {
