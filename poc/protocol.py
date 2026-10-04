@@ -224,6 +224,8 @@ give <verdict>inconclusive</verdict> or withdraw.
 **Every reply must contain**, besides its action:
 <assessment>what the evidence so far says about the hypothesis, in 1–2 sentences</assessment>
 <p_success>your current probability that your claim will be {"confirmed" if rule == "market" else "a clear verdict"}</p_success>
+<estimate>your current best value for each posted quantity, name = value ± sigma (a rough
+guess is fine before you have data)</estimate>
 
 **Actions** (one per round):
 - <run_experiment>[...]</run_experiment>, as described above;

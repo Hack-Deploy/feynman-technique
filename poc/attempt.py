@@ -34,7 +34,7 @@ def round_log(conversation_log: list[dict]) -> list[dict]:
         ran = e.get("experiment_input") if e.get("experiment_output") is not None else None
         out.append({
             "round": e["round"], "action": e["action"], "assessment": e.get("assessment"),
-            "p_success": e.get("p_success"),
+            "p_success": e.get("p_success"), "estimates": e.get("estimates") or {},
             "experiments": len(ran) if isinstance(ran, list) else 0,
             "experiments_cost": e.get("experiments_cost", 0.0), "round_fee": e.get("round_fee", 0.0),
             "spent_so_far": e.get("spent_so_far"),

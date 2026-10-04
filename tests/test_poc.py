@@ -128,6 +128,15 @@ def test_experiment_then_verdict_charges_rounds_and_experiments():
     assert agent.executor.experiments == 1
 
 
+def test_running_estimates_are_recorded_every_round():
+    from poc.attempt import round_log
+    agent, _, _ = make_agent([run_exp() + "<estimate>n = 1.6 ± 0.5</estimate>", run_exp(), VERDICT])
+    agent.run()
+    log = round_log(agent.conversation_log)
+    assert [e["estimates"].get("n", {}).get("value") for e in log] == [1.6, None, 1.0]
+    assert log[2]["estimates"]["a3"]["value"] == pytest.approx(0.053)
+
+
 def test_round_callback_fires_once_after_each_round():
     rounds = []
     agent, _, _ = make_agent([run_exp(), VERDICT], on_round=lambda entry: rounds.append(entry["round"]))
@@ -261,3 +270,13 @@ def test_poc_never_imports_the_oracle():
             names = ([a.name for a in node.names] if isinstance(node, ast.Import)
                      else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
             assert not any(n.startswith(("dm.oracle", "dm.settle")) for n in names), path
+
+
+def test_learning_reading_recovers_pull_from_a_drop_at_rest():
+    from poc.animate import _reading
+    t = [0.5, 1.0, 1.5, 2.0]
+    run = {"input": {"p1": 2.0, "p2": 1.0, "pos2": [0.0, 4.0], "velocity2": [0.0, 0.0]},
+           "output": {"measurement_times": t, "pos2": [[0.0, 4.0 - 0.5 * 0.06 * s * s] for s in t]}}
+    assert _reading(run) == {"r": 4.0, "a": pytest.approx(0.03)}  # 0.06 pull at p1/p2 = 2
+    moving = {**run, "input": {**run["input"], "velocity2": [0.1, 0.0]}}
+    assert _reading(moving) is None

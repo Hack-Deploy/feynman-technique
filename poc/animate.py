@@ -26,6 +26,7 @@ from poc import estimate, truth
 from poc.baselines import SUPPORT_GUESS
 
 OUT = C.ROOT / "web" / "data" / "experiments.json"
+LEARNING_OUT = C.ROOT / "web" / "data" / "learning.json"
 FRAMES = 120
 POWER_LAW = ("gravity", "fractional")
 LABELS = {
@@ -120,9 +121,11 @@ def scene(record, cfg: C.Config) -> dict:
         "tolerance": {q.name: q.tolerance for q in hyp.quantities},
         "rounds": [{"round": e.get("round"), "action": e.get("action"),
                     "assessment": e.get("assessment"), "p_success": e.get("p_success"),
-                    "experiments": e.get("experiments")} for e in x.get("round_log") or []],
+                    "experiments": e.get("experiments"),
+                    "experiments_cost": e.get("experiments_cost"), "round_fee": e.get("round_fee")}
+                   for e in x.get("round_log") or []],
         "evidence": x.get("evidence"),
-        "spent": record.lab_cost,
+        "spent": record.lab_cost, "bid_p": x.get("bid_p"),
         "naive": (st.get("naive") or {}).get("profit"),
         "market": (st.get("market") or {}).get("profit"),
         "launches": [l for l in (_launch(hyp.world, record.seed, run, claimed)
@@ -130,12 +133,87 @@ def scene(record, cfg: C.Config) -> dict:
     }
 
 
+def _reading(run: dict) -> dict | None:
+    """A rough pull reading from one launch released at rest: fit d = a t² / 2 to how far the
+    probe has moved toward the source in its early snapshots, per unit p1 / p2."""
+    inp, out = run.get("input") or {}, run.get("output")
+    if not isinstance(out, dict) or "pos2" not in out or "pos2" not in inp:
+        return None
+    if any(abs(float(v)) > 1e-9 for v in inp.get("velocity2") or [0.0, 0.0]):
+        return None
+    try:
+        src = np.asarray(inp.get("pos1") or [0.0, 0.0], float)
+        x0 = np.asarray(inp["pos2"], float) - src
+        t = np.asarray(out.get("measurement_times") or inp.get("measurement_times"), float)
+        obs = np.asarray(out["pos2"], float) - src
+        role = float(inp.get("p1", 1.0)) / float(inp.get("p2", 1.0))
+    except (TypeError, ValueError):
+        return None
+    r0 = float(np.hypot(*x0))
+    if r0 <= 0 or role <= 0 or len(t) != len(obs) or not len(t):
+        return None
+    d = (x0 - obs) @ (x0 / r0)
+    early = t <= (t[np.argmax(d > 0.3 * r0)] if np.any(d > 0.3 * r0) else np.inf)
+    t, d = t[early & (t > 0)], d[early & (t > 0)]
+    if not len(t):
+        return None
+    return {"r": round(r0, 3), "a": round(2 * float(np.sum(d * t ** 2) / np.sum(t ** 4)) / role, 5)}
+
+
+def learning(record, cfg: C.Config) -> dict:
+    """One run round by round: the experiments it bought, the pull readings they give, and the
+    model's own running estimate of the law, against the hidden true law."""
+    x = record.extra
+    hyp = cfg.hypothesis(x["hypothesis_id"])
+    runs = x.get("runs") or []
+    rounds = []
+    for e in x.get("round_log") or []:
+        est = e.get("estimates") or {}
+        rounds.append({
+            "round": e.get("round"), "action": e.get("action"),
+            "assessment": e.get("assessment"), "p_success": e.get("p_success"),
+            "experiments": e.get("experiments"), "spent_so_far": e.get("spent_so_far"),
+            "estimates": {k: est[k] for k in ("n", "a3") if k in est},
+            "points": [p for p in (_reading(run) for run in runs
+                                   if run.get("round") == e.get("round")) if p],
+        })
+    true_values = truth.true_values(hyp)
+    st = x.get("settlements") or {}
+    return {
+        "id": record.attempt_id, "agent": LABELS.get(record.solver, record.solver),
+        "hypothesis_id": hyp.id, "hypothesis": hyp.hypothesis, "seed": record.seed,
+        "answer": hyp.answer, "verdict": x.get("agent_verdict"),
+        "outcome": record.verdict.get("outcome"), "prize": hyp.prize,
+        "expected": {k: SUPPORT_GUESS[hyp.id][k] for k in ("n", "a3")},
+        "true": {k: round(true_values[k], 5) for k in ("n", "a3")},
+        "tolerance": {q.name: q.tolerance for q in hyp.quantities},
+        "rounds": rounds, "max_rounds": x.get("max_rounds"), "spent": record.lab_cost,
+        "usd": (record.llm_usage or {}).get("usd"),
+        "naive": (st.get("naive") or {}).get("profit"),
+        "market": (st.get("market") or {}).get("profit"),
+    }
+
+
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--store", default=str(C.ATTEMPTS_PATH))
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--learning", metavar="STORE",
+                    help="write web/data/learning.json from the last real-model power-law run "
+                         "in STORE, instead of the hook")
     args = ap.parse_args(argv)
     cfg = C.load()
+    if args.learning:
+        recs = [r for r in AttemptStore(args.learning).load(lambda r: r.protocol == C.PROTOCOL)
+                if not r.solver.startswith("baseline:") and r.solver != "fake"
+                and cfg.hypothesis(r.extra["hypothesis_id"]).world in POWER_LAW]
+        if not recs:
+            raise SystemExit(f"no real-model power-law run in {args.learning}")
+        out = LEARNING_OUT
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(learning(recs[-1], cfg), separators=(",", ":"), allow_nan=False))
+        print(f"{recs[-1].solver} on {recs[-1].extra['hypothesis_id']} -> {out}")
+        return
     record = hook_record(AttemptStore(args.store).load(lambda r: r.protocol == C.PROTOCOL), cfg)
     if record is None:
         raise SystemExit("no real-model false claim in a power-law world yet")

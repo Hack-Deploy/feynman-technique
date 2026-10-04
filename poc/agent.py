@@ -218,6 +218,7 @@ class MarketAgent(DiscoveryAgent):
             entry["llm_reply"] = reply
             messages.append({"role": "assistant", "content": reply})
             self._read_confidence(reply, messages, entry)
+            entry["estimates"] = protocol.parse_estimates(reply)  # running belief; a verdict overwrites
             if round_num == 1:
                 reply = self._read_bid(reply, messages, entry)
                 if protocol.parse_withdraw(reply) is None and not self.bid["accepted"]:

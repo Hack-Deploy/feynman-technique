@@ -101,6 +101,10 @@ def main(argv: list[str] | None = None) -> None:
                     help="no lab: one reply from prior knowledge (the experimenting control)")
     ap.add_argument("--record", action="store_true",
                     help="show the public record of earlier failed runs (default: blind)")
+    ap.add_argument("--max-rounds", type=int,
+                    help="live runs only: override live.max_rounds in poc/live_models.yaml")
+    ap.add_argument("--max-usd", type=float,
+                    help="live runs only: override live.max_usd (DM_MAX_USD still applies)")
     ap.add_argument("--usd-per-call", type=float)
     ap.add_argument("--store", default=str(C.ATTEMPTS_PATH))
     ap.add_argument("--verbose", action="store_true")
@@ -138,6 +142,9 @@ def main(argv: list[str] | None = None) -> None:
         if os.environ.get("ENABLE_LIVE") != "1":
             sys.exit("refusing paid calls: set ENABLE_LIVE=1")
         live_settings = spend.load_settings()
+        overrides = {k: v for k, v in (("max_rounds", args.max_rounds),
+                                       ("max_usd", args.max_usd)) if v is not None}
+        live_settings = replace(live_settings, **overrides)
         cap = spend.effective_cap(live_settings)
         if cap is None:
             sys.exit("refusing paid calls: DM_MAX_USD must be set to a positive amount")

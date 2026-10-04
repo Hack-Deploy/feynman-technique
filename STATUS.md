@@ -660,3 +660,26 @@ rewards being right and knowing when you're right.
   original Vision / How it works / Live market pages and `style.css` are restored unchanged; the
   only change outside the new page is the `/experiments` route in `app.py`. Data file 36 kB.
   Check: `uv run pytest -q` 699 passed, 12 skipped; `--runslow tests/test_poc_market.py` 33 passed.
+
+## 2026-10-04 · One Opus run that iterates, and a "watching it learn" section
+
+- **Running estimates.** Every reply now also asks for `<estimate>` (a rough guess is fine before
+  data). `MarketAgent` records it per round in `entry["estimates"]`; `round_log` and the live
+  cache keep it. The verdict's estimate block still settles the run; earlier ones are only
+  status. One side effect to note: asking every round may nudge a model to commit earlier.
+- `poc.bench` takes `--max-rounds` and `--max-usd` for live runs, so one long run needs no edit to
+  `poc/live_models.yaml` (still 3 rounds / $5 for /live and the grid).
+- **The run.** Opus 5.5, gravity-inverse-square, seed 1, market rule told, up to 12 rounds, no
+  minimum (it may stop when it chooses). Own store: `attempts/poc_dp_opus_loop.jsonl` (git-ignored),
+  so the pilot boards are untouched. Projected worst case $8.91; actual **$0.31**, 4 calls.
+  It stopped after 4 rounds: experiments (4) → MSE fit → experiments (2) → verdict "refuted".
+  Running n: 2.0 ± 0.5 (prior) → 1.1 ± 0.3 → 1.15 ± 0.25 → 0.97 ± 0.08 (truth 1.00, tolerance
+  0.22); a3 0.11 → 0.058 → 0.055 → 0.055 (truth 0.053). Confirmed; market +46.7, naive +44.
+- **/experiments, new section below the hook.** `uv run python -m poc.animate --learning
+  attempts/poc_dp_opus_loop.jsonl` writes `web/data/learning.json`. The chart shows pull against
+  distance: the model's current guess curve moving round by round, earlier guesses as ghosts,
+  rough pull readings from each launch (fit d = a t²/2 to early snapshots of a drop at rest), the
+  1/r² hypothesis and the true law (labelled hidden from the model). Beside it, n per round with
+  σ bars against the checker's acceptance band, the model's words, and the checker's result.
+  The hook section above is unchanged.
+- Check: `uv run pytest -q` 701 passed, 12 skipped.
