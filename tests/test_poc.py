@@ -131,6 +131,25 @@ def test_round_callback_fires_once_after_each_round():
     assert rounds == [1, 2]
 
 
+def test_penultimate_round_warning_allows_experiments():
+    cfg = dataclasses.replace(CFG, max_rounds=3)
+    agent, _, _ = make_agent([run_exp(), run_exp(), VERDICT], cfg=cfg)
+
+    agent.run()
+
+    assert "You may still run an experiment" in agent.conversation_log[1]["system_message"]
+
+
+def test_empty_no_tag_reply_gets_cutoff_feedback():
+    agent, _, _ = make_agent(["", VERDICT])
+
+    agent.run()
+
+    assert agent.conversation_log[0]["system_message"].startswith(
+        "ERROR: your reply was empty"
+    )
+
+
 def test_round_callback_errors_do_not_change_the_run(capsys):
     def fail(_entry):
         raise RuntimeError("callback failed")

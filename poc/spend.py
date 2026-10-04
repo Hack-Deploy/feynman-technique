@@ -164,6 +164,20 @@ def effective_cap(settings: LiveSettings) -> float | None:
     return min(env_cap, settings.max_usd)
 
 
+def cap_note(settings: LiveSettings) -> str:
+    raw = os.environ.get("DM_MAX_USD")
+    try:
+        env_cap = float(raw)
+    except (TypeError, ValueError):
+        return ""
+    if math.isfinite(env_cap) and env_cap > settings.max_usd:
+        return (
+            f"DM_MAX_USD (${env_cap:g}) exceeds the configured hard cap "
+            f"(${settings.max_usd:g}); the hard cap is applied."
+        )
+    return ""
+
+
 class CapReached(RuntimeError):
     """The cumulative spend cap would be exceeded."""
 

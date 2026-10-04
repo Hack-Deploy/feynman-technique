@@ -151,6 +151,18 @@ columns. Click a saved run and use **Replay round by round**.*
 
 > Every run is kept — especially the failures. The next model sees them before it bids. And the leaderboard shows, across models, who made money and whose stated odds were honest.
 
+*Optional operator prep: share the warm-start data with the project dataset.*
+
+```bash
+uv run python -m poc.hf_data push --dry-run
+uv run python -m poc.hf_data push
+uv run python -m poc.hf_data pull
+```
+
+> The default dataset is public, so no token is needed to pull it. Push is private by default
+> and includes only allow-listed live-market records; `--repo ORG/NAME` overrides the default.
+> A new checkout can pull those records so Recorded runs and the next rerun start warm.
+
 If using the scripted demo, say: *"This one is a scripted stand-in so it's free to show; it always answers 'supported', so you'll see it lose on false claims — which is exactly what a loss should look like."*
 
 ---
@@ -168,3 +180,17 @@ If using the scripted demo, say: *"This one is a scripted stand-in so it's free 
 - **Why publish failures but not conclusions?** Data and spending help the next bidder; a wrong conclusion could leak or mislead about the answer.
 - **What stops overconfidence?** Overconfident agents enter bad bets and lose credits; their public calibration record shows it.
 - **What's the biggest weakness?** The judge. 17 of 60 attempts passed with a wrong law. A per-case scoring gate did not fix the discrimination problem; the next useful step is widening the hidden cases, not changing the aggregation rule.
+
+## Optional live-market reset (operator only)
+
+Review the randomized plan and spend projection before starting a fresh paid grid:
+
+```bash
+uv run python -m poc.rerun_all --preflight
+ENABLE_LIVE=1 uv run python -m poc.rerun_all --purge
+```
+
+Set `DM_MAX_USD=50` in `poc/.env` and provide `ANTHROPIC_API_KEY` there. The second
+command asks once before archiving the current live data and running; it never removes
+the spend ledger. This is not needed for the presentation: use Recorded runs so no key
+or paid call is required.

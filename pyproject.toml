@@ -13,6 +13,7 @@ dependencies = [
     "physchool",
     "scienceagent",
     "requests>=2.31",  # imported by scienceagent.llm_client but not declared
+    "huggingface-hub>=1.0,<2",
 ]
 
 [dependency-groups]

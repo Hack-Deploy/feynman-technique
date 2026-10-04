@@ -6,6 +6,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -286,6 +287,83 @@ def test_metered_llm_bounds_calls_and_never_sends_over_cap(tmp_path):
     assert calls == []
 
 
+def test_metered_llm_records_stop_reasons_and_defaults_to_16000_tokens(tmp_path):
+    price = ModelPrice("Sonnet", "sonnet", 2, 10)
+    requests = []
+    stop_reasons = iter(("max_tokens", "end_turn"))
+
+    def transport(model, system, messages, max_tokens):
+        requests.append(max_tokens)
+        return "ok", {
+            "input_tokens": 5,
+            "output_tokens": 2,
+            "stop_reason": next(stop_reasons),
+        }
+
+    metered = MeteredLLM(
+        "sonnet",
+        price,
+        SpendLedger(tmp_path / "metered-stop-reasons.jsonl", cap=1),
+        "metered-stop-reasons",
+        transport=transport,
+    )
+
+    metered("sonnet", [{"role": "user", "content": "first"}])
+    metered("sonnet", [{"role": "user", "content": "second"}], max_tokens=10)
+
+    assert requests == [16000, 10]
+    assert metered.stop_reasons == ["max_tokens", "end_turn"]
+    assert metered.take_cut_off() is True
+    assert metered.take_cut_off() is False
+
+
+def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
+    settings = spend.load_settings()
+    hyp = C.load().hypotheses[0]
+    settings = replace(
+        settings,
+        models=settings.models[:1],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=3,
+        max_tokens=32,
+    )
+    replies = iter((
+        ("", "max_tokens"),
+        (
+            "<assessment>No response content yet.</assessment><p_success>0.4</p_success>",
+            "end_turn",
+        ),
+        (
+            "<assessment>Evidence is sufficient.</assessment><p_success>0.7</p_success>"
+            "<verdict>supported</verdict><evidence>Offline response.</evidence>",
+            "end_turn",
+        ),
+    ))
+
+    def transport(_model, _system, _messages, _max_tokens):
+        text, stop_reason = next(replies)
+        return text, {
+            "input_tokens": 25,
+            "output_tokens": 0 if not text else 8,
+            "stop_reason": stop_reason,
+        }
+
+    cache = tmp_path / "cutoff-grid.jsonl"
+    messages = []
+    result = _run_grid(
+        settings,
+        cache,
+        SpendLedger(tmp_path / "cutoff-grid-spend.jsonl", cap=1),
+        lambda _model: transport,
+        out=lambda *parts: messages.append(" ".join(map(str, parts))),
+    )
+
+    assert result["done"] == 1, (result, messages)
+    rounds = live_cache.load(cache)[0]["rounds"]
+    assert [round_entry["cut_off"] for round_entry in rounds] == [True, False]
+
+
 def test_metered_llm_voids_provider_status_errors_and_keeps_unknown_reservations(
     monkeypatch, tmp_path
 ):
@@ -324,16 +402,16 @@ def test_metered_llm_voids_provider_status_errors_and_keeps_unknown_reservations
 def test_live_market_reads_cumulative_spend_and_enforces_hard_cap(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("ENABLE_LIVE", "1")
-    monkeypatch.setenv("DM_MAX_USD", "20")
-    ledger = SpendLedger(spend.LEDGER_PATH, cap=5)
-    reservation = ledger.reserve("old-run", "claude-sonnet-5-5", 4.99)
-    ledger.settle(reservation, "old-run", "claude-sonnet-5-5", {}, 4.99)
+    monkeypatch.setenv("DM_MAX_USD", "50")
+    ledger = SpendLedger(spend.LEDGER_PATH, cap=50)
+    reservation = ledger.reserve("old-run", "claude-sonnet-5-5", 49.99)
+    ledger.settle(reservation, "old-run", "claude-sonnet-5-5", {}, 49.99)
 
     info = live_market.info()
-    assert info["live"]["hard_cap_usd"] == 5
-    assert info["live"]["max_usd"] == 5
-    assert info["live"]["spent_usd"] == 4.99
-    assert info["live"]["actual_usd"] == 4.99
+    assert info["live"]["hard_cap_usd"] == 50
+    assert info["live"]["max_usd"] == 50
+    assert info["live"]["spent_usd"] == 49.99
+    assert info["live"]["actual_usd"] == 49.99
     assert info["live"]["remaining_usd"] == 0.01
     with pytest.raises(PermissionError, match="Projected run spend exceeds.*DM_MAX_USD"):
         live_market.start("gravity-inverse-square", "claude-sonnet-5-5", scripted=False)
@@ -362,15 +440,31 @@ def test_demo_grid_refuses_live_mode_without_each_guard(monkeypatch, tmp_path, e
 
 @pytest.mark.allow_live_env
 def test_demo_grid_preflight_loads_cap_from_poc_env(monkeypatch, tmp_path, capsys):
+    monkeypatch.delenv("DM_MAX_USD", raising=False)
     env_path = tmp_path / "poc.env"
-    env_path.write_text("DM_MAX_USD=5\n")
+    env_path.write_text("DM_MAX_USD=50\n")
     monkeypatch.setattr(bench, "load_env", lambda: _LOAD_ENV(env_path))
     demo_grid.main([
         "--preflight",
         "--cache", str(tmp_path / "runs.jsonl"),
         "--ledger", str(tmp_path / "spend.jsonl"),
     ])
-    assert "effective cap: $5.000000" in capsys.readouterr().out
+    assert spend.effective_cap(spend.load_settings()) == 50
+    output = capsys.readouterr().out
+    assert "effective cap: $50.000000" in output
+
+    monkeypatch.setenv("DM_MAX_USD", "100")
+    bench.load_env()
+    assert spend.effective_cap(spend.load_settings()) == 50
+    demo_grid.main([
+        "--preflight",
+        "--cache", str(tmp_path / "runs-uncapped.jsonl"),
+        "--ledger", str(tmp_path / "spend-uncapped.jsonl"),
+    ])
+    assert "the hard cap is applied" in capsys.readouterr().out
+    monkeypatch.setenv("DM_MAX_USD", "40")
+    bench.load_env()
+    assert spend.effective_cap(spend.load_settings()) == 40
 
 
 def test_bench_live_uses_metered_ledger_and_stops_when_cap_is_reached(
@@ -607,6 +701,7 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
         "gravity-inverse-square",
         seed=1,
     )
+    real_entry["rounds"][0]["cut_off"] = True
     live_cache.append(live_cache.RUNS_PATH, real_entry)
     status, body = _request(f"{app_server}/api/live/recorded")
     assert status == 200
@@ -624,6 +719,7 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
     detail = json.loads(body)
     assert detail["source"] == "real"
     assert detail["rounds"] == real_entry["rounds"]
+    assert detail["rounds"][0]["cut_off"] is True
     status, body = _request(f"{app_server}/api/live/recorded/run?id=unknown")
     assert status == 404
     assert json.loads(body) == {"error": "not found"}

@@ -37,12 +37,53 @@ scripted and recorded examples.
 `uv sync` installs the DiscoverPhysics packages from the pinned submodule as editable
 dependencies. Never edit files under `vendor/`; wrap vendor behavior in project code.
 
+## Quick start with recorded data
+
+```bash
+git clone --recurse-submodules https://github.com/Hack-Deploy/feynman-technique.git
+cd feynman-technique
+uv sync
+uv run python -m poc.hf_data pull      # downloads arushisinha98/discovery-market-live
+uv run python app.py                   # open /live → Recorded runs
+```
+
+No Anthropic key is needed to view the recorded data. The default dataset is public, so no
+token is needed; `HF_TOKEN` is only needed for a private fork or copy, set in `poc/.env`
+with read access. Pull archives replaced local files under `attempts/archive/` and fills
+`attempts/fixtures/live/runs.jsonl`, which `/live` uses for Recorded runs. `poc.rerun_all`
+reads its cached run keys and `order_seed`, so completed runs are skipped and the plan resumes.
+
 ## Run the live market with your key
 
 The `/live` page's scripted and recorded modes make no API calls. To run real models,
 follow [the live-market instructions in `poc/README.md`](poc/README.md#run-the-live-market-with-your-key):
-they cover the no-key spend preflight, the multi-model grid, the explicit $5 cap,
+they cover the no-key spend preflight, the multi-model grid, the configured $50 hard cap,
 committing recorded runs, and the persistent append-only spend ledger.
+
+To preview a fresh randomized model order for every claim and archive the current live
+record before rerunning the full grid:
+
+```bash
+uv run python -m poc.rerun_all --preflight
+ENABLE_LIVE=1 uv run python -m poc.rerun_all --purge
+```
+
+The purge archives the live cache, summary, benchmark store, and transcripts; it never
+deletes them or touches the spend ledger. The run still requires a positive `DM_MAX_USD`
+cap (for example, set `DM_MAX_USD=50` in `poc/.env`) and an API key.
+
+## Share / warm start
+
+To push data, set `HF_TOKEN` in `poc/.env` with write access. `--repo ORG/NAME` overrides
+the default dataset; `DM_HF_REPO` is an optional environment override.
+
+```bash
+uv run python -m poc.hf_data push --dry-run
+uv run python -m poc.hf_data push
+```
+
+Push creates a private dataset unless `--public` is supplied and uploads only allow-listed
+live records. `--dry-run` lists files and sizes without network calls.
 
 ## How the simulation works
 

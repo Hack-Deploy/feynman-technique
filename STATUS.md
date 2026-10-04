@@ -484,12 +484,13 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 
 - Added the configured Anthropic model-price table, cumulative append-only spend ledger,
   per-call metering and reservations, bounded run projections, and resumable multi-model grid.
-  The configured hard cap is $5; `DM_MAX_USD` can only lower it.
+  The configured hard cap is $50; `DM_MAX_USD` can only lower it.
 - Added the deterministic scripted grid at `attempts/fixtures/live/scripted_demo.jsonl` and
   its derived summary, plus real/scripted recorded-run APIs and documentation. The ledger and
   lock remain git-ignored. No real API calls were made.
-- Preflight with an empty live cache: $4.661748 total worst-case across 8 runs; the largest
-  model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
+- With `max_tokens: 16000` and `DM_MAX_USD=50`, preflight projects $17.693172 worst-case
+  across 8 runs: Sonnet 5.5 $3.931816, Sonnet 5 $3.931816, Opus 5.5 $7.863632, and
+  Haiku 4.5 $1.965908. The configured $50 hard cap applies if the environment cap is higher.
 - Checks after merging `origin/real-attempts`: targeted live/POC suite 47 passed; full suite
   657 passed, 5 skipped, 0 xfailed, no XPASS.
 
@@ -554,3 +555,35 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   committed snapshot when available; a present `top_model: null` remains output data.
 - Verification: `uv run pytest -q -p no:cacheprovider tests/test_real_snapshots.py
   tests/test_real_app.py` — 16 passed, 1 skipped.
+
+## Live reasoning budget, hard cap, and randomized reruns (2026-10-04)
+
+- Live reasoning uses `max_tokens: 16000` and an explicit 600-second Anthropic timeout.
+  Stop reasons are retained; rounds stopped by `max_tokens` are marked in the cache and
+  replay, and empty replies and the penultimate-round prompt are clearer.
+- The configured hard cap is $50. If `DM_MAX_USD` is higher, preflight and `/api/live/info`
+  explain that the configured cap applies.
+- `poc.rerun_all` covers every configured claim and model at seed 0. It creates a seeded,
+  independent model permutation per claim and executes position-major; interrupted runs
+  resume their cached order. Purge archives live records and transcripts without touching
+  the spend ledger or scripted fixtures.
+- No-call preflight with inline `DM_MAX_USD=50`: the 8-run demo grid projects $17.693172
+  ($3.931816 each for Sonnet 5.5 and Sonnet 5, $7.863632 for Opus 5.5, and $1.965908 for
+  Haiku 4.5). The 44-run rerun-all plan used order seed `1845679887` and projects $97.557075
+  ($21.679350 each for Sonnet 5.5 and Sonnet 5, $43.358700 for Opus 5.5, and $10.839675
+  for Haiku 4.5), with the effective cap at $50.
+
+## Hugging Face live-data sharing and warm start (2026-10-04)
+
+- Added `huggingface-hub>=1.0,<2` as a main dependency and locked `huggingface-hub 1.33.0`.
+- `poc.hf_data` pushes only allow-listed live records to a private dataset by default,
+  scans uploads for secrets, supports a network-free dry run, and archives conflicts before
+  pulling a warm-start dataset. `HF_TOKEN` and `DM_HF_REPO` are documented in the env template.
+- Focused live/rerun/Hugging Face suite: 109 passed. Full suite:
+  `uv run pytest -q -p no:cacheprovider` — 698 passed, 3 skipped, 34 warnings.
+- Recorded-run replay also defaults missing legacy `cut_off` fields to false;
+  `tests/test_live_market.py::test_scripted_http_run_and_seed_increment` passed.
+- Follow-up: cutoff tracking now lives in `MeteredLLM` and is consumed by both live and grid
+  callbacks; public Hugging Face pulls need no token, and the dataset defaults to
+  `arushisinha98/discovery-market-live`. README documents the cold-start pull and resume path.
+- No paid API calls were made and no vendor files were edited.
