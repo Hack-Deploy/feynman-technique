@@ -47,6 +47,11 @@ uv run python -m poc.report --dashboard                 # summary + output/poc_d
 
 ## Run the live market with your key
 
+Live-market observations include independent Gaussian noise: positions σ = 0.075 and velocities
+σ = 0.05. The Poc wrapper adds velocity noise because the vendor executor only noises positions.
+Results can be inconclusive; repeating an experiment in the same or a later round gives a fresh
+reading and is charged at full price.
+
 ```bash
 cp poc/.env.example poc/.env
 # Set ANTHROPIC_API_KEY in poc/.env.
@@ -100,6 +105,8 @@ uv run python -m poc.hf_data pull
 ```
 
 Push is private unless `--public` is supplied. The dry run makes no network calls.
+Push replaces the dataset's allow-listed live data with yours; older versions stay in the
+dataset's commit history.
 Pull replaces the local allow-listed live record with the dataset snapshot, archiving
 the old files and directories under `attempts/archive/`.
 

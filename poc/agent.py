@@ -15,6 +15,8 @@ import sys
 from copy import deepcopy
 from typing import Callable, Optional
 
+import numpy as np
+
 from scienceagent import llm_client
 from scienceagent.agent import (
     DiscoveryAgent, _MSE_FIT_PROMPT_BLOCK, _compact_json, _extract_tag, _join_sys,
@@ -31,11 +33,14 @@ Complete = Callable[..., str]
 class MeteredExecutor:
     """Prices a batch of experiments, refuses it if over budget, charges it only if it runs."""
 
-    def __init__(self, inner, cfg: Config, hyp: Hypothesis, account: Account):
+    def __init__(self, inner, cfg: Config, hyp: Hypothesis, account: Account,
+                 velocity_noise_std: float, noise_seed: int):
         self.inner = inner
         self.cfg = cfg
         self.hyp = hyp
         self.account = account
+        self.velocity_noise_std = velocity_noise_std
+        self._vel_rng = np.random.default_rng([noise_seed, 1])
         self.round_num = 0
         self.round_cost = 0.0
         self.experiments = 0
@@ -56,6 +61,19 @@ class MeteredExecutor:
             self.account.refuse(total, self.round_num, len(exp_input))
             raise OverBudget(total, self.account.remaining)
         results = self.inner.run(exp_input)
+        if self.velocity_noise_std != 0:
+            for result in results:
+                if not isinstance(result, dict):
+                    continue
+                for key in ("velocity1", "velocity2", "velocities"):
+                    value = result.get(key)
+                    if value is not None:
+                        array = np.asarray(value, dtype=float)
+                        result[key] = (
+                            array + self._vel_rng.normal(
+                                0, self.velocity_noise_std, array.shape
+                            )
+                        ).tolist()
         self.account.charge("experiments_charged", total, self.round_num,
                             {"count": len(exp_input), "items": [b for _, b in priced]})
         self.round_cost = round(self.round_cost + total, 6)
@@ -66,7 +84,8 @@ class MeteredExecutor:
 class MarketAgent(DiscoveryAgent):
     def __init__(self, *, cfg: Config, hyp: Hypothesis, account: Account,
                  ledger_entries: list[dict], complete: Optional[Complete] = None,
-                 on_round: Callable[[dict], None] | None = None, **kwargs):
+                 on_round: Callable[[dict], None] | None = None, noise_seed: int = 0,
+                 **kwargs):
         # Set before super().__init__, which builds the system prompt.
         self.cfg = cfg
         self.hyp = hyp
@@ -76,7 +95,10 @@ class MarketAgent(DiscoveryAgent):
         self._complete = complete or llm_client.complete
         self.record_bought = False
         self.record_fee = 0.0
-        executor = MeteredExecutor(kwargs.pop("executor"), cfg, hyp, account)
+        executor = MeteredExecutor(
+            kwargs.pop("executor"), cfg, hyp, account,
+            cfg.velocity_noise_std, noise_seed,
+        )
         super().__init__(executor=executor, max_rounds=cfg.max_rounds, min_rounds=1,
                          critic=None, random_experiments=False, no_mse=False, **kwargs)
         self.outcome: str | None = None  # verdict | walked_away | withdrawn | out_of_rounds

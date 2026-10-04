@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fnmatch
 import json
 from pathlib import Path
 
@@ -84,6 +85,12 @@ def test_push_uses_only_allowlisted_files_and_private_dataset_by_default(tmp_pat
         {"repo_type": "dataset", "private": True, "exist_ok": True},
     )
     assert len(api.uploads) == 1
+    delete_patterns = api.uploads[0]["delete_patterns"]
+    assert delete_patterns == list(hf_data.ALLOW_PATTERNS)
+    assert all(
+        not fnmatch.fnmatchcase("README.md", pattern)
+        for pattern in delete_patterns
+    )
     uploaded_files = api.uploads[0]["files"]
     assert set(uploaded_files) == set(uploaded) | {"README.md"}
     assert all(name not in uploaded_files for name in excluded)
@@ -130,8 +137,12 @@ def test_dry_run_lists_sizes_without_api_calls(tmp_path):
     hf_data.push("org/data", root=tmp_path, api=api, dry_run=True, out=output.append)
 
     assert output
-    assert all("(" in line and " bytes)" in line for line in output)
+    assert all("(" in line and " bytes)" in line for line in output[:-1])
     assert any(line.startswith("README.md") for line in output)
+    assert output[-1] == (
+        "Remote allowlisted files not in this upload will be deleted "
+        "(kept in the dataset's commit history)."
+    )
     assert api.created == []
     assert api.uploads == []
 
