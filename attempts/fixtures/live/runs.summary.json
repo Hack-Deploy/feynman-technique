@@ -51,8 +51,8 @@
   },
   "comparison": [
     {
-      "brier": 0.1608,
-      "credits_spent": 471.2,
+      "brier": 0.1431,
+      "credits_spent": 547.2,
       "label": "Claude Sonnet 5.5",
       "model": "claude-sonnet-5-5",
       "points": [
@@ -73,14 +73,20 @@
           "hypothesis_id": "circle-ordinary-gravity",
           "p": 0.7,
           "passed": true
+        },
+        {
+          "attempt_id": "1b0e3cc1-761b-53a0-996f-346ce6053355",
+          "hypothesis_id": "ether-outward-push",
+          "p": 0.7,
+          "passed": true
         }
       ],
-      "prize_paid": 370.0,
-      "profit": -101.2,
-      "runs": 3,
-      "usd_spent": 0.725712,
-      "win_rate": 0.6667,
-      "wins": 2
+      "prize_paid": 490.0,
+      "profit": -57.2,
+      "runs": 4,
+      "usd_spent": 1.012126,
+      "win_rate": 0.75,
+      "wins": 3
     },
     {
       "brier": 0.25,
@@ -103,8 +109,8 @@
       "wins": 1
     },
     {
-      "brier": 0.0692,
-      "credits_spent": 163.0,
+      "brier": 0.0715,
+      "credits_spent": 203.0,
       "label": "Claude Opus 5.5",
       "model": "claude-opus-5-5",
       "points": [
@@ -125,14 +131,20 @@
           "hypothesis_id": "dark-matter-unseen-pull",
           "p": 0.85,
           "passed": true
+        },
+        {
+          "attempt_id": "6b91cf84-a1d3-5065-9235-dab0a527f3c5",
+          "hypothesis_id": "hubble-outward-push",
+          "p": 0.72,
+          "passed": true
         }
       ],
-      "prize_paid": 270.0,
-      "profit": 107.0,
-      "runs": 3,
-      "usd_spent": 0.758024,
+      "prize_paid": 390.0,
+      "profit": 187.0,
+      "runs": 4,
+      "usd_spent": 1.1411,
       "win_rate": 1.0,
-      "wins": 3
+      "wins": 4
     },
     {
       "brier": 0.0225,
