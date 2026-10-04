@@ -58,6 +58,8 @@
 
   .learn { margin-top: 0; }
   [hidden] { display: none !important; }
+  #oLaw { margin-top: 10px; font-size: 13px; }
+  #oLaw pre { max-height: 260px; overflow: auto; white-space: pre; font-size: 12px; background: #fff; padding: 10px; border-radius: 6px; }
   .kv.row { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
   @media (max-width: 720px) { .kv.row { grid-template-columns: 1fr 1fr; } }
   .viewbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 14px; }
@@ -173,13 +175,13 @@
   <h2 id="watchTitle">Round by round.</h2>
   <p class="sub" id="watchLead"></p>
   <div class="viewbar">
-    <span class="mode" id="view"><span id="vRuns"><button data-v="replay" data-run="0" class="on">Recorded run</button></span><button data-v="live" id="vLive" disabled>Your market</button></span>
+    <span class="mode" id="view"><span id="vRuns"><button data-v="replay" data-run="0" class="on">Recorded run</button></span><button data-v="orig" id="vOrig" hidden>Find the law</button><button data-v="live" id="vLive" disabled>Your market</button></span>
   </div>
   <div id="claim"></div>
   <div class="kv row">
     <div><span>Round</span><b id="kRound">–</b></div>
-    <div><span>Spent</span><b id="kSpent">–</b></div>
-    <div><span>Experiments</span><b id="kExp">–</b></div>
+    <div><span id="kSpentL">Spent</span><b id="kSpent">–</b></div>
+    <div><span id="kExpL">Experiments</span><b id="kExp">–</b></div>
     <div><span>Stated chance</span><b id="kP">–</b></div>
   </div>
   <div class="learn" id="learn">
@@ -208,6 +210,30 @@
   <div class="trail">
     <div class="trail-head"><h3>How its hypothesis changed</h3><p class="note">What it believed after each round, and why. Click a round to jump there.</p></div>
     <ol id="lTrail"></ol>
+  </div>
+  </div>
+  <div id="origView" hidden>
+  <div class="learn-grid">
+    <figure class="lchart">
+      <svg id="oc" viewBox="0 0 640 520" role="img" aria-label="Hidden test: the probes' true paths against the paths its current law predicts"></svg>
+      <div class="legend">
+        <span><i class="dot" style="background:#B9B9B3"></i>Other bodies in the world</span>
+        <span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>True probe paths (hidden from the model)</span>
+        <span><i style="border-color:#B7791F"></i>What its current law predicts</span>
+      </div>
+    </figure>
+    <div class="lside">
+      <div class="lhead"><b id="oRound"></b><span id="oConf"></span></div>
+      <div class="lguess" id="oErr"></div>
+      <svg id="oe" viewBox="0 0 320 170" role="img" aria-label="Error of its law on the hidden tests, round by round, against the pass line"></svg>
+      <p class="quote" id="oQuote"></p>
+      <details id="oLaw"><summary>Its law so far (Python)</summary><pre id="oLawSrc"></pre></details>
+      <div class="lverdict" id="oVerdict"></div>
+    </div>
+  </div>
+  <div class="controls" style="margin-top:12px">
+    <button class="btn sm" id="oPlay">Play</button>
+    <div class="steps" id="oSteps"></div>
   </div>
   </div>
   <div class="board" id="liveView" hidden>
@@ -282,8 +308,11 @@ let INFO = null, MODE = "demo", POLL = null, VIEW = "replay", CLAIM = {}, REPLAY
 // section 2: one view at a time, the recorded run or the market you started
 function showView(v) {
   VIEW = v;
-  $("#learn").hidden = v !== "replay"; $("#liveView").hidden = v !== "live";
+  $("#learn").hidden = v !== "replay"; $("#liveView").hidden = v !== "live"; $("#origView").hidden = v !== "orig";
+  $("#kSpentL").textContent = v === "orig" ? "Experiments" : "Spent";
+  $("#kExpL").textContent = v === "orig" ? "Error on hidden tests" : "Experiments";
   document.querySelectorAll("#view button").forEach(b => b.classList.toggle("on", b.dataset.v === v && (b.dataset.run == null || +b.dataset.run === RUN_IX)));
+  if (v === "orig" && window.origRender) window.origRender(true);
   if (v === "replay" && REPLAY_CLAIM) renderClaim(REPLAY_CLAIM);
   if (v === "replay" && window.replayRender) window.replayRender();
   if (v === "live") renderClaim(CLAIM);
@@ -744,6 +773,138 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
     new IntersectionObserver((es, o) => { if (es[0].isIntersecting && !started && !REDUCED) { started = true; play(); o.disconnect(); } }, {threshold: .35}).observe($("#learn"));
   }).catch(() => { $("#view").hidden = true; $("#vLive").disabled = false; showView("live"); });
 })();
+})();
+</script>
+<script>
+// ---------------------------------------------------------------- section 2: the original task, find the law from scratch
+(() => {
+  const GOLD = "#B7791F", GREEN = "#2E7D4F", GREY = "#B9B9B3";
+  const R_DUR = 2.8, TWEEN = 0.9, CHECK_DUR = 3, W = 640, H = 520, M = 18;
+  const fmt = (v, d = 3) => v == null ? "–" : +(+v).toPrecision(d) + "";
+  const ease = x => x < 0 ? 0 : x > 1 ? 1 : 1 - Math.pow(1 - x, 3);
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let O = null, T = 0, playing = false, last = null, total = 0, started = false, S = null, held = [];
+
+  const sp = (pos, f) => pos.map(frame => frame.map(f));
+  function scale(d) {  // fit every true path into the panel, same scale on both axes
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const fr of d.truth.positions) for (const [x, y] of fr) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const k = Math.min((W - 2 * M) / (x1 - x0 || 1), (H - 2 * M) / (y1 - y0 || 1)) / 1.12;
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    return ([x, y]) => [W / 2 + (x - cx) * k, H / 2 - (y - cy) * k];
+  }
+  const line = (pts, stroke, w, dash, op = 1) => `<polyline points="${pts.map(p => p.map(v => v.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="${stroke}" stroke-width="${w}" ${dash ? `stroke-dasharray="${dash}"` : ""} stroke-linecap="round" stroke-linejoin="round" opacity="${op}"/>`;
+  const track = (pos, i) => pos.map(fr => S(fr[i]));
+
+  function errChart(idx, inCheck) {
+    const EW = 320, EH = 170, L = 40, R = 10, Tp = 12, B = 26, N = O.rounds.length;
+    const scored = O.rounds.map(r => r.nmse).filter(v => v > 0);
+    const top = Math.log10(Math.max(O.no_force_nmse || 10, ...scored) * 2), bot = Math.min(-2, Math.floor(Math.log10(Math.min(...scored, 1))));
+    const x = i => L + (N > 1 ? i / (N - 1) : .5) * (EW - L - R - 6) + 3, y = v => EH - B - (Math.log10(Math.max(v, 10 ** bot)) - bot) / (top - bot) * (EH - B - Tp);
+    let g = `<rect x="${L}" y="${y(O.threshold)}" width="${EW - L - R}" height="${EH - B - y(O.threshold)}" fill="${GREEN}" opacity=".13"/>`;
+    g += `<line x1="${L}" x2="${EW - R}" y1="${y(O.threshold)}" y2="${y(O.threshold)}" stroke="${GREEN}" stroke-dasharray="5 4"/><text x="${EW - R}" y="${y(O.threshold) + 13}" font-size="11" fill="${GREEN}" text-anchor="end">passes below ${O.threshold}</text>`;
+    if (O.no_force_nmse) g += `<line x1="${L}" x2="${EW - R}" y1="${y(O.no_force_nmse)}" y2="${y(O.no_force_nmse)}" stroke="#6B6B67" stroke-dasharray="1 4" stroke-width="2"/><text x="${L + 4}" y="${y(O.no_force_nmse) + 13}" font-size="11" fill="#6B6B67">a law with no forces: ${fmt(O.no_force_nmse, 2)}</text>`;
+    for (let e = Math.ceil(bot); e <= Math.floor(top); e++) g += `<text x="${L - 6}" y="${y(10 ** e) + 4}" font-size="10" fill="#6B6B67" text-anchor="end">${+(10 ** e).toPrecision(1)}</text>`;
+    O.rounds.forEach((r, i) => { if (N <= 12 || i % 2 === 0 || i === N - 1) g += `<text x="${x(i)}" y="${EH - 8}" font-size="10" fill="#6B6B67" text-anchor="middle">R${r.round}</text>`; });
+    g += `<text x="4" y="${Tp + 2}" font-size="10" fill="#6B6B67">error</text>`;
+    let path = "";
+    O.rounds.forEach((r, i) => {
+      if (i > idx) return;
+      if (r.nmse == null) { g += `<text x="${x(i)}" y="${Tp + 10}" font-size="12" fill="#B9B9B3" text-anchor="middle">×</text>`; return; }
+      path += `${path ? "L" : "M"}${x(i).toFixed(1)},${y(r.nmse).toFixed(1)}`;
+      g += `<circle cx="${x(i)}" cy="${y(r.nmse)}" r="${i === idx && !inCheck ? 6 : 4.5}" fill="${r.nmse < O.threshold ? GREEN : GOLD}" stroke="#fff" stroke-width="1.5"/>`;
+    });
+    if (path) g = g + `<path d="${path}" fill="none" stroke="${GOLD}" stroke-width="1.5" opacity=".6"/>`;
+    $("#oe").innerHTML = g;
+  }
+
+  function render() {
+    if (!O || VIEW !== "orig") return;
+    const N = O.rounds.length, inCheck = T >= N * R_DUR;
+    const idx = Math.min(N - 1, Math.floor(T / R_DUR)), local = inCheck ? R_DUR : T - idx * R_DUR;
+    const rd = O.rounds[idx], cur = held[idx], prev = held[Math.max(0, idx - 1)];
+    const k = idx === 0 || !prev ? 1 : ease(local / TWEEN);
+
+    // the hidden test: other bodies, the probes' true paths, and what its law predicts
+    const pos = O.truth.positions, probes = new Set(O.truth.probes);
+    let g = `<defs><clipPath id="oclip"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#oclip)">`;
+    pos[0].forEach((_, i) => { if (!probes.has(i)) { const tr = track(pos, i); g += line(tr, GREY, 1.2, "", .5); const e = tr[tr.length - 1]; g += `<circle cx="${e[0]}" cy="${e[1]}" r="3.2" fill="${GREY}"/>`; } });
+    O.truth.probes.forEach(i => {
+      const tr = track(pos, i); g += line(tr, GREEN, 2.4, "7 5");
+      g += `<circle cx="${tr[0][0]}" cy="${tr[0][1]}" r="5" fill="#fff" stroke="${GREEN}" stroke-width="2"/>`;
+      const e = tr[tr.length - 1]; g += `<circle cx="${e[0]}" cy="${e[1]}" r="4" fill="${GREEN}"/>`;
+    });
+    if (cur && cur.path) {
+      const from = prev && prev.path && k < 1 ? prev.path : null;
+      O.truth.probes.forEach(i => {
+        const tr = cur.path.map((fr, t) => { const p = fr[i]; if (!from) return S(p); const q = from[t][i]; return S([q[0] + (p[0] - q[0]) * k, q[1] + (p[1] - q[1]) * k]); });
+        g += line(tr, GOLD, 3.2, "");
+        const e = tr[tr.length - 1]; g += `<circle cx="${e[0]}" cy="${e[1]}" r="5" fill="${GOLD}" stroke="#fff" stroke-width="1.5"/>`;
+      });
+    }
+    g += `</g><text x="${W - 12}" y="${H - 12}" font-size="12" fill="#6B6B67" text-anchor="end">hidden test case · ${O.truth.probes.length} probes · t = 0 to ${O.truth.times[O.truth.times.length - 1]}</text>`;
+    if (!(cur && cur.path)) g += `<text x="${W / 2}" y="28" font-size="14" fill="#A23B1E" text-anchor="middle">${cur ? "its law does not run on this test" : "no law yet: it is still experimenting"}</text>`;
+    $("#oc").innerHTML = g;
+    errChart(idx, inCheck);
+
+    // words
+    const stated = (String(O.stated_p || "").match(/[0-9]*\.?[0-9]+/) || [])[0];
+    $("#oRound").textContent = inCheck ? "The checker" : `Round ${rd.round} of up to ${O.max_rounds}`;
+    $("#oConf").textContent = inCheck && stated ? `said ${Math.round(stated * 100)}% sure` : "";
+    $("#oErr").innerHTML = cur && cur.nmse != null ? `error ${fmt(cur.nmse)}<small>on the hidden tests; it passes below ${O.threshold}</small>`
+      : `no score yet<small>${cur ? "its law fails to run on the hidden tests" : "it has not written a law yet"}</small>`;
+    const act = rd.action === "experiment" ? (rd.experiments ? `Runs ${rd.experiments} experiment${rd.experiments === 1 ? "" : "s"}` : (rd.error ? "Experiment rejected" : "Experiment"))
+      : rd.action === "mse_fit" ? "Fits a candidate law to its data" : rd.action === "final_law" ? "Submits its final law" : esc(rd.action || "");
+    const said = rd.thinking.replace(/\*\*|`|^#+ /gm, "");
+    $("#oQuote").innerHTML = `“${esc(said.slice(0, 420))}${said.length > 420 ? "…" : ""}”<small>Round ${rd.round} · ${act}${rd.error ? ` · lab said: ${esc(String(rd.error).slice(0, 80))}` : ""}</small>`;
+    $("#oLaw").hidden = !cur; if (cur) $("#oLawSrc").textContent = cur.law;
+    const v = $("#oVerdict"); v.classList.toggle("show", inCheck);
+    if (inCheck) {
+      const ok = O.passed, a = O.ara, first = O.rounds.findIndex(r => r.nmse != null && r.nmse < O.threshold);
+      const early = first >= 0 && first < N - 1 ? ` Its law first passed at round ${O.rounds[first].round} (error ${fmt(O.rounds[first].nmse, 2)}); it kept experimenting for ${N - 1 - first} more round${N - 1 - first === 1 ? "" : "s"}${stated ? ` and said it was only ${Math.round(stated * 100)}% sure` : ""}.` : "";
+      v.style.borderLeftColor = ok ? "var(--green)" : "var(--rust)";
+      v.innerHTML = `<b>${ok ? "Passed." : "Failed."}</b> On test experiments it never saw, its law's error is ${O.final_nmse == null ? "undefined (it did not run)" : fmt(O.final_nmse)}; it needed under ${O.threshold}.${early} ${a ? `In the <a href="${esc(a.url)}">ARA</a> runs, ${a.passed.length} of ${a.runs} frontier models solved ${esc(O.world)}${a.passed.length ? ` (${esc(a.passed.join(", "))})` : ""}.` : ""}
+        <div class="nums"><span style="color:var(--muted)">${O.experiments} experiments · ${N} rounds · $${(+O.usd).toFixed(2)} API</span></div>`;
+    }
+    $("#kRound").textContent = inCheck ? `${rd.round} · done` : rd.round;
+    $("#kSpent").textContent = O.rounds.slice(0, idx + 1).reduce((s, r) => s + (r.experiments || 0), 0);
+    $("#kExp").textContent = cur && cur.nmse != null ? fmt(cur.nmse) : "–";
+    $("#kP").textContent = inCheck && stated ? pct(+stated) : "–";
+    document.querySelectorAll("#oSteps button").forEach(b => b.classList.toggle("on", +b.dataset.i === (inCheck ? N : idx)));
+  }
+  function claim() {
+    $("#claim").innerHTML = `<div class="q"><p class="label" style="margin:0 0 6px">The task · no hypothesis given</p><div class="h">“Find the law that moves these particles.”</div>
+      <div class="crit"><b>How it will be judged:</b> it submits the law as Python. The checker runs it on test experiments it never sees and compares where its ${O.truth.probes.length} probes end up with where they really go. It passes if the normalised error is below ${O.threshold}. This is the original DiscoverPhysics benchmark task.</div>
+      <div class="meta"><span class="pill info">${esc(O.agent)} · seed ${O.seed}</span><span class="pill info">world: ${esc(O.world)}</span><span class="pill">up to ${O.max_rounds} rounds</span>${O.ara ? `<span class="pill warn">${O.ara.passed.length} of ${O.ara.runs} frontier models solved it</span>` : ""}</div></div>`;
+    $("#watchLead").innerHTML = `A recorded real run of the original, harder task. Nobody tells ${esc(O.agent)} what to test: it designs experiments, writes a law as Python, and is scored on hidden tests. Gold is what its law predicts after each round; green dashes are the truth.`;
+  }
+
+  function tick(t) {
+    if (playing && VIEW !== "orig") { playing = false; $("#oPlay").textContent = "Play"; }
+    if (last != null && playing) {
+      T += (t - last) / 1000;
+      if (T >= total) { T = total; playing = false; $("#oPlay").textContent = "Replay"; }
+      render();
+    }
+    last = t; requestAnimationFrame(tick);
+  }
+  const play = () => { if (T >= total) T = 0; playing = true; $("#oPlay").textContent = "Pause"; };
+  $("#oPlay").addEventListener("click", () => playing ? (playing = false, $("#oPlay").textContent = "Play") : play());
+  $("#oSteps").addEventListener("click", e => {
+    const i = e.target.dataset && e.target.dataset.i; if (i == null) return;
+    T = +i * R_DUR + (+i < O.rounds.length ? .01 : 0); play(); render();
+  });
+  window.origRender = enter => { if (!O) return; if (enter) { claim(); if (!started && !REDUCED) { started = true; T = 0; play(); } } render(); };
+
+  fetch("/web/data/original.json").then(r => r.ok ? r.json() : Promise.reject(new Error(r.status))).then(d => {
+    O = d; S = scale(d);
+    let h = null; held = d.rounds.map(r => r.new_law ? (h = {law: r.law, nmse: r.nmse, path: r.path}) : h);
+    total = d.rounds.length * R_DUR + CHECK_DUR; if (REDUCED) T = total;
+    $("#oSteps").innerHTML = d.rounds.map((r, i) => `<button data-i="${i}">R${r.round}</button>`).join("") + `<button data-i="${d.rounds.length}">Checker</button>`;
+    const b = $("#vOrig"); b.hidden = false; b.textContent = `${d.agent} · ${d.world} · find the law`;
+    b.addEventListener("click", () => showView("orig"));
+    requestAnimationFrame(tick);
+  }).catch(() => {});
 })();
 </script>
 </body>

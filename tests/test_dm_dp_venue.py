@@ -307,3 +307,23 @@ class TestUsageAndLiveGuard:
         out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
                              cwd=ROOT, check=True).stdout.strip()
         assert out == "False"
+
+
+def test_every_world_gets_its_own_prompt_not_the_generic_fallback(tmp_path):
+    """From the repo root the vendor loader cannot find relative prompt paths and falls back
+    to a one-line prompt; the wrapper must hand it absolute paths."""
+    from scienceagent.agent import _load_system_prompt
+    from scienceagent.worlds import get_world
+
+    from dm.venues.discoverphysics import WORLDS, prompt_path
+
+    for world in WORLDS:
+        w = get_world(world, engine="nbody", noise_std=0.0, noise_seed=0)
+        text = _load_system_prompt(prompt_path(w["system_prompt"]), prompt_path(w["instructions"]))
+        assert "{{world_instructions}}" not in text
+        assert not text.startswith("You are a scientific discovery agent. Design experiments")
+        assert len(text) > 3000, world
+
+    a, _, _ = _run(tmp_path, world="ether", seed=0)
+    system = json.loads((tmp_path / "fake-1overr_ether_s0.json").read_text())["system"]
+    assert "probe_positions" in system  # ether's experiment format reached the model

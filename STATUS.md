@@ -899,3 +899,29 @@ scales to each run's true law and readings, and the claim label (1/r, 1/r²) com
 - Check: all touched test files pass. The only full-suite failure is
   `test_poc_never_imports_the_oracle`, caused by the untracked `poc/original.py`, which is not
   part of this merge.
+
+## 2026-10-04 · The original task: Opus 5.5 finds the ether law from scratch
+
+`original_task.py` (top level: it is judge-side and scores with the oracle, so it may not live
+in `poc/` or `dm/`) runs the vendor DiscoverPhysics loop unchanged through
+`dm.venues.discoverphysics.run_attempt` without the market note: no hypothesis, 16 rounds, noise
+0.075, then scores the law the model held after each round on hidden test case 0 and writes
+`web/data/original.json`. /live section 2 has a "find the law" view: the probes' true paths
+against the paths its current law predicts, its hidden-test error per round against the 0.1 line
+and a no-forces floor (11.3), its words, and the checker with the ARA comparison.
+
+Bug found and fixed in our wrapper: the vendor prompt loader resolves `PhysicsSchool/prompts/...`
+under the wrong directory and then the working directory, and on a miss silently uses a one-line
+generic prompt. From this repo's root every DiscoverPhysics run therefore got no world
+instructions, no experiment format and no law signature. `prompt_path()` now passes absolute
+paths; a test checks every world loads its own prompt. (No earlier paid run used this venue.)
+
+Runs (Opus 5.5, ether, which 1 of 8 ARA frontier models solved):
+- seed 1, before the fix: found the physics (1/r pull + uniform +y 0.05) but submitted the
+  two-body signature, so the law did not run. $0.49. Kept in attempts/original_runs.jsonl.
+- seed 2, after the fix: passed, hidden-test NMSE 0.021 (needs < 0.1), 10 rounds, 12
+  experiments, $3.03. Its first fitted law (round 3) already scored 0.0009; it kept experimenting
+  for 7 rounds and said it was only 40% sure.
+Today's paid total is about $5.10. The page data includes one hidden test case's paths
+(test_seed 0, unsalted here); the world's law is public in the vendor repo anyway.
+807 passed.

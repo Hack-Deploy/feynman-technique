@@ -54,6 +54,19 @@ STATED_P_PROMPT = (
 _P_RE = re.compile(r"<p_success>\s*([0-9]*\.?[0-9]+)\s*</p_success>")
 
 _LLM_LOCK = threading.Lock()
+VENDOR_ROOT = Path(__file__).resolve().parents[2] / "vendor" / "discovery-agents"
+
+
+def prompt_path(rel: str) -> str:
+    """A world's prompt file as an absolute path.
+
+    The vendor loader looks for ``PhysicsSchool/prompts/...`` under the wrong directory
+    and then under the working directory, and on a miss silently falls back to a one-line
+    generic prompt, so from this repo's root the model would never see the world's
+    instructions, experiment format or law signature. An absolute path always resolves.
+    """
+    path = Path(rel)
+    return str(path if path.is_absolute() else VENDOR_ROOT / path)
 
 
 class MeteredExecutor:
@@ -185,8 +198,8 @@ def run_attempt(
                                   csv_path=Path(tmp) / f"{world}.csv", run_id=run_id)
         agent = DiscoveryAgent(
             model=solver_model, executor=executor, mission=mission, max_tokens=MAX_TOKENS,
-            verbose=False, system_prompt_path=w["system_prompt"],
-            instructions_path=w["instructions"], law_stub=w["law_stub"],
+            verbose=False, system_prompt_path=prompt_path(w["system_prompt"]),
+            instructions_path=prompt_path(w["instructions"]), law_stub=w["law_stub"],
             experiment_format=w["experiment_format"], max_rounds=max_rounds,
             trajectory_logger=logger)
         executor.round_fn = lambda: len(agent.conversation_log) + 1
