@@ -631,4 +631,4 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 
 - Push deletes stale remote allow-listed live files in the upload commit while leaving
   the dataset card and non-allow-listed files alone; older versions remain in commit history.
-- The dry-run output identifies the remote allow-listed files that would be deleted.
+- The dry-run output ends with a note that remote allow-listed files missing locally will be deleted.
