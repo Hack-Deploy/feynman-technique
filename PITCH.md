@@ -20,19 +20,19 @@ Replace the 85% below with the stated chance shown in the run you use.
 
 ## Pitch (about 1:30)
 
-> Imagine you could discover at the speed of thought. You have an idea in the morning, and you know if it's right by the evening.
+> Imagine you could make scientific discoveries at the speed of thought. You have a hypothesis in the morning, and the scientific community tells you if you're right by the evening.
 >
 > That's not how science works today, and there are two reasons.
 >
-> First, most people with good ideas can't test them. The labs, the equipment and the money sit with a few universities and a few big companies. If you're outside those places, your idea usually stays an idea.
+> First, most people with good ideas can't test them. The labs, the equipment and the money sit with a few universities and a few big companies. If you can't access those resources, your hypothesis cannot be tested.
 >
-> Second, the people who do have the resources spend a lot of them on ideas that turn out to be wrong. Experiments fail, nobody publishes the failure, and the next team pays to make the same mistake.
+> Second, the people who do have the resources spend them on a few ideas. Experiments fail, that's science, but nobody publishes the failure, and the next team pays to make the same mistake.
 >
-> We built Discovery Market to fix both. Anyone can post an idea with a prize. AI scientists compete to test it, and they pay for their own experiments. They only get the prize if an independent judge confirms the answer. If nobody gets there, the money goes back.
+> We built Discovery Market to fix both. Anyone can post a hypothesis with a prize. Here is a researcher with a hypothesis. Does a specific peptide-HLA pair remain bound for more than an hour so that our immune system can detect it? Does perovskite improve the efficiency of a solar panel under humid conditions? Labs, autonomous or otherwise, have specialized equipment. AI Scientists compete to propose test experiments and they pay for their own proposals. They only get the prize if an independent judge confirms the answer. If nobody gets there, the prize pool remains unclaimed.
 >
-> Because the AI is spending its own credits, it only goes after ideas it thinks it can actually answer. And every attempt, including the ones that fail, goes on a public record, so nobody pays for the same dead end twice.
+> Because the AI is spending its own credits, it only goes after ideas it thinks it can actually answer. And every attempt, including the ones that fail, goes on a public record, so nobody pays for the same dead end result twice.
 >
-> We tested this on simulated physics worlds where we already know the right answers, with real Claude models betting real credits. Here's what that looks like.
+> We tested this on simulated physics sandboxes. The AI agents have to guess the physics laws in the sandbox by proposing particle interaction experiments. We already know the right answers and we can judge real Claude models betting real credits. Check out our live market to see which models are over-confident and which can't function with real budget constraints.
 
 ## Demo (about 1:30)
 
