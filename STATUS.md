@@ -612,3 +612,23 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   is $50.
 - Focused suite: 135 passed. Full suite: `uv run pytest -q` — 724 passed, 3 skipped,
   34 warnings. No paid API or Hugging Face calls were made; vendor files were untouched.
+
+## Peptide-HLA venue (2026-10-04)
+- **Built**: a second venue judged by a laboratory measurement instead of a simulation.
+  `data/protein/make_claims.py` fetches the Track 3 stability table (28,165 measured 9-mers,
+  fetched not committed) and picks six claims: three true, three false, every one at least
+  5x clear of the one-hour threshold so no verdict turns on measurement noise. Two are chosen
+  so the allele's majority answer is wrong, which punishes base-rate guessing.
+  `protein_market.py` runs the market: the judged row is deleted from the lab before round one,
+  the solver pays a round fee plus per measurement it looks up, states a confidence, and is
+  paid only if its verdict matches the withheld value. `web/protein.html` (route `/protein`,
+  nav tab 04) shows the claims, the rounds, and a strip plot of every measured half-life on
+  that receptor with the bought ones lit up and the answer revealed at the end.
+  APIs: `/api/protein/{info,dist,job,start}`. Scripted solver runs free; real models stay
+  behind `ENABLE_LIVE=1` and `DM_MAX_USD` (rule 1).
+- **Checks**: 20 tests (`test_protein_claims.py`, `test_protein_market.py`) covering the
+  measurement match, the margin, the 3/3 split, the judged row being unreachable, prompt
+  symmetry between the two verdicts, and credit conservation; they skip with a pointer when
+  the table has not been fetched. Full suite 745 passed.
+- **Result**: the free base-rate solver scores 4/6 and loses money on both hard claims
+  (DAYRRIHSL: 92% stated confidence, answered refuted, measured 108.4 h).

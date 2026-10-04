@@ -37,3 +37,6 @@ vendor/**/results/
 .env
 .env.*
 !.env.example
+
+# Track 3 peptide-HLA data: fetched, not redistributed
+data/protein/track3_raw.csv
