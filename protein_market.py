@@ -317,6 +317,9 @@ def distribution(claim_id: str) -> dict:
         "claim": public_claim(c), "threshold": THRESHOLD_H,
         "values": values, "n": len(values),
         "frac_above": round(above / len(values), 3) if values else 0.0,
+        # P2 and P9 are the anchor residues that sit deepest in the groove and
+        # do most of the binding; the rest face outward toward the T cell.
+        "anchors": [2, 9],
     }
 
 

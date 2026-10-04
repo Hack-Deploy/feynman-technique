@@ -623,7 +623,9 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   the solver pays a round fee plus per measurement it looks up, states a confidence, and is
   paid only if its verdict matches the withheld value. `web/protein.html` (route `/protein`,
   nav tab 04) shows the claims, the rounds, and a strip plot of every measured half-life on
-  that receptor with the bought ones lit up and the answer revealed at the end.
+  that receptor: the peptide drawn in the HLA groove with its two anchor residues marked,
+  and dissociation curves showing what fraction is still bound over six hours - one line per
+  measurement the solver bought, with the judged peptide's curve drawn only at the end.
   APIs: `/api/protein/{info,dist,job,start}`. Scripted solver runs free; real models stay
   behind `ENABLE_LIVE=1` and `DM_MAX_USD` (rule 1).
 - **Checks**: 20 tests (`test_protein_claims.py`, `test_protein_market.py`) covering the

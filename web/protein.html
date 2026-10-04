@@ -49,13 +49,10 @@
   .pulse { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--rust); animation: p 1s infinite alternate; margin-right: 6px; }
   @keyframes p { from { opacity: .25 } to { opacity: 1 } }
   .note { font-size: 14px; color: var(--muted); margin-top: 12px; }
-  .chartbox { margin-top: 18px; background: var(--faint); border-radius: 10px; padding: 8px 4px; }
-  #dist { width: 100%; height: auto; display: block; }
-  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--body); margin-top: 10px; }
-  .legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
-  .legend .dot.faint { background: #C7C7C2; }
-  .legend .dot.bought { background: var(--navy); }
-  .legend .dot.answer { background: var(--rust); }
+  .bio { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 20px; }
+  @media (max-width: 900px) { .bio { grid-template-columns: 1fr; } }
+  .bio h3 { font-size: 17px; margin-bottom: 8px; }
+  .bio svg { width: 100%; height: auto; display: block; background: var(--faint); border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -96,13 +93,20 @@
 
 <section>
   <span class="label">The evidence</span>
-  <h2>Every peptide measured on this receptor.</h2>
-  <p>One mark per peptide, placed by how long it stayed attached. The dashed line is the one-hour mark the question turns on. Marks light up as the AI pays to look at them, and the answer it is being judged on appears only at the end.</p>
-  <div class="chartbox"><svg id="dist" viewBox="0 0 980 230" role="img" aria-label="Measured half-lives for this receptor"></svg></div>
-  <div class="legend">
-    <span><span class="dot faint"></span>measured, not looked at</span>
-    <span><span class="dot bought"></span>the AI paid to see this one</span>
-    <span><span class="dot answer"></span>the hidden answer</span>
+  <h2>How long does it stay in the groove?</h2>
+  <p>An HLA molecule holds a short peptide in a groove on its surface and shows it to the immune system. The peptide does not stay forever. Half-life is how long until half of the copies have fallen out. That is the number being predicted here.</p>
+
+  <div class="bio">
+    <div>
+      <h3>The peptide under test</h3>
+      <svg id="groove" viewBox="0 0 520 220" role="img" aria-label="Peptide held in the HLA binding groove"></svg>
+      <p class="note">Positions 2 and 9 sit deepest in the groove and do most of the holding. The rest face outward, toward the immune cell.</p>
+    </div>
+    <div>
+      <h3>Falling out over time</h3>
+      <svg id="decay" viewBox="0 0 520 220" role="img" aria-label="Fraction of peptide still bound over time"></svg>
+      <p class="note">Each grey line is a peptide the AI paid to measure. The red line is the one it is being judged on, drawn only once the answer is revealed.</p>
+    </div>
   </div>
 </section>
 
@@ -182,43 +186,84 @@ function renderResult(res) {
     It spent ${res.spent} credits and ended ${res.net > 0 ? "up" : "down"} ${Math.abs(res.net)}.</div>`;
 }
 
-const LO = 0.02, HI = 300;
-const lx = v => Math.log10(Math.min(Math.max(v, LO), HI));
+// Amino-acid colouring, the usual biochemistry grouping.
+const AA = {
+  A:"hyd",V:"hyd",L:"hyd",I:"hyd",M:"hyd",F:"hyd",W:"hyd",P:"hyd",G:"hyd",
+  S:"pol",T:"pol",C:"pol",Y:"pol",N:"pol",Q:"pol",
+  D:"neg",E:"neg", K:"pos",R:"pos",H:"pos",
+};
+const AA_FILL = { hyd:"#E8DCC8", pol:"#CFE0E8", neg:"#F2CFC6", pos:"#D6D2EA", "":"#E4E4E0" };
+const AA_EDGE = { hyd:"#9A7F4E", pol:"#5B8A9E", neg:"#A23B1E", pos:"#5B52A3", "":"#9A9A96" };
 
-function drawDist(bought, answer) {
-  const d = st.dist;
-  if (!d) return;
-  const W = 980, H = 230, L = 46, R = 28, TOP = 26, BOT = 48, band = H - TOP - BOT;
-  const X = v => L + (lx(v) - lx(LO)) / (lx(HI) - lx(LO)) * (W - L - R);
-  const seen = new Set(Object.values(bought || {}).map(v => Math.round(v * 100)));
+function drawGroove() {
+  const d = st.dist; if (!d) return;
+  const pep = d.claim.peptide, anchors = new Set(d.anchors || []);
+  const W = 520, cx = W / 2, n = pep.length, gap = 44, x0 = cx - (n - 1) * gap / 2, y = 112;
   let g = "";
-  for (const t of [0.1, 1, 10, 100]) {
-    g += `<line x1="${X(t)}" y1="${TOP - 6}" x2="${X(t)}" y2="${TOP + band}" stroke="#DADAD6"/>`;
-    g += `<text x="${X(t)}" y="${H - 26}" font-size="13" text-anchor="middle" fill="#6B6B67">${t < 1 ? t : t + " h"}</text>`;
+  // the two alpha helices that form the walls of the groove, seen from the side
+  g += `<path d="M34 72 Q${cx} 42 486 72" fill="none" stroke="#B9C6D8" stroke-width="22" stroke-linecap="round"/>`;
+  g += `<path d="M34 158 Q${cx} 188 486 158" fill="none" stroke="#B9C6D8" stroke-width="22" stroke-linecap="round"/>`;
+  g += `<text x="26" y="62" font-size="12" fill="#6B6B67">HLA groove</text>`;
+  // the peptide backbone
+  g += `<path d="M${x0} ${y} L${x0 + (n - 1) * gap} ${y}" stroke="#6B6B67" stroke-width="3"/>`;
+  for (let i = 0; i < n; i++) {
+    const c = pep[i], cls = AA[c] || "", x = x0 + i * gap, anchor = anchors.has(i + 1);
+    const r = anchor ? 19 : 15;
+    if (anchor) g += `<path d="M${x} ${y} L${x} ${i + 1 === 2 ? y + 34 : y + 34}" stroke="#9A7F4E" stroke-width="3" stroke-dasharray="3 3"/>`;
+    g += `<circle cx="${x}" cy="${y}" r="${r}" fill="${AA_FILL[cls]}" stroke="${AA_EDGE[cls]}" stroke-width="${anchor ? 3 : 1.5}"/>`;
+    g += `<text x="${x}" y="${y + 5}" font-size="${anchor ? 17 : 15}" font-weight="700" text-anchor="middle" fill="#161616">${c}</text>`;
+    g += `<text x="${x}" y="${y + 46}" font-size="11" text-anchor="middle" fill="${anchor ? "#9A7F4E" : "#9A9A96"}">${anchor ? "anchor" : "P" + (i + 1)}</text>`;
   }
-  // deterministic vertical jitter so the cloud has shape without overlapping
-  d.values.forEach((v, i) => {
-    const y = TOP + 8 + ((i * 2654435761) % 1000) / 1000 * (band - 16);
-    const hit = seen.has(Math.round(v * 100));
-    g += `<circle cx="${X(v).toFixed(1)}" cy="${y.toFixed(1)}" r="${hit ? 4 : 2.4}" fill="${hit ? "#1B3F8B" : "#C7C7C2"}" ${hit ? '' : 'opacity="0.55"'}/>`;
-  });
-  g += `<line x1="${X(1)}" y1="${TOP - 14}" x2="${X(1)}" y2="${TOP + band + 4}" stroke="#161616" stroke-width="2" stroke-dasharray="5 4"/>`;
-  g += `<text x="${X(1)}" y="${TOP - 18}" font-size="13" font-weight="700" text-anchor="middle" fill="#161616">one hour</text>`;
-  g += `<text x="${L}" y="${H - 6}" font-size="13" fill="#6B6B67">shorter</text>`;
-  g += `<text x="${W - R}" y="${H - 6}" font-size="13" text-anchor="end" fill="#6B6B67">longer</text>`;
-  if (answer != null) {
-    const x = X(answer), y = TOP + band / 2;
-    g += `<line x1="${x}" y1="${TOP - 8}" x2="${x}" y2="${TOP + band + 4}" stroke="#A23B1E" stroke-width="2"/>`;
-    g += `<circle cx="${x}" cy="${y}" r="9" fill="#A23B1E"/>`;
-    const flip = x > W * 0.72;
-    g += `<text x="${x + (flip ? -14 : 14)}" y="${y - 12}" font-size="14" font-weight="700" fill="#A23B1E" text-anchor="${flip ? "end" : "start"}">the answer: ${answer} h</text>`;
-  }
-  $("dist").innerHTML = g;
+  g += `<text x="${cx}" y="26" font-size="14" font-weight="700" text-anchor="middle" fill="#161616">${esc(pep)}</text>`;
+  g += `<text x="${cx}" y="206" font-size="12" text-anchor="middle" fill="#6B6B67">on ${esc(d.claim.allele)}</text>`;
+  $("groove").innerHTML = g;
 }
+
+function drawDecay(bought, answer) {
+  const d = st.dist; if (!d) return;
+  const W = 520, H = 220, L = 54, R = 16, TOP = 18, BOT = 42, h = H - TOP - BOT, w = W - L - R;
+  const TMAX = 6;  // hours on the x axis
+  const X = t => L + t / TMAX * w, Y = f => TOP + (1 - f) * h;
+  const curve = half => {
+    const k = Math.LN2 / Math.max(half, 0.01);
+    return Array.from({ length: 61 }, (_, i) => {
+      const t = i / 60 * TMAX;
+      return `${X(t).toFixed(1)},${Y(Math.exp(-k * t)).toFixed(1)}`;
+    }).join(" ");
+  };
+  let g = "";
+  for (const f of [0, 0.5, 1]) {
+    g += `<line x1="${L}" y1="${Y(f)}" x2="${W - R}" y2="${Y(f)}" stroke="${f === 0.5 ? "#B9B9B4" : "#DADAD6"}" ${f === 0.5 ? 'stroke-dasharray="4 4"' : ""}/>`;
+    g += `<text x="${L - 8}" y="${Y(f) + 4}" font-size="11" text-anchor="end" fill="#6B6B67">${f * 100}%</text>`;
+  }
+  for (const t of [0, 1, 2, 4, 6]) {
+    g += `<text x="${X(t)}" y="${H - 22}" font-size="11" text-anchor="middle" fill="#6B6B67">${t}</text>`;
+  }
+  g += `<text x="${L + w / 2}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#161616">hours</text>`;
+  g += `<text x="${L - 30}" y="${TOP + h / 2}" font-size="11" text-anchor="middle" fill="#6B6B67" transform="rotate(-90 ${L - 30} ${TOP + h / 2})">still bound</text>`;
+  // the one-hour mark the question turns on
+  g += `<line x1="${X(1)}" y1="${TOP}" x2="${X(1)}" y2="${TOP + h}" stroke="#161616" stroke-width="2" stroke-dasharray="5 4"/>`;
+  g += `<text x="${X(1) + 6}" y="${TOP + 12}" font-size="12" font-weight="700" fill="#161616">one hour</text>`;
+  const vals = Object.values(bought || {});
+  vals.forEach(v => { g += `<polyline points="${curve(v)}" fill="none" stroke="#1B3F8B" stroke-width="1.5" opacity="0.5"/>`; });
+  if (!vals.length) {
+    g += `<text x="${L + w / 2}" y="${TOP + h / 2}" font-size="13" text-anchor="middle" fill="#9A9A96">no measurements bought yet</text>`;
+  }
+  if (answer != null) {
+    g += `<polyline points="${curve(answer)}" fill="none" stroke="#A23B1E" stroke-width="3.5"/>`;
+    const yAt1 = Y(Math.exp(-Math.LN2 / Math.max(answer, 0.01)));
+    g += `<circle cx="${X(1)}" cy="${yAt1}" r="5" fill="#A23B1E"/>`;
+    const low = yAt1 < TOP + 46;  // the curve hugs the top: drop the label clear of "one hour"
+    g += `<text x="${X(1) + 12}" y="${low ? TOP + 56 : yAt1 - 10}" font-size="13" font-weight="700" fill="#A23B1E">the answer: ${answer} h</text>`;
+  }
+  $("decay").innerHTML = g;
+}
+
+function drawBio(bought, answer) { drawGroove(); drawDecay(bought, answer); }
 
 async function loadDist() {
   st.dist = await (await fetch(`/api/protein/dist?claim=${encodeURIComponent(st.claim)}`)).json();
-  drawDist({}, null);
+  drawBio({}, null);
 }
 
 async function startRun() {
@@ -236,7 +281,7 @@ async function startRun() {
     if (j.error) { clearInterval(st.poll); $("btnStart").disabled = false; return; }
     renderRounds(j.rounds || [], j.state === "running");
     const bought = Object.assign({}, ...(j.rounds || []).map(r => r.bought || {}));
-    drawDist(bought, j.state === "done" && j.result ? j.result.measured_thalf_hours : null);
+    drawBio(bought, j.state === "done" && j.result ? j.result.measured_thalf_hours : null);
     if (j.state !== "running") {
       clearInterval(st.poll); $("btnStart").disabled = false;
       if (j.state === "error") $("rounds").innerHTML += `<p class="wait">${esc(j.error)}</p>`;
