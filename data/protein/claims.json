@@ -1,0 +1,80 @@
+[
+  {
+    "id": "hla-aakhmsnty-1501",
+    "allele": "HLA-B*15:01",
+    "peptide": "AAKHMSNTY",
+    "claim": "For peptide AAKHMSNTY presented by HLA-B*15:01, the measured binding half-life is above 1 hour.",
+    "criteria": "Judged against the experimentally measured half-life for this exact peptide and allele, withheld from the solver. Supported if above 1 h, refuted if below.",
+    "answer": "supported",
+    "measured_thalf_hours": 11.7,
+    "allele_frac_above": 0.89,
+    "base_rate_answer": "supported",
+    "difficulty": "easy",
+    "prize": 100.0
+  },
+  {
+    "id": "hla-aiidyiaym-0201",
+    "allele": "HLA-A*02:01",
+    "peptide": "AIIDYIAYM",
+    "claim": "For peptide AIIDYIAYM presented by HLA-A*02:01, the measured binding half-life is above 1 hour.",
+    "criteria": "Judged against the experimentally measured half-life for this exact peptide and allele, withheld from the solver. Supported if above 1 h, refuted if below.",
+    "answer": "supported",
+    "measured_thalf_hours": 18.0,
+    "allele_frac_above": 0.721,
+    "base_rate_answer": "supported",
+    "difficulty": "medium",
+    "prize": 100.0
+  },
+  {
+    "id": "hla-dayrrihsl-1401-C67S",
+    "allele": "HLA-B*14:01(C67S)",
+    "peptide": "DAYRRIHSL",
+    "claim": "For peptide DAYRRIHSL presented by HLA-B*14:01(C67S), the measured binding half-life is above 1 hour.",
+    "criteria": "Judged against the experimentally measured half-life for this exact peptide and allele, withheld from the solver. Supported if above 1 h, refuted if below.",
+    "answer": "supported",
+    "measured_thalf_hours": 108.4,
+    "allele_frac_above": 0.032,
+    "base_rate_answer": "refuted",
+    "difficulty": "hard",
+    "prize": 100.0
+  },
+  {
+    "id": "hla-aanmyiypl-0801",
+    "allele": "HLA-B*08:01",
+    "peptide": "AANMYIYPL",
+    "claim": "For peptide AANMYIYPL presented by HLA-B*08:01, the measured binding half-life is above 1 hour.",
+    "criteria": "Judged against the experimentally measured half-life for this exact peptide and allele, withheld from the solver. Supported if above 1 h, refuted if below.",
+    "answer": "refuted",
+    "measured_thalf_hours": 0.0,
+    "allele_frac_above": 0.084,
+    "base_rate_answer": "refuted",
+    "difficulty": "easy",
+    "prize": 100.0
+  },
+  {
+    "id": "hla-aayvlplhr-0301",
+    "allele": "HLA-A*03:01",
+    "peptide": "AAYVLPLHR",
+    "claim": "For peptide AAYVLPLHR presented by HLA-A*03:01, the measured binding half-life is above 1 hour.",
+    "criteria": "Judged against the experimentally measured half-life for this exact peptide and allele, withheld from the solver. Supported if above 1 h, refuted if below.",
+    "answer": "refuted",
+    "measured_thalf_hours": 0.2,
+    "allele_frac_above": 0.47,
+    "base_rate_answer": "refuted",
+    "difficulty": "medium",
+    "prize": 100.0
+  },
+  {
+    "id": "hla-alaagivgv-0211",
+    "allele": "HLA-A*02:11",
+    "peptide": "ALAAGIVGV",
+    "claim": "For peptide ALAAGIVGV presented by HLA-A*02:11, the measured binding half-life is above 1 hour.",
+    "criteria": "Judged against the experimentally measured half-life for this exact peptide and allele, withheld from the solver. Supported if above 1 h, refuted if below.",
+    "answer": "refuted",
+    "measured_thalf_hours": 0.0,
+    "allele_frac_above": 0.918,
+    "base_rate_answer": "supported",
+    "difficulty": "hard",
+    "prize": 100.0
+  }
+]
