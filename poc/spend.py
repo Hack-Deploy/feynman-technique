@@ -134,7 +134,7 @@ def project_run_usd(
     chars_per_token: float,
     data_chars_per_round: int,
 ) -> dict:
-    calls = 2 * max_rounds + 1
+    calls = 2 * max_rounds + 2
     base_tokens = math.ceil(base_chars / chars_per_token)
     growth = max_tokens + math.ceil(data_chars_per_round / chars_per_token)
     input_tokens = sum(base_tokens + call * growth for call in range(calls))

@@ -1,6 +1,6 @@
-"""One run: one AI scientist, one posted hypothesis, a fresh conversation, the public record of
-failed runs as its only memory. Returns a ``SubmittedAttempt``; ``poc.bench`` resolves it
-against the hidden answer, so this module never sees the answer.
+"""One run: one AI scientist, one posted hypothesis, a fresh conversation, with an optional
+purchase of the public record of failed runs. Returns a ``SubmittedAttempt``; ``poc.bench``
+resolves it against the hidden answer, so this module never sees the answer.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import re
 from typing import Callable
 
 from dm.types import SubmittedAttempt
-from poc import config as C
+from poc import config as C, protocol
 from poc.agent import Complete, MarketAgent
 from poc.pricing import Account
 
@@ -34,6 +34,7 @@ def round_log(conversation_log: list[dict]) -> list[dict]:
         out.append({
             "round": e["round"], "action": e["action"], "assessment": e.get("assessment"),
             "p_success": e.get("p_success"),
+            "record_bought": e.get("record_bought", False),
             "experiments": len(ran) if isinstance(ran, list) else 0,
             "experiments_cost": e.get("experiments_cost", 0.0), "round_fee": e.get("round_fee", 0.0),
             "spent_so_far": e.get("spent_so_far"),
@@ -151,7 +152,9 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
             "noise_std": cfg.noise_std,
             "round_log": log,
             "runs": runs(agent.conversation_log),
-            "ledger_seen": [e["id"] for e in ledger_entries],
+            "ledger_seen": [e["id"] for e in ledger_entries] if agent.record_bought else [],
+            "record_bought": agent.record_bought,
+            "record_fee": agent.record_fee,
             "account_events": account.events,
         },
     )
@@ -186,4 +189,8 @@ def prompt_chars(hyp_id: str, cfg: C.Config, ledger_entries: list[dict]) -> int:
         experiment_format=world_spec["experiment_format"],
         trajectory_logger=None,
     )
-    return len(agent._system) + len(world_spec["mission"])
+    return (
+        len(agent._system)
+        + len(world_spec["mission"])
+        + len(protocol.ledger_block(ledger_entries))
+    )

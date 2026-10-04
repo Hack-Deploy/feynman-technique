@@ -3,7 +3,8 @@
 The market from `slides.html`, run on the 11 DiscoverPhysics worlds. A researcher posts a
 hypothesis with resolution criteria and a prize. The AI scientist plans experiments, states its
 chance of a clear answer, bids or walks away, pays the lab, and gets the prize only for a clear,
-correct verdict. Failed runs go into a public record that later runs see.
+correct verdict. Failed runs go into an opt-in public record that a later model can buy for
+30 credits. A successful solve closes that claim to later real runs.
 
 Everything you'd want to change is in [`config.yaml`](config.yaml): hypotheses, resolution
 criteria, prizes, the round fee, per-part experiment costs, an optional budget, and the round cap.
@@ -23,10 +24,11 @@ Every round costs `round_fee`. The answer key (`answer` in `config.yaml`) is nev
 
 ## Memory
 
-Each run starts fresh. The only carry-over is the public record of earlier failed runs on the
-same hypothesis: model, outcome, rounds, spend, stated p, withdrawal reason, and the raw
-experiment data. Their verdicts, evidence and assessments are hidden, because a wrong verdict
-would give the answer away.
+Each run starts fresh. The public record contains only failed runs on the same hypothesis:
+model, outcome, rounds, spend, stated p, withdrawal reason, and raw experiment data. Their
+verdicts, evidence and assessments stay hidden. Models can buy that record for 30 credits,
+paid to the market and never refunded; the purchase is optional, happens once, and uses no
+round. If no failed runs exist, there is nothing to buy.
 
 ## Commands
 
@@ -35,7 +37,7 @@ uv run pytest tests/test_poc.py -q
 uv run python -m poc.bench --fake                       # scripted LLM, real simulator, no API
 uv run python -m poc.demo_grid --fake                   # multi-model recorded demo, no API
 uv run python -m poc.demo_grid --preflight              # worst-case live spend, no key needed
-uv run python -m poc.rerun_all --preflight               # randomized position-major full-grid plan
+uv run python -m poc.rerun_all --preflight               # claim-major randomized order and spend
 uv run python -m poc.report --dashboard                 # summary + output/poc_dashboard.html
 ```
 
@@ -57,7 +59,9 @@ uv run python app.py
 ```
 
 For a fresh run of every configured claim against every configured model, first inspect the
-randomized per-claim order and worst-case spend, then confirm the archive and rerun:
+claim-major order and worst-case spend, then confirm the archive and rerun. Each claim gets an
+independent seeded model permutation in config order. Later models on a claim are skipped after
+the first success; unsolved claims resume with the next untried model in their stored order:
 
 ```bash
 uv run python -m poc.rerun_all --preflight

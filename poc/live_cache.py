@@ -44,6 +44,7 @@ def compact_round(entry: dict, usd_so_far: float | None = None) -> dict:
         "reply": str(reply)[:4000] if reply is not None else None,
         "usd_so_far": usd_so_far if usd_so_far is not None else entry.get("usd_so_far"),
         "cut_off": entry.get("cut_off", False),
+        "record_bought": entry.get("record_bought", False),
     }
 
 

@@ -1,4 +1,4 @@
-"""Rerun every live-market hypothesis against every priced model in randomized order."""
+"""Rerun open claims in config order, stopping each claim after its first successful model."""
 
 from __future__ import annotations
 
@@ -25,9 +25,9 @@ def _order(
         for hyp in cfg.hypotheses
     }
     runs = [
-        (hyp.id, claim_order[hyp.id][position], 0)
-        for position in range(len(models))
+        (hyp.id, model_id, 0)
         for hyp in cfg.hypotheses
+        for model_id in claim_order[hyp.id]
     ]
     extra_fields = {
         (hyp.id, model_id, 0): {
@@ -122,10 +122,22 @@ def _confirm(args) -> bool:
 def main(argv: list[str] | None = None) -> None:
     bench.load_env()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--preflight", action="store_true")
-    parser.add_argument("--purge", action="store_true")
+    parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="show the claim-major model order and worst-case spend without running",
+    )
+    parser.add_argument(
+        "--purge",
+        action="store_true",
+        help="archive live records and start a fresh model order",
+    )
     parser.add_argument("--yes", action="store_true")
-    parser.add_argument("--order-seed", type=int)
+    parser.add_argument(
+        "--order-seed",
+        type=int,
+        help="seed the independent randomized model permutation for each claim",
+    )
     parser.add_argument("--fake", action="store_true")
     parser.add_argument("--cache", type=Path)
     parser.add_argument("--store", type=Path)
@@ -172,7 +184,18 @@ def main(argv: list[str] | None = None) -> None:
         order=order,
         ignore_cached=args.purge,
     )
-    demo_grid._print_preflight(settings, todo, ledger)
+    cached_records = live_cache.records([] if args.purge else cached_entries)
+    open_claims = sum(
+        bench.solved_by(cached_records, hypothesis_id) is None
+        for hypothesis_id in settings.hypotheses
+    )
+    demo_grid._print_preflight(
+        settings,
+        todo,
+        ledger,
+        open_claims=open_claims,
+        total_claims=len(settings.hypotheses),
+    )
     if args.preflight:
         return
 

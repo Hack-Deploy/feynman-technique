@@ -57,6 +57,7 @@ class Config:
     hypotheses: tuple[Hypothesis, ...]
     ledger_max_entries: int
     ledger_max_data_chars: int
+    ledger_read_fee: float
 
     def hypothesis(self, hid: str) -> Hypothesis:
         for h in self.hypotheses:
@@ -115,4 +116,5 @@ def load(path: Path = CONFIG_PATH) -> Config:
         hypotheses=tuple(hypotheses),
         ledger_max_entries=int(ledger.get("max_entries", 10)),
         ledger_max_data_chars=int(ledger.get("max_data_chars", 6000)),
+        ledger_read_fee=_amount(ledger.get("read_fee", 30), "ledger.read_fee"),
     )

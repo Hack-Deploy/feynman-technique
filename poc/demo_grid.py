@@ -35,7 +35,14 @@ def _plan(
         for seed in settings.seeds
     ]
     models = {model.id: model for model in settings.models}
+    solved_claims = {
+        hypothesis_id
+        for hypothesis_id in settings.hypotheses
+        if bench.solved_by(cached_records, hypothesis_id) is not None
+    }
     for hypothesis_id, model_id, seed in planned:
+        if hypothesis_id in solved_claims:
+            continue
         hyp = cfg.hypothesis(hypothesis_id)
         public_entries = bench.public_record(cached_records, hyp, cfg)
         prompt_key = (hypothesis_id, tuple(entry["id"] for entry in public_entries))
@@ -68,6 +75,8 @@ def _print_preflight(
     todo: list[dict],
     ledger: SpendLedger | None,
     out=print,
+    open_claims: int | None = None,
+    total_claims: int | None = None,
 ) -> dict:
     rows = []
     for model in settings.models:
@@ -102,6 +111,12 @@ def _print_preflight(
     )
     if note := spend.cap_note(settings):
         out(note)
+    if open_claims is not None:
+        total_claims = total_claims if total_claims is not None else len(settings.hypotheses)
+        out(
+            f"Open claims: {open_claims}/{total_claims}; the projection above is the "
+            "worst case if none of these claims is solved."
+        )
     out(
         "Runs start only while spent + that run's worst case <= cap; every call is also "
         "checked against the cap before it is sent."
@@ -169,10 +184,32 @@ def run_grid(
         _reconcile_store(entries, Path(store_path), out)
     if show_preflight:
         _print_preflight(settings, todo, ledger, out)
-    total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)
+    planned = order if order is not None else [
+        (hypothesis_id, model.id, seed)
+        for hypothesis_id in settings.hypotheses
+        for model in settings.models
+        for seed in settings.seeds
+    ]
+    cached_keys = live_cache.done_keys(entries)
+    cached_records = live_cache.records(entries)
+    solved_claims = {
+        hypothesis_id
+        for hypothesis_id in settings.hypotheses
+        if bench.solved_by(cached_records, hypothesis_id) is not None
+    }
+    closed = sum(
+        hypothesis_id in solved_claims
+        and (model_id, hypothesis_id, seed) not in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
+    skipped = sum(
+        (model_id, hypothesis_id, seed) in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
     result = {
         "done": 0,
-        "skipped": total_runs - len(todo),
+        "skipped": skipped,
+        "closed": closed,
         "stopped_reason": None,
     }
     if not todo:
@@ -181,16 +218,25 @@ def run_grid(
         result["stopped_reason"] = "declined"
         return result
 
-    cached_records = live_cache.records(entries)
     for index, item in enumerate(todo):
         model = item["model"]
         hyp = item["hyp"]
         seed = item["seed"]
+        solver = bench.solved_by(cached_records, hyp.id)
+        if solver is not None:
+            out(
+                f"{hyp.id}: solved by {solver.solver}; off the market, skipping {model.id}"
+            )
+            result["closed"] += 1
+            continue
         projection = item["projection"]["usd"]
         try:
             ledger.admit_run(projection)
         except CapReached:
-            remaining = len(todo) - index
+            remaining = sum(
+                bench.solved_by(cached_records, pending["hyp"].id) is None
+                for pending in todo[index:]
+            )
             out(
                 f"spend cap reached: {remaining} run(s) left; nothing more was spent"
             )
@@ -303,16 +349,45 @@ def _run_fake_grid(
     todo, entries, cfg = _plan(settings, cache_path, order=order)
     if show_preflight:
         _print_preflight(settings, todo, None, out)
-    total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)
+    planned = order if order is not None else [
+        (hypothesis_id, model.id, seed)
+        for hypothesis_id in settings.hypotheses
+        for model in settings.models
+        for seed in settings.seeds
+    ]
+    cached_keys = live_cache.done_keys(entries)
+    cached_records = live_cache.records(entries)
+    solved_claims = {
+        hypothesis_id
+        for hypothesis_id in settings.hypotheses
+        if bench.solved_by(cached_records, hypothesis_id) is not None
+    }
+    closed = sum(
+        hypothesis_id in solved_claims
+        and (model_id, hypothesis_id, seed) not in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
+    skipped = sum(
+        (model_id, hypothesis_id, seed) in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
     result = {
         "done": 0,
-        "skipped": total_runs - len(todo),
+        "skipped": skipped,
+        "closed": closed,
         "stopped_reason": None,
     }
     for item in todo:
         model = item["model"]
         hyp = item["hyp"]
         seed = item["seed"]
+        solver = bench.solved_by(cached_records, hyp.id)
+        if solver is not None:
+            out(
+                f"{hyp.id}: solved by {solver.solver}; off the market, skipping {model.id}"
+            )
+            result["closed"] += 1
+            continue
         slot = settings.models.index(model)
         fake = fake_llm.ScriptedLLM(_persona_replies(slot, hyp, cfg))
         rounds = []
@@ -353,6 +428,7 @@ def _run_fake_grid(
         if store_path is not None:
             AttemptStore(store_path).append([record])
         entries.append(entry)
+        cached_records.append(record)
         live_cache.write_summary(
             cache_path,
             entries,

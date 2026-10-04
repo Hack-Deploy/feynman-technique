@@ -54,7 +54,7 @@ def experiment_price(inp: dict, cfg: Config, hyp: Hypothesis) -> tuple[float, di
 
 @dataclass
 class Account:
-    """What one agent has spent on one hypothesis. Every charge is an event (agent → lab)."""
+    """What one agent has spent on one hypothesis, with each charge recorded as an event."""
 
     agent: str
     hypothesis: str
@@ -73,8 +73,9 @@ class Account:
         if amount < 0:
             raise ValueError("charges must be >= 0")
         self.spent = round(self.spent + amount, 6)
+        recipient = "market" if kind == "record_charged" else "lab"
         self.events.append({
-            "type": kind, "from": f"agent:{self.agent}", "to": "lab", "amount": amount,
+            "type": kind, "from": f"agent:{self.agent}", "to": recipient, "amount": amount,
             "hypothesis": self.hypothesis, "round": round_num, **({"detail": detail} if detail else {}),
         })
 
@@ -86,7 +87,11 @@ class Account:
         })
 
     def lab_revenue(self) -> float:
-        return round(sum(e["amount"] for e in self.events if e["type"].endswith("_charged")), 6)
+        return round(
+            sum(e["amount"] for e in self.events
+                if e.get("to") == "lab" and e["type"].endswith("_charged")),
+            6,
+        )
 
 
 class OverBudget(RuntimeError):
