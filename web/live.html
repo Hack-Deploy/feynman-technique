@@ -207,6 +207,21 @@
     animation: discover-float 24s linear infinite; }
   @keyframes discover-float { from { background-position: 0 0, 0 0; } to { background-position: 260px -180px, 0 0; } }
   @media (prefers-reduced-motion: reduce) { .discover { animation: none; } }
+  /* Simplified page: fewer blocks, more air */
+  .hero .sub, #watchLead, #costNote, #record, #recBody > h3:nth-of-type(2), #recRuns, #ln { display: none !important; }
+  #watch > .controls:not(#replayTabs) { display: none !important; }
+  section { padding: 120px 0 32px; }
+  section > * + * { margin-top: 28px; }
+  .q, .kv.row, .learn-grid { margin-top: 28px; }
+  .learn-grid { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 28px; }
+  .lchart, .lside { padding: 28px; }
+  .lside .quote { margin-top: 20px; }
+  .trail { margin-top: 56px; }
+  .cmp { gap: 56px; }
+  #recBody > h3:first-of-type { margin-top: 40px !important; }
+  #recBanner { display: none !important; }
+  .cmp { align-items: center; }
+  .cmp .fig { margin-top: 0; }
 </style>
 </head>
 <body>
