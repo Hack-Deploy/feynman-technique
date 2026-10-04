@@ -167,6 +167,11 @@ def _run_row(record: AttemptRecord) -> dict:
         "ledger_seen": len(extra.get("ledger_seen") or []),
         "round_log": extra.get("round_log") or [],
         "created_at": record.created_at,
+        "hypothesis": extra.get("hypothesis"),
+        "resolution_criteria": extra.get("resolution_criteria"),
+        "round_fee": extra.get("round_fee"),
+        "max_rounds": extra.get("max_rounds"),
+        "judge": record.verdict.get("resolved_by"),
     }
 
 
@@ -254,6 +259,24 @@ def _run_job(job_id: str, hyp: C.Hypothesis, model: str, seed: int, scripted: bo
             submitted,
             llm_usage=metered.usage if metered is not None else {},
         )
+        # The completed run can use the same law replay as the recorded examples.
+        replay = None
+        if hyp.world in ("gravity", "fractional") and record.extra.get("round_log"):
+            from poc.animate import learning
+            replay = learning(record, cfg)
+            replay["agent"] = "Scripted AI scientist" if scripted else model
+            replay["judge"] = "quantity_checker"
+            replay["usd"] = (record.llm_usage or {}).get("usd", 0.0)
+            replay["prize_paid"] = record.extra.get("prize_paid", 0.0)
+            replay["profit"] = replay["prize_paid"] - record.lab_cost
+        elif record.extra.get("round_log"):
+            from poc.market_replay import build
+            replay = build(record, hyp, cfg)
+            replay["agent"] = "Scripted AI scientist" if scripted else model
+        if replay is not None and not replay.get("traces"):
+            # Quantity replays already carry traces with the noise-free reference; keep those.
+            from poc.recorded_replay import traces
+            replay["traces"] = traces(record.extra.get("runs") or [])
         AttemptStore(store_path).append([record])
         if metered is not None:
             with _LOCK:
@@ -282,6 +305,7 @@ def _run_job(job_id: str, hyp: C.Hypothesis, model: str, seed: int, scripted: bo
             )
         with _LOCK:
             _JOBS[job_id]["run"] = _run_row(record)
+            _JOBS[job_id]["replay"] = replay
             _JOBS[job_id]["state"] = "done"
     except Exception as exc:
         with _LOCK:
@@ -432,11 +456,13 @@ def job(job_id: str) -> dict | None:
             "scripted": stored["scripted"],
             "rounds": list(stored["rounds"]),
             "run": stored["run"] if stored["state"] == "done" else None,
+            "replay": stored.get("replay") if stored["state"] == "done" else None,
             "error": stored["error"],
         }
 
 
 def recorded() -> dict:
+    from poc import recorded_replay
     settings = spend.load_settings()
     real_entries = live_cache.load(live_cache.RUNS_PATH)
     scripted_entries = live_cache.load(live_cache.SCRIPTED_PATH)
@@ -452,6 +478,7 @@ def recorded() -> dict:
             if key != "round_log"
         }
         row.update({
+            "visual_stats": recorded_replay.stats(entry),
             "usd": entry.get("usd", record.llm_usage.get("usd", 0.0)),
             "model_label": entry.get("model_label"),
             "source": entry.get("source"),
@@ -465,11 +492,13 @@ def recorded() -> dict:
         "prices_source": settings.source.get("pricing"),
         "prices_checked": settings.source.get("checked"),
         "runs": rows,
+        "recommendations": recorded_replay.recommendations(rows),
         "comparison": live_cache.comparison(shown, settings.models),
     }
 
 
 def recorded_run(attempt_id: str) -> dict | None:
+    from poc import recorded_replay
     for path in (live_cache.RUNS_PATH,):
         for entry in live_cache.load(path):
             record = AttemptRecord.from_dict(entry["record"])
@@ -486,9 +515,15 @@ def recorded_run(attempt_id: str) -> dict | None:
                 "calls": record.llm_usage.get("calls", 0),
             })
             return {
+                "replay": recorded_replay.build(entry),
                 "run": row,
                 "rounds": [
-                    {**round_entry, "cut_off": round_entry.get("cut_off", False)}
+                    {**round_entry, "cut_off": round_entry.get("cut_off", False),
+                     "experiment_results": [
+                         {"input": run.get("input"), "output": run.get("output")}
+                         for run in (record.extra or {}).get("runs", [])
+                         if run.get("round") == round_entry.get("round")
+                     ]}
                     for round_entry in entry.get("rounds", [])
                 ],
                 "settings": entry.get("settings", {}),

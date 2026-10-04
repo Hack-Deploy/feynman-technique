@@ -5,6 +5,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from types import SimpleNamespace
 
 import anthropic
@@ -250,6 +251,37 @@ def test_info_reports_solved_by_and_record_fee():
     assert claim["solved_by"] == "prior-solver"
 
 
+def test_recorded_catalog_keeps_each_claims_original_metadata_and_readings():
+    for hyp_id, model in (("gravity-inverse-square", "claude-sonnet-5"),
+                          ("dark-matter-unseen-pull", "claude-opus-5-5")):
+        record = _solved_record(hyp_id, model)
+        record = replace(record, extra={**record.extra,
+            "hypothesis": f"Archived {hyp_id}",
+            "resolution_criteria": "Original dataset criteria",
+            "round_fee": 7, "max_rounds": 3,
+            "runs": [{"round": 1, "input": {"pos2": [2, 0]},
+                      "output": {"pos2": [[1.9, 0]]}}],
+        }, verdict={**record.verdict, "resolved_by": "answer_key"})
+        live_cache.append(live_cache.RUNS_PATH, {
+            "key": {"hypothesis_id": hyp_id, "model": model, "seed": 0},
+            "record": record.to_dict(), "source": "real", "model_label": model,
+            "rounds": [{"round": 1, "action": "experiment"}],
+        })
+
+    rows = live_market.recorded()["runs"]
+    assert {row["hypothesis_id"] for row in rows} == {
+        "gravity-inverse-square", "dark-matter-unseen-pull"}
+    for row in rows:
+        assert row["hypothesis"] == f"Archived {row['hypothesis_id']}"
+        assert row["resolution_criteria"] == "Original dataset criteria"
+        assert row["round_fee"] == 7
+        assert row["max_rounds"] == 3
+        assert row["judge"] == "answer_key"
+        detail = live_market.recorded_run(row["attempt_id"])
+        assert detail["rounds"][0]["experiment_results"][0]["output"] == {
+            "pos2": [[1.9, 0]]}
+
+
 def test_real_live_start_refuses_solved_claim_without_reserving_spend(
     app_server,
 ):
@@ -400,6 +432,18 @@ def test_scripted_http_run_and_seed_increment(app_server, monkeypatch):
     assert "answer" not in json.dumps(result["rounds"])
     assert result["run"]["model"] == "scripted-demo"
     assert result["run"]["rounds"] >= 2
+    replay = result["replay"]
+    assert replay["agent"] == "Scripted AI scientist"
+    assert replay["judge"] == "quantity_checker"
+    assert replay["answer"] == result["run"]["answer"]
+    assert replay["outcome"] == "false_claim"
+    assert replay["rounds"][0]["points"]
+    assert replay["rounds"][-1]["estimates"] == {
+        k: scripted_estimate for k, scripted_estimate in
+        result["run"]["round_log"][-1]["estimates"].items() if k in ("n", "a3")
+    }
+    assert replay["profit"] == result["run"]["profit"]
+    assert replay["usd"] == 0
     assert len(AttemptStore(live_market.DEMO_PATH).load()) == 1
 
     scripted_record = AttemptStore(live_market.DEMO_PATH).load()[0]
@@ -433,6 +477,27 @@ def test_scripted_http_run_and_seed_increment(app_server, monkeypatch):
     assert len(AttemptStore(live_market.DEMO_PATH).load()) == 2
     assert all(row["model"] != "scripted-demo" for row in records["live"])
     assert records["summary"] == live_market.runs()["summary"]
+
+
+@pytest.mark.parametrize("hyp_id", [
+    "dark-matter-unseen-pull", "yukawa-screened", "oscillator-time-varying",
+    "circle-ordinary-gravity", "ether-outward-push", "hubble-outward-push",
+])
+def test_other_claims_return_experiment_and_quantity_replay(app_server, hyp_id):
+    status, _, body = _post_start(app_server, hypothesis_id=hyp_id)
+    assert status == 200
+    result = _wait_for_job(app_server, json.loads(body)["job_id"])
+    assert result["state"] == "done", result.get("error")
+    replay = result["replay"]
+    assert replay["kind"] == "quantity"
+    assert replay["primary"] in replay["true"]
+    assert replay["hypothesis_id"] == hyp_id
+    assert replay["traces"]
+    assert replay["traces"][0]["observed"]
+    assert replay["traces"][0]["reference"]
+    assert len(replay["traces"][0]["times"]) == len(replay["traces"][0]["observed"])
+    assert replay["rounds"][-1]["estimates"][replay["primary"]]["value"] == 1
+    assert replay["profit"] == result["run"]["profit"]
 
 
 def test_busy_start_unknown_hypothesis_and_unknown_job(app_server, monkeypatch):
