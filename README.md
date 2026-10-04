@@ -6,11 +6,19 @@ be worth the cost; labs are paid for experiments; and every attempt, including
 failures, is recorded. The judge pays only for a clear answer that passes its
 precommitted tests.
 
+**Online:** <https://discovery-market.vercel.app>, a static, read-only copy of the app with
+the recorded runs. New paid runs start only from a local install. To update it:
+
+```bash
+uv run python scripts/export_static.py                    # writes output/discovery-market/
+cd output/discovery-market && vercel deploy --prod
+```
+
 ## The app
 
 The local app has three pages:
 
-- **Vision (`/`)** explains the market and the problem it addresses.
+- **Pitch (`/`)** explains the market and the problem it addresses.
 - **How it works (`/simulation`)** walks through ForceBench for a general audience.
   Its sixth section replays 88 published attempts by eight frontier models:
   who solved what, the clearing prize per world, profit per model, and whether

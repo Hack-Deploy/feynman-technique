@@ -51,8 +51,8 @@
   },
   "comparison": [
     {
-      "brier": 0.1963,
-      "credits_spent": 212.0,
+      "brier": 0.1608,
+      "credits_spent": 471.2,
       "label": "Claude Sonnet 5.5",
       "model": "claude-sonnet-5-5",
       "points": [
@@ -67,18 +67,24 @@
           "hypothesis_id": "yukawa-screened",
           "p": 0.55,
           "passed": false
+        },
+        {
+          "attempt_id": "266faa6a-a1d2-5649-b3a0-15fd1be5f722",
+          "hypothesis_id": "circle-ordinary-gravity",
+          "p": 0.7,
+          "passed": true
         }
       ],
-      "prize_paid": 130.0,
-      "profit": -82.0,
-      "runs": 2,
-      "usd_spent": 0.289812,
-      "win_rate": 0.5,
-      "wins": 1
+      "prize_paid": 370.0,
+      "profit": -101.2,
+      "runs": 3,
+      "usd_spent": 0.725712,
+      "win_rate": 0.6667,
+      "wins": 2
     },
     {
       "brier": 0.25,
-      "credits_spent": 235.5,
+      "credits_spent": 327.9,
       "label": "Claude Sonnet 5",
       "model": "claude-sonnet-5",
       "points": [
@@ -90,10 +96,10 @@
         }
       ],
       "prize_paid": 220.0,
-      "profit": -15.5,
-      "runs": 2,
-      "usd_spent": 1.579224,
-      "win_rate": 0.5,
+      "profit": -107.9,
+      "runs": 3,
+      "usd_spent": 3.416898,
+      "win_rate": 0.3333,
       "wins": 1
     },
     {
@@ -129,15 +135,22 @@
       "wins": 3
     },
     {
-      "brier": null,
-      "credits_spent": 0.0,
+      "brier": 0.0225,
+      "credits_spent": 409.8,
       "label": "Claude Haiku 4.5",
       "model": "claude-haiku-4-5-20251001",
-      "points": [],
+      "points": [
+        {
+          "attempt_id": "1ca2f340-2108-5cb8-aea7-0df330b64d46",
+          "hypothesis_id": "circle-ordinary-gravity",
+          "p": 0.15,
+          "passed": false
+        }
+      ],
       "prize_paid": 0.0,
-      "profit": 0.0,
-      "runs": 2,
-      "usd_spent": 0.01828,
+      "profit": -409.8,
+      "runs": 3,
+      "usd_spent": 0.212878,
       "win_rate": 0.0,
       "wins": 0
     }
