@@ -63,8 +63,18 @@
     const rs = [...law.rounds.flatMap(r => r.points || []), ...(law.reference_points || [])].map(pt => pt.r);
     const lo = Math.min(1.5, ...rs) * .9, hi = Math.max(7, ...rs) * 1.05;
     const force = g => Array.from({length:111}, (_, i) => { const r = lo * (hi / lo) ** (i / 110); return [r, g.a3 * (3 / r) ** g.n]; });
-    const toGuess = r => { const e = r?.estimates || {}; return e.n && e.a3 ? {n: e.n.value, a3: e.a3.value} : null; };
-    const idx = data.rounds.indexOf(rd), guess = toGuess(rd), prev = idx > 0 ? toGuess(data.rounds[idx - 1]) : null;
+    const toGuess = r => { const e = r?.estimates || {}; return e.n && e.a3 ? {n: e.n.value, a3: e.a3.value, own: true} : null; };
+    // Without a recorded n and a3, fit a ≈ a3 (3/r)^n (a straight line on log scales) through the readings so far.
+    const fitReadings = upTo => {
+      const pts = law.rounds.filter(r => r.round <= upTo).flatMap(r => r.points || []).filter(pt => pt.r > 0 && pt.a > 0);
+      if (new Set(pts.map(pt => pt.r)).size < 2) return null;
+      const xs = pts.map(pt => Math.log(3 / pt.r)), ys = pts.map(pt => Math.log(pt.a));
+      const mx = xs.reduce((s, v) => s + v, 0) / xs.length, my = ys.reduce((s, v) => s + v, 0) / ys.length;
+      const n = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0) / xs.reduce((s, v) => s + (v - mx) ** 2, 0);
+      return {n, a3: Math.exp(my - n * mx), own: false};
+    };
+    const guessAt = (r, upTo) => toGuess(r) || fitReadings(upTo);
+    const idx = data.rounds.indexOf(rd), guess = guessAt(rd, round), prev = idx > 0 ? guessAt(data.rounds[idx - 1], data.rounds[idx - 1].round) : null;
     const reference = law.true ? force(law.true) : [], hypothesis = law.expected ? force(law.expected) : [], final = guess ? force(guess) : [];
     const refPoints = (law.reference_points || []).map(pt => [pt.r, pt.a]);
     let fit = final;
@@ -86,11 +96,14 @@
     });
     $("#lc").innerHTML = svg;
     $("#lc").setAttribute("aria-label", "Recorded pull readings and fitted force law against hypothesis and simulator reference");
-    $("#learn .legend").innerHTML = `<span><i class="dot"></i>Pull derived from recorded positions</span><span><i style="border-color:#B7791F"></i>Recorded numeric fit, when available</span><span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>Simulator reference${law.reference_points?.length ? " (open circles: same launches, noise-free)" : ""}</span>${law.expected ? '<span><i style="border-color:#3D63B5;border-top-style:dotted"></i>Hypothesis</span>' : ""}`;
+    $("#learn .legend").innerHTML = `<span><i class="dot"></i>Pull derived from recorded positions</span>${guess ? `<span><i style="border-color:#B7791F"></i>${guess.own ? "Its recorded fit this round" : "Power-law fit to readings so far"}</span>` : ""}<span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>Simulator reference${law.reference_points?.length ? " (open circles: same launches, noise-free)" : ""}</span>${law.expected ? '<span><i style="border-color:#3D63B5;border-top-style:dotted"></i>Hypothesis</span>' : ""}`;
   }
   function drawMetric(idx) {
     const metric = $("#replayMetric").value;
-    if (metric === "confidence") { chart(data.rounds.slice(0, idx + 1), "#ln"); $("#ln").setAttribute("aria-label", "Stated chance and credits spent by round"); return; }
+    if (metric === "confidence") { chart(data.rounds.slice(0, idx + 1), "#ln"); $("#ln").setAttribute("aria-label", "Stated chance and credits spent by round");
+      $("#lnLegend").innerHTML = '<span><i style="border-color:#1B3F8B"></i>Stated chance of winning</span><span><i style="border-color:#A23B1E;border-top-style:dashed"></i>Credits spent so far</span>';
+      return;
+    }
     const pts = data.rounds.flatMap((r, i) => r.estimates?.[metric] ? [[i + 1, r.estimates[metric].value]] : []);
     const reference = data.law?.true?.[metric], expected = data.law?.expected?.[metric];
     const all = [...pts, ...[reference, expected].filter(Number.isFinite).map(v => [1, v])];
@@ -104,6 +117,7 @@
     seen.forEach(p => { svg += `<circle cx="${ax.x(p[0])}" cy="${ax.y(p[1])}" r="5" fill="#B7791F" stroke="#fff"/>`; });
     $("#ln").innerHTML = `<svg viewBox="0 0 640 380">${svg}</svg>`;
     $("#ln").setAttribute("aria-label", `Recorded ${metric} by round, against available reference and hypothesis`);
+    $("#lnLegend").innerHTML = `<span><i style="border-color:#B7791F"></i>Its recorded ${esc(metric)}</span>${reference != null ? '<span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>Simulator reference</span>' : ""}${expected != null ? '<span><i style="border-color:#3D63B5;border-top-style:dotted"></i>Hypothesis</span>' : ""}`;
   }
   function render(force = false) {
     if (!data) return;

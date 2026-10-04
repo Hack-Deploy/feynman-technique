@@ -208,7 +208,7 @@
   @keyframes discover-float { from { background-position: 0 0, 0 0; } to { background-position: 260px -180px, 0 0; } }
   @media (prefers-reduced-motion: reduce) { .discover { animation: none; } }
   /* Simplified page: fewer blocks, more air */
-  .hero .sub, #watchLead, #costNote, #record, #recBody > h3:nth-of-type(2), #recRuns, #ln { display: none !important; }
+  .hero .sub, #watchLead, #costNote, #record, #recBody > h3:nth-of-type(2), #recRuns { display: none !important; }
   #watch > .controls:not(#replayTabs) { display: none !important; }
   section { padding: 120px 0 32px; }
   section > * + * { margin-top: 28px; }
@@ -313,6 +313,7 @@
       <div class="lhead"><b id="lRound"></b><span id="lConf"></span></div>
       <div class="lguess" id="lGuess"></div>
       <svg id="ln" viewBox="0 0 420 220" role="img" aria-label="The model's recorded estimate of the exponent n each round, against the simulator reference"></svg>
+      <div class="legend" id="lnLegend"></div>
       <p class="quote" id="lQuote"></p>
       <div id="replayDetails"></div>
       <div class="lverdict" id="lVerdict"></div>
@@ -476,7 +477,7 @@ function renderHyp() {
 }
 
 function chart(rounds, el = "#ln") {
-  const W = 420, H = 220, x0 = 36, y0 = 190, w = W - x0 - 14, h = 160;
+  const W = 420, H = 220, x0 = 44, y0 = 190, w = W - x0 - 14, h = 160;
   const n = Math.max(rounds.length, 4);
   const sx = i => x0 + (n === 1 ? 0 : i / (n - 1) * w);
   const maxS = Math.max(1, ...rounds.map(r => r.spent_so_far || 0));
