@@ -105,6 +105,8 @@ uv run python -m poc.hf_data pull
 ```
 
 Push is private unless `--public` is supplied. The dry run makes no network calls.
+Push replaces the dataset's allow-listed live data with yours; older versions stay in the
+dataset's commit history.
 Pull replaces the local allow-listed live record with the dataset snapshot, archiving
 the old files and directories under `attempts/archive/`.
 
