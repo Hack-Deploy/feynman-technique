@@ -82,10 +82,17 @@
   .calib circle { opacity: 0; transform: scale(0.4); transform-box: fill-box; transform-origin: center; transition: opacity .35s ease, transform .35s ease; }
   .calib.go circle { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) { .calib circle { opacity: 1; transform: none; } }
-  .track { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-  .track .calib { max-width: 520px; }
+  .track { display: grid; grid-template-columns: 1.7fr 1fr; gap: 64px; align-items: center; }
+  .track .calib { max-width: 640px; }
   .need.side { margin-top: 0; padding-top: 0; border-top: 0; }
   .need.side .need-grid { grid-template-columns: 1fr; gap: 16px; }
+  .need.side .stat { background: none; border-radius: 0; padding: 18px 0 18px 20px; border-left: 2px solid var(--line); }
+  .need.side .stat + .stat { margin-top: 4px; }
+  .need.side .stat .nums { gap: 28px; margin-bottom: 8px; }
+  .need.side .stat .nums b { font-size: 40px; }
+  .need.side .stat h3 { font-size: 19px; margin-bottom: 4px; }
+  .need.side .stat p { font-size: 15px; }
+  .need.side .label { font-size: 12px; }
   @media (max-width: 860px) { .track { grid-template-columns: 1fr; } }
   .road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; position: relative; padding-top: 28px; }
   .road::before { content: ""; position: absolute; left: 12px; right: 12px; top: 39px; height: 3px; background: linear-gradient(90deg, var(--navy) 0 33%, var(--line) 33% 100%); }
@@ -97,6 +104,11 @@
   .stage h3 { font-size: 24px; margin-bottom: 6px; }
   .stage p { color: var(--body); font-size: 17px; }
   @media (max-width: 860px) { .road { grid-template-columns: 1fr; } .road::before { display: none; } }
+  .prob { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+  .prob .prob-art { height: 260px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 8px; }
+  .prob .prob-art svg { height: 220px; width: auto; max-width: 100%; }
+  .prob h3 { font-size: 26px; color: var(--rust); }
+  .prob p { font-size: 18px; color: var(--body); max-width: 440px; }
   @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -123,8 +135,35 @@
 <section>
   <div class="section-head"><div class="label rust"><span class="num">[01]</span>The problem</div><h2>That's not how science works today.</h2></div>
   <div class="grid2">
-    <div class="card rust"><h3>Most good ideas never get tested</h3><p>The labs, the equipment and the money sit with a few universities and a few big companies. Outside those places, an idea usually stays an idea.</p></div>
-    <div class="card rust"><h3>Null results vanish</h3><p>65% of null results are never written up.<sup>1</sup> So the next team pays to make the same mistake.</p></div>
+    <div class="prob"><div class="prob-art"><svg viewBox="0 0 220 240" role="img" aria-label="A broken lightbulb">
+<defs><linearGradient id="bg" x1="0" x2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DCE4F2"/></linearGradient></defs>
+<ellipse cx="110" cy="224" rx="46" ry="9" fill="#1B3F8B" opacity="0.08"/>
+<path d="M88,150 C88,128 52,112 52,74 A58,58 0 1 1 168,74 C168,112 132,128 132,150 Z" fill="url(#bg)" stroke="#1B3F8B" stroke-width="3" stroke-linejoin="round"/>
+<path d="M78,44 L96,70 L86,86 L108,104 L100,122 L116,136" fill="none" stroke="#1B3F8B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M96,70 L118,62 M108,104 L128,98" fill="none" stroke="#1B3F8B" stroke-width="2.2" stroke-linecap="round"/>
+<g stroke="#1B3F8B" stroke-width="3" stroke-linejoin="round">
+<rect x="86" y="150" width="48" height="14" rx="3" fill="#C9D5EC"/>
+<rect x="88" y="164" width="44" height="14" rx="3" fill="#9DB1DA"/>
+<rect x="90" y="178" width="40" height="14" rx="3" fill="#C9D5EC"/>
+<path d="M98,192 h24 l-5,12 h-14 z" fill="#1B3F8B"/>
+</g>
+<g fill="#FFFFFF" stroke="#1B3F8B" stroke-width="2.4" stroke-linejoin="round">
+<polygon points="160,196 176,190 172,206"/>
+<polygon points="44,204 58,198 56,212"/>
+</g>
+</svg></div><h3>Most good ideas never get tested</h3><p>The labs, the equipment and the money sit with a few universities and a few big companies. Outside those places, an idea usually stays an idea.</p></div>
+    <div class="prob"><div class="prob-art"><svg viewBox="0 0 220 240" role="img" aria-label="A bin with papers in it">
+<defs><linearGradient id="tg" x1="0" x2="1"><stop offset="0" stop-color="#C9D5EC"/><stop offset="1" stop-color="#8FA5D3"/></linearGradient></defs>
+<ellipse cx="110" cy="224" rx="62" ry="10" fill="#1B3F8B" opacity="0.08"/>
+<ellipse cx="110" cy="70" rx="62" ry="22" fill="#3D5FA8" stroke="#1B3F8B" stroke-width="2.5"/>
+<g stroke="#1B3F8B" stroke-width="2.5" stroke-linejoin="round">
+<rect x="64" y="14" width="44" height="58" rx="2" fill="#FFFFFF" transform="rotate(-14 86 43)"/>
+<rect x="100" y="6" width="44" height="58" rx="2" fill="#FFFFFF" transform="rotate(8 122 35)"/>
+<rect x="84" y="22" width="44" height="58" rx="2" fill="#FFFFFF" transform="rotate(-2 106 51)"/>
+</g>
+<path d="M48,70 L60,206 A50,16 0 0 0 160,206 L172,70 A62,22 0 0 1 48,70 Z" fill="url(#tg)" stroke="#1B3F8B" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M48,70 A62,22 0 0 0 172,70" fill="none" stroke="#1B3F8B" stroke-width="5" stroke-linecap="round"/>
+</svg></div><h3>Null results vanish</h3><p>65% of null results are never written up.<sup>1</sup> So the next team pays to make the same mistake.</p></div>
   </div>
   <p class="note">1 Franco et al., Science 2014</p>
 </section>
@@ -172,10 +211,10 @@
         <text x="296" y="64" font-size="17.6" font-weight="600" fill="#1B3F8B" text-anchor="end">AI Lab A</text>
         <text x="350" y="244" font-size="17.6" font-weight="600" fill="#A23B1E" text-anchor="end">Startup C</text>
       </svg></div><p class="note" style="text-align:center">After 200 bounties. Dashed line: stated odds match results. Below it: overconfident. Illustrative data.</p></div><div class="need side">
-    <div class="label rust">Why AI scientists need this</div>
+    <div class="label rust">Why this matters</div>
     <div class="need-grid">
-      <div class="stat"><div class="nums"><div><b class="rust">77%</b><span>predicted success</span></div><div><b>22%</b><span>actual success</span></div></div><p>Some agents are this overconfident.<sup>1</sup> They also misjudge their own costs.<sup>2</sup></p></div>
-      <div class="stat"><h3>Benchmarks get gamed</h3><p>Models overfit to known answers. Only open questions are a real test.</p></div>
+      <div class="stat"><div class="nums"><div><b class="rust">77%</b><span>they predict</span></div><div><b>22%</b><span>they deliver</span></div></div><p>Some AI agents predict a 77% chance of success but succeed only 22% of the time.<sup>1</sup> They misjudge their costs too.<sup>2</sup></p></div>
+      <div class="stat"><h3>Benchmarks can’t catch this</h3><p>Models overfit to known answers. Only open questions, scored on real outcomes, show who is calibrated.</p></div>
     </div>
     <p class="note">1 Kaddour et al., ICLR 2026 · 2 Fradkin &amp; Krishnan, MarketBench, 2026</p>
   </div></div>
