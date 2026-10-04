@@ -108,15 +108,114 @@
   .tr .conf span { display: block; font: 700 10px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
   @media (max-width: 860px) { .tr { grid-template-columns: minmax(0, 1fr) 64px; grid-template-areas: "rn conf" "hyp hyp" "why why"; } }
   @keyframes p { from { opacity: .25 } to { opacity: 1 } }
+  /* Presentation layer (matches the Pitch tab). One type scale:
+     72 hero · 40 section · 20 sub-heading · 24 numbers · 16 body · 14 small · 12 labels */
+  main { max-width: 1240px; }
+  section { padding: 96px 0 24px; }
+  section + section { margin-top: 32px; }
+  section > * + * { margin-top: 20px; }
+  section > .label + h2 { margin-top: 10px; }
+  .label { font-size: 12px; }
+  .label .num { color: var(--muted); margin-right: 12px; letter-spacing: 0.08em; }
+  h2 { font-size: 40px; letter-spacing: -0.03em; line-height: 1.08; max-width: 900px; margin-bottom: 0; }
+  h3, .trail-head h3, #recBody h3 { font-size: 20px; letter-spacing: -0.01em; margin: 0; }
+  .sub, .status, .banner, .result, .lverdict, .quote, .lside .quote, .round p { font-size: 16px; line-height: 1.55; }
+  .note, .cap, .legend, table, select, .mode button, .steps button, .wait, #claimStatus, #watchLead, .q .crit, .tr .why, .tr .rn .act, #replayDetails, #replayDetails * { font-size: 14px; }
+  .kv span, .lhead b, .lhead span, .tr .rn b, .controls label, .pill, .q .label { font-size: 12px; }
+
+  /* Hero */
+  .hero { min-height: 0; padding-top: 80px; gap: 56px; }
+  .hero h1 { font-size: 72px; letter-spacing: -0.045em; line-height: 0.98; }
+  .hero .lead, .hero .sub { font-size: 18px; line-height: 1.55; color: var(--body); max-width: 560px; }
+  .hero .sub { margin-top: 12px; }
+
+  /* One surface style for every box */
+  #start > .controls, .q, .kv div, .lchart, .lside, .tr { background: #fff; border: 1px solid #E3E9F4; border-radius: 16px; }
+
+  /* Run picker */
+  .status, .banner { background: none; border: 0; padding: 0; display: block; color: var(--body); margin-top: 12px; }
+  .status .pill, .banner .pill { display: none; }
+  #start > .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto auto; gap: 16px; align-items: end; padding: 20px 24px; margin-top: 24px !important; }
+  #start > .controls label { min-width: 0; }
+  #start > .controls select { width: 100%; }
+  select { height: 44px; border-radius: 10px; padding: 0 14px; border-color: #C9D3E6; background: #fff; }
+  .mode { height: 44px; border-radius: 999px; border-color: #C9D3E6; }
+  .mode button { padding: 0 16px; white-space: nowrap; }
+  .btn { height: 44px; border-radius: 999px; padding: 0 22px; white-space: nowrap; }
+  .btn.sm { height: 36px; padding: 0 16px; }
+  #costNote { display: none; }
+  #claimStatus, #watchLead { color: var(--muted); margin-top: 10px !important; line-height: 1.5; }
+  #replayTabs { margin-top: 20px !important; }
+
+  /* Hypothesis card */
+  .q { padding: 24px; margin-top: 16px; }
+  .q .h { font-size: 20px; line-height: 1.4; }
+  .q .crit { color: var(--body); line-height: 1.55; }
+
+  /* Stats */
+  .kv.row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  .kv div { padding: 16px 20px; min-height: 84px; display: flex; flex-direction: column; justify-content: space-between; }
+  .kv b { font: 800 24px var(--sans); letter-spacing: -0.02em; color: var(--navy); }
+
+  /* Plot / Track toolbar: labels inline, aligned with the cards */
+  #watch > .controls:not(#replayTabs) { display: flex; gap: 24px; margin-top: 24px !important; }
+  #watch > .controls:not(#replayTabs) label { flex-direction: row; align-items: center; gap: 10px; }
+  #watch > .controls:not(#replayTabs) select { min-width: 200px; }
+
+  /* Charts */
+  .learn-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: stretch; margin-top: 16px; }
+  .lchart, .lside { padding: 20px; height: 100%; }
+  .lchart svg text { font-size: 13px !important; fill: #6B6B67; }
+  .lside svg text { font-size: 13px !important; fill: #6B6B67; }
+  .lside svg svg text { font-size: 22px !important; }
+  .lhead { margin-bottom: 4px; }
+  .lguess { font: 700 16px/1.4 var(--sans); color: var(--navy); margin: 8px 0 12px; }
+  .lguess small { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .lside .quote { min-height: 0; margin-top: 16px; border-left-width: 2px; }
+  .quote small { font-size: 14px; }
+  .learn .controls { margin-top: 16px !important; }
+  .steps button { height: 36px; border-radius: 999px; padding: 0 14px; }
+
+  /* Round history */
+  .trail { margin-top: 40px; }
+  .trail-head .note { margin: 0; }
+  #lTrail { gap: 10px; }
+  .tr { padding: 16px 20px; border-left-width: 3px; }
+  .tr.now { background: #F7F9FD; border-left-color: var(--navy); }
+  .tr.check.ok { background: #fff; border-left-color: var(--green); }
+  .tr.check.bad { background: #fff; border-left-color: var(--rust); }
+  .tr .rn .saw, .tr .stance { font-size: 14px; }
+  .tr .law, .tr.check .law { font: 700 14px var(--sans); color: var(--navy); }
+  .tr .law small { font-size: 14px; }
+  .tr .conf { font: 800 24px var(--sans); color: var(--navy); }
+  .tr .conf span { font-size: 12px; }
+
+  /* Recorded runs + public record */
+  .cmp { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: start; margin-top: 16px; }
+  #recBody h3 { margin-top: 48px !important; margin-bottom: 8px; }
+  table th { border-bottom: 1px solid var(--line); }
+  table td, table th { padding: 10px; vertical-align: middle; }
+  table td { border-bottom-color: #EEF0F4; }
+  footer { text-align: center; color: var(--muted); font-size: 14px; padding: 48px 0 64px; }
+  .status.on, .status.off, .banner.real, .banner.scripted { background: none; border: 0; padding: 0; }
+  table th, table td { padding: 10px 8px; }
+  table th, #recCompare td:first-child { white-space: nowrap; }
+  @media (max-width: 960px) { #start > .controls { grid-template-columns: 1fr 1fr; } .kv.row { grid-template-columns: 1fr 1fr; } .hero h1 { font-size: 48px; } h2 { font-size: 30px; } }
+  .discover { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22180%22%20viewBox%3D%220%200%20260%20180%22%3E%3Cg%20transform%3D%22translate%2830%2030%29%20rotate%2825%29%22%3E%3Crect%20x%3D%22-17.0%22%20y%3D%22-7%22%20width%3D%2234%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-12.0%22%20y%3D%22-4%22%20width%3D%2213.6%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28120%2080%29%20rotate%28-35%29%22%3E%3Crect%20x%3D%22-14.0%22%20y%3D%22-7%22%20width%3D%2228%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-9.0%22%20y%3D%22-4%22%20width%3D%2211.2%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28200%2022%29%20rotate%2860%29%22%3E%3Crect%20x%3D%22-15.0%22%20y%3D%22-7%22%20width%3D%2230%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-10.0%22%20y%3D%22-4%22%20width%3D%2212.0%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2870%20140%29%20rotate%2810%29%22%3E%3Crect%20x%3D%22-16.0%22%20y%3D%22-7%22%20width%3D%2232%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-11.0%22%20y%3D%22-4%22%20width%3D%2212.8%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28170%20150%29%20rotate%28-20%29%22%3E%3Crect%20x%3D%22-13.0%22%20y%3D%22-7%22%20width%3D%2226%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-8.0%22%20y%3D%22-4%22%20width%3D%2210.4%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28240%20100%29%20rotate%2845%29%22%3E%3Crect%20x%3D%22-15.0%22%20y%3D%22-7%22%20width%3D%2230%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-10.0%22%20y%3D%22-4%22%20width%3D%2212.0%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2820%2090%29%20rotate%28-60%29%22%3E%3Crect%20x%3D%22-11.0%22%20y%3D%22-7%22%20width%3D%2222%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-6.0%22%20y%3D%22-4%22%20width%3D%228.8%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(120deg, #1B3F8B 0%, #2F5DB8 45%, #5C8FE0 100%);
+    background-size: 260px 180px, 100% 100%; background-repeat: repeat, no-repeat;
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    animation: discover-float 24s linear infinite; }
+  @keyframes discover-float { from { background-position: 0 0, 0 0; } to { background-position: 260px -180px, 0 0; } }
+  @media (prefers-reduced-motion: reduce) { .discover { animation: none; } }
 </style>
 </head>
 <body>
 <div class="topbar"><div class="in">
   <a class="brand" href="/">Discovery Market</a>
   <nav class="tabs">
-    <a href="/"><span>01</span>Pitch draft</a>
-    <a href="/simulation"><span>02</span>How it works</a>
-    <a class="on" href="/live"><span>03</span>Live market</a>
+    <a href="/"><span>01</span>Pitch</a>
+    <a class="on" href="/live"><span>02</span>Live market</a>
+    <a href="/simulation"><span>03</span>How it works</a>
   </nav>
 </div></div>
 
@@ -125,7 +224,7 @@
 <section class="hero">
   <div>
     <p class="label">Live market</p>
-    <h1>A real AI model bets on a real question.</h1>
+    <h1>A real AI model bets on a <span class="discover">real question</span>.</h1>
     <p class="lead">Pick a claim about a hidden world. A frontier model reads the prize and can pay to read earlier failed runs before bidding. Each round it pays a fee, may buy an experiment, and says how likely it is to get the answer right.</p>
     <p class="sub">It ends with a verdict (supported, refuted or inconclusive), or it walks away. Only a correct, clear verdict wins the prize. The answer is hidden from the model and revealed here only at the end.</p>
   </div>
@@ -154,7 +253,7 @@
 </section>
 
 <section id="start">
-  <p class="label">1 · Choose a recorded run</p>
+  <p class="label"><span class="num">[01]</span>Choose a recorded run</p>
   <h2>Choose a claim and an AI scientist.</h2>
   <div id="status"></div>
   <div class="controls" style="margin-top:18px">
@@ -217,7 +316,7 @@
 </section>
 
 <section id="recorded">
-  <p class="label">2 · Recorded runs</p>
+  <p class="label"><span class="num">[02]</span>Recorded runs</p>
   <h2>Replay runs that were already played.</h2>
   <p class="sub">Every model got the same claims, the same prices and the same spending cap. Replays read saved results from this machine; nothing is sent to an AI model.</p>
   <div id="recBanner"><p class="wait">Loading…</p></div>
@@ -235,7 +334,7 @@
 </section>
 
 <section id="record">
-  <p class="label rust">3 · The public record</p>
+  <p class="label rust"><span class="num">[03]</span>The public record</p>
   <h2>Every run is kept, especially the failures.</h2>
   <p class="sub" id="recordNote">Models can buy failed runs for their claim; solved claims leave the market. Below: runs played by real models only.</p>
   <div id="leader"></div>
@@ -431,6 +530,7 @@ async function replaySelectedRecording(autoplay = true, attemptId = null) {
     const examples = await LEARNING_DATA.catch(() => ({runs: []}));
     if (request !== REPLAY_REQUEST) return;
     const law = (examples.runs || []).find(x => x.id === r.attempt_id);
+    if (!d.replay) throw new Error("This recorded run has no replay data yet.");
     if (law) {
       d.replay.law = law;
       d.replay.rounds.forEach(rd => {
