@@ -597,6 +597,17 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   `tests/test_live_spend.py`, `tests/test_live_market.py`).
 - Full suite: `uv run pytest -q` — 704 passed, 3 skipped, 34 warnings.
 
+## Experiment replays (2026-10-04)
+- **Built**: `animations.py` and `web/experiments.html` (route `/experiments`, nav tab 04).
+  Each recorded live run's experiments are re-run through the same world simulator
+  (`get_world(..., engine="nbody", noise_std=0.0)`) at 72 dense time steps, using the
+  transcript's own inputs. The page animates the true paths, highlights the AI's probes,
+  overlays the noisy measurements the AI paid for, steps through rounds with stated
+  chance and reasoning, and ends with the verdict against the hidden answer.
+  Replays are cached in `output/animations/<claim>.json` and rebuilt when transcripts change.
+  APIs: `/api/anim/claims`, `/api/anim?claim=<id>`. No API calls; vendor code untouched.
+- **Checks**: all 11 claims × 4 models replay (105 experiments, 0 simulator errors);
+  `tests/test_animations.py` (4); full suite 709 passed.
 ## Solved claims and paid public-record reads (2026-10-04)
 
 - A successful record closes its claim to subsequent real runs across the benchmark, live
