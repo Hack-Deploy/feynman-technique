@@ -706,3 +706,11 @@ sit beside 120 baseline, 24 fake and 3 scripted runs). The scripted-demo table i
 says no real grid has been recorded yet. Nothing was deleted from the attempt stores; this is
 display only, and the market's public ledger (what models see) is unchanged. Tests updated:
 701 passed.
+
+## 2026-10-04 · /live section 2 is one view: hypothesis, strip, replay or your market
+
+Removed the Haiku "paid for a wrong discovery" block from /live. "Watching it learn" and the
+round-by-round feed are now one section: a hypothesis card (claim, how it is judged, model,
+world, prize; the answer stays hidden until the checker), one Round / Spent / Experiments /
+Stated chance strip, then either the recorded Opus replay or the market you started, with a
+toggle between them. Checked in a headless browser at 1280 and 390 px: no page errors, no overflow.

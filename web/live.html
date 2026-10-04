@@ -48,48 +48,19 @@
   .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
   tr.sel td { background: var(--soft); }
   .btn.sm { padding: 6px 12px; font-size: 13px; }
-  .stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 26px; align-items: start; }
-  @media (max-width: 960px) { .stage { grid-template-columns: minmax(0, 1fr); } }
-  .lab { position: relative; background: #0D1830; border-radius: 10px; overflow: hidden; aspect-ratio: 1 / 1; }
-  .lab canvas { display: block; width: 100%; height: 100%; }
-  .hud { position: absolute; left: 14px; top: 12px; right: 14px; display: flex; justify-content: space-between; gap: 10px;
-    font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: #9FB3DA; pointer-events: none; }
-  .stamp { position: absolute; right: 18px; top: 40px; font: 800 22px var(--narrow); letter-spacing: .1em; text-transform: uppercase;
-    padding: 6px 14px; border: 3px solid #FF8A6B; color: #FF8A6B; border-radius: 6px; background: rgba(13,24,48,.6);
-    transform: rotate(-6deg) scale(.6); opacity: 0; transition: transform .35s cubic-bezier(.2,1.6,.4,1), opacity .25s; }
-  .stamp.ok { color: #6FD39A; border-color: #6FD39A; }
-  .stamp.show { transform: rotate(-6deg) scale(1); opacity: 1; }
-  .caption { min-height: 46px; margin-top: 10px; font: 500 16px/1.45 var(--sans); }
-  .rr .controls, .learn .controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-  .rr .controls input, .learn .controls input[type=range] { flex: 1; min-width: 140px; accent-color: var(--navy); }
+  .learn .controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
   .steps { display: flex; gap: 6px; flex-wrap: wrap; }
   .steps button { font: 600 13px var(--sans); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--body); }
   .steps button.on { background: var(--soft); border-color: var(--navy); color: var(--navy); }
 
-  .force { background: var(--faint); border-radius: 10px; padding: 18px 18px 14px; }
-  .force .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .force .head b { font: 700 13px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: var(--navy); }
-  .force .head span { font: 700 13px var(--narrow); letter-spacing: .08em; color: var(--muted); }
   .quote { margin: 10px 0 6px; min-height: 96px; font: 500 16px/1.5 var(--sans); color: var(--ink); border-left: 3px solid var(--navy); padding: 2px 0 2px 12px; }
   .quote small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
-  .force svg { width: 100%; height: auto; display: block; }
-  .force svg text { font-family: var(--sans); }
-  .laws { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-  .laws div { background: #fff; border-radius: 8px; padding: 8px 10px; border-top: 3px solid; opacity: .25; transition: opacity .4s; }
-  .laws div.lit { opacity: 1; }
-  .laws span { display: block; font: 700 10px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-  .laws b { font: 700 17px var(--narrow); }
-  .pay { display: grid; grid-template-columns: 92px 1fr 56px; gap: 8px; align-items: center; font-size: 14px; margin: 6px 0; }
-  .pay .bar { position: relative; height: 18px; background: #fff; border-radius: 4px; }
-  .pay .bar i { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: 4px; transition: all .8s cubic-bezier(.2,.8,.2,1); }
-  .pay .bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
-  .pay b { font: 700 16px var(--narrow); text-align: right; }
-  .payout { opacity: .25; transition: opacity .4s; margin-top: 12px; }
-  .payout.lit { opacity: 1; }
-  @media (prefers-reduced-motion: reduce) { .stamp, .laws div, .payout, .pay .bar i { transition: none; } }
 
-  .rr { margin-top: 56px; padding-top: 36px; border-top: 1px solid var(--line); }
-  .learn { margin-top: 56px; padding-top: 36px; border-top: 1px solid var(--line); }
+  .learn { margin-top: 0; }
+  [hidden] { display: none !important; }
+  .kv.row { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
+  @media (max-width: 720px) { .kv.row { grid-template-columns: 1fr 1fr; } }
+  .viewbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 14px; }
   .learn-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; margin-top: 22px; align-items: start; }
   @media (max-width: 960px) { .learn-grid { grid-template-columns: minmax(0, 1fr); } }
   .lchart { background: var(--faint); border-radius: 10px; padding: 14px 14px 10px; margin: 0; }
@@ -118,6 +89,7 @@
     <a href="/"><span>01</span>Vision</a>
     <a href="/simulation"><span>02</span>How it works</a>
     <a class="on" href="/live"><span>03</span>Live market</a>
+    <a href="/market"><span>04</span>Marketplace</a>
   </nav>
 </div></div>
 
@@ -171,64 +143,18 @@
 <section id="watch">
   <p class="label">2 · Watch it play out</p>
   <h2 id="watchTitle">Round by round.</h2>
-  <div class="board">
-    <div id="feed"><p class="wait">Start a market above. Each round appears here as it happens.</p></div>
-    <div>
-      <div class="kv">
-        <div><span>Round</span><b id="kRound">–</b></div>
-        <div><span>Spent</span><b id="kSpent">–</b></div>
-        <div><span>Experiments</span><b id="kExp">–</b></div>
-        <div><span>Stated chance</span><b id="kP">–</b></div>
-      </div>
-      <div class="fig" style="margin-top:14px"><svg viewBox="0 0 420 220" id="pChart" role="img" aria-label="Stated chance and spend by round"></svg>
-        <p class="cap">Navy: the model's stated chance of a correct verdict. Rust: credits spent.</p></div>
-      <div id="result"></div>
-    </div>
+  <p class="sub" id="watchLead"></p>
+  <div class="viewbar">
+    <span class="mode" id="view"><button data-v="replay" class="on" id="vReplay">Recorded run</button><button data-v="live" id="vLive" disabled>Your market</button></span>
   </div>
-
-  <div class="rr" id="realRuns">
-    <p class="label rust">Two real runs, replayed</p>
-    <h3 id="title">An AI got paid for a discovery that was wrong.</h3>
-    <p class="sub" id="lead"></p>
-<div class="stage">
-  <div>
-    <div class="lab" id="lab">
-      <canvas id="cv"></canvas>
-      <div class="hud"><span id="hudL"></span><span id="hudR"></span></div>
-      <div class="stamp" id="stamp"></div>
-    </div>
-    <p class="caption" id="caption"></p>
-    <div class="controls">
-      <button class="btn sm" id="play">Pause</button>
-      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Timeline">
-    </div>
-    <div class="steps" id="steps" style="margin-top:8px">
-      <button data-s="0">Round 1 · plan</button><button data-s="1">Round 2 · experiments</button>
-      <button data-s="2">Round 3 · claim</button><button data-s="3">Checker</button>
-    </div>
+  <div id="claim"></div>
+  <div class="kv row">
+    <div><span>Round</span><b id="kRound">–</b></div>
+    <div><span>Spent</span><b id="kSpent">–</b></div>
+    <div><span>Experiments</span><b id="kExp">–</b></div>
+    <div><span>Stated chance</span><b id="kP">–</b></div>
   </div>
-
-  <div class="force">
-    <div class="head"><b>How the model got there</b><span id="conf"></span></div>
-    <p class="quote" id="quote"></p>
-    <svg id="fd" viewBox="0 0 520 330" role="img" aria-label="Force on each probe: expected, claimed and true"></svg>
-    <div class="laws">
-      <div id="lawE" style="border-color:#3D63B5"><span>Expected</span><b id="lawEv"></b></div>
-      <div id="lawC" style="border-color:#B7791F"><span>Claimed</span><b id="lawCv"></b></div>
-      <div id="lawT" style="border-color:#2E7D4F"><span>True</span><b id="lawTv"></b></div>
-    </div>
-    <div class="payout" id="payout">
-      <div class="pay"><span>Naive rule</span><div class="bar"><i id="barN"></i></div><b id="valN"></b></div>
-      <div class="pay"><span>Market rule</span><div class="bar"><i id="barM"></i></div><b id="valM"></b></div>
-      <p class="note">Credits for this run. Naive pays the prize for any clear verdict. The market pays only a checked one and keeps a 30% bond on a false claim.</p>
-    </div>
-  </div>
-</div>
-  </div>
-<div class="learn" id="learn">
-  <p class="label">Watching it learn</p>
-  <h3 id="lTitle">Closing in on the hidden law, one round at a time.</h3>
-  <p class="sub" id="lLead"></p>
+  <div class="learn" id="learn">
   <div class="learn-grid">
     <figure class="lchart">
       <svg id="lc" viewBox="0 0 640 380" role="img" aria-label="The model's guess for how the pull falls with distance, round by round, against its readings and the true law"></svg>
@@ -251,7 +177,15 @@
     <button class="btn sm" id="lPlay">Play</button>
     <div class="steps" id="lSteps"></div>
   </div>
-</div>
+  </div>
+  <div class="board" id="liveView" hidden>
+    <div id="feed"><p class="wait">Start a market above. Each round appears here as it happens.</p></div>
+    <div>
+      <div class="fig"><svg viewBox="0 0 420 220" id="pChart" role="img" aria-label="Stated chance and spend by round"></svg>
+        <p class="cap">Navy: the model's stated chance of a correct verdict. Rust: credits spent.</p></div>
+      <div id="result"></div>
+    </div>
+  </div>
 </section>
 
 <section id="recorded">
@@ -311,7 +245,25 @@ const n0 = v => v == null ? "–" : (Math.round(v * 10) / 10).toString();
 const ACTION = {experiment: "bought an experiment", mse_fit: "fitted a formula to its data", verdict: "gave its verdict",
   walk_away: "walked away", withdraw: "withdrew", no_tag: "reply had no action"};
 const OUTCOME = {verdict: "verdict", walked_away: "walked away", withdrawn: "withdrew", out_of_rounds: "ran out of rounds"};
-let INFO = null, MODE = "demo", POLL = null;
+let INFO = null, MODE = "demo", POLL = null, VIEW = "replay", CLAIM = {}, REPLAY_CLAIM = null;
+
+// section 2: one view at a time, the recorded run or the market you started
+function showView(v) {
+  VIEW = v;
+  $("#learn").hidden = v !== "replay"; $("#liveView").hidden = v !== "live";
+  document.querySelectorAll("#view button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  if (v === "replay" && REPLAY_CLAIM) renderClaim(REPLAY_CLAIM);
+  if (v === "replay" && window.replayRender) window.replayRender();
+  if (v === "live") renderClaim(CLAIM);
+}
+function renderClaim(c) {
+  const h = (INFO && INFO.hypotheses.find(x => x.id === c.id)) || {};
+  const crit = c.resolution_criteria || h.resolution_criteria;
+  $("#claim").innerHTML = c.hypothesis ? `<div class="q"><p class="label" style="margin:0 0 6px">The hypothesis</p><div class="h">“${esc(c.hypothesis)}”</div>
+    ${crit ? `<div class="crit"><b>How it will be judged:</b> ${esc(crit)}</div>` : ""}
+    <div class="meta"><span class="pill info">${esc(c.model)}</span>${(c.world || h.world) ? `<span class="pill info">world: ${esc(c.world || h.world)}</span>` : ""}<span class="pill pass">prize ${n0(c.prize ?? h.prize)} credits</span>
+    ${c.answer ? `<span class="pill ${c.answer === "supported" ? "pass" : "fail"}">answer: ${esc(c.answer)}</span>` : `<span class="pill">answer hidden</span>`}</div></div>` : "";
+}
 
 function renderStatus() {
   const l = INFO.live;
@@ -370,6 +322,7 @@ function roundCard(r) {
 }
 function renderJob(j) {
   const rs = j.rounds || [];
+  if (VIEW !== "live") showView("live");
   $("#feed").innerHTML = (rs.length ? rs.map(roundCard).join("") : "") +
     (j.state === "running" ? `<p class="wait"><span class="pulse"></span> ${j.scripted ? "Scripted AI scientist" : esc(j.model)} is thinking…</p>` : "");
   const last = rs[rs.length - 1] || {};
@@ -382,6 +335,7 @@ function renderJob(j) {
   if (j.state === "error") $("#result").innerHTML = `<div class="result lose"><b>The run stopped with an error.</b><p class="note">${esc(j.error)}</p></div>`;
   if (j.state === "done" && j.run) {
     const r = j.run, win = r.passed;
+    CLAIM.answer = r.answer; renderClaim(CLAIM);
     $("#result").innerHTML = `<div class="result ${win ? "win" : "lose"}"><p class="label" style="margin:0">${win ? "Prize paid" : "No prize"}</p>
       <div class="big" style="color:${win ? "var(--green)" : "var(--rust)"}">${r.profit >= 0 ? "+" : ""}${n0(r.profit)} credits</div>
       <p style="margin-top:8px">Outcome: <b>${esc(OUTCOME[r.outcome] || r.outcome)}</b>${r.agent_verdict ? `, it said <b>${esc(r.agent_verdict)}</b>` : ""}. The hidden answer was <b>${esc(r.answer)}</b>.</p>
@@ -401,7 +355,11 @@ $("#go").addEventListener("click", async () => {
   clearTimeout(POLL);
   $("#go").disabled = true; $("#result").innerHTML = ""; $("#feed").innerHTML = '<p class="wait"><span class="pulse"></span> Posting the question…</p>';
   const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
-  $("#watchTitle").textContent = `“${h.hypothesis}”`;
+  CLAIM = {id: h.id, hypothesis: h.hypothesis, resolution_criteria: h.resolution_criteria, world: h.world, prize: h.prize,
+    model: MODE === "demo" ? "Scripted AI scientist" : ($("#model").selectedOptions[0]?.textContent || $("#model").value)};
+  $("#vLive").disabled = false; showView("live");
+  $("#watchLead").textContent = "Your market. Each round appears here as it happens.";
+  $("#kRound").textContent = $("#kSpent").textContent = $("#kExp").textContent = $("#kP").textContent = "–";
   try {
     const res = await fetch("/api/live/start", {method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({hypothesis_id: h.id, model: $("#model").value, scripted: MODE === "demo"})});
@@ -520,240 +478,16 @@ fetch("/api/live/info").then(r => r.json()).then(info => {
   $("#hyp").addEventListener("change", renderHyp);
   document.querySelectorAll("#mode button").forEach(b => b.addEventListener("click", () => !b.disabled && setMode(b.dataset.m)));
   renderStatus(); renderHyp(); costNote(); chart([]);
+  if (VIEW === "replay" && REPLAY_CLAIM) renderClaim(REPLAY_CLAIM);
+  document.querySelectorAll("#view button").forEach(b => b.addEventListener("click", () => !b.disabled && showView(b.dataset.v)));
 }).catch(e => { $("#status").innerHTML = `<p class="pill fail">Could not load the market: ${esc(e.message)}</p>`; });
 loadRuns().catch(() => {});
 </script>
 <script>
-// ---------------------------------------------------------------- two real runs, replayed (section 2)
+// ---------------------------------------------------------------- section 2: the recorded run, round by round
 (() => {
 const fmt = (v, d = 3) => v == null ? "–" : +(+v).toPrecision(d) + "";
-const COLORS = ["#7FB2FF", "#C59BFF", "#5FE0D0", "#FF9BD2", "#B8E86B", "#FFD36B", "#9BC0FF", "#FFB0A0"];
-const LAW = {expected: "#3D63B5", claimed: "#B7791F", true: "#2E7D4F"};
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const cv = $("#cv"), ctx = cv.getContext("2d");
-let D = null, T = 0, playing = false, last = null, TL = null, G = null, SERIES = null;
-
-// ---------------------------------------------------------------- timeline: plan, experiments, claim, checker
-function timeline(d) {
-  const per = d.launches.length > 4 ? 1.5 : 2.4;
-  const plan = {start: 0, dur: 4};
-  const launches = d.launches.map((l, i) => ({i, start: plan.dur + i * per, dur: per}));
-  const claim = {start: plan.dur + d.launches.length * per, dur: 4.5};
-  const check = {start: claim.start + claim.dur, dur: 4.5};
-  return {plan, launches, claim, check, total: check.start + check.dur + .5};
-}
-const stepAt = t => t < TL.launches[0].start ? 0 : t < TL.claim.start ? 1 : t < TL.check.start ? 2 : 3;
-
-// ---------------------------------------------------------------- left: the experiment
-const WORLD = 0.5;
-function resize() {
-  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (!D) return;
-  let x0 = 0, x1 = 0;
-  for (const l of D.launches) for (const f of [...l.obs, ...(l.true || [])]) for (const p of f) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); }
-  G = {w: r.width, h: r.height, wh: Math.round(r.height * WORLD), cx: (x0 + x1) / 2, half: (x1 - x0) / 2 * 1.15 + .5};
-  draw();
-}
-const P = p => { const s = G.w / (2 * G.half); return [G.w / 2 + (p[0] - G.cx) * s, G.wh / 2 + 14 - p[1] * s]; };
-function lerp(frames, times, t) {
-  const tEnd = times[times.length - 1] || 1, x = Math.max(0, Math.min(1, t / tEnd)) * (frames.length - 1);
-  const i = Math.floor(x), f = x - i, a = frames[i], b = frames[Math.min(i + 1, frames.length - 1)];
-  return a.map((p, j) => [p[0] + (b[j][0] - p[0]) * f, p[1] + (b[j][1] - p[1]) * f]);
-}
-function disc(p, r, fill, glow) {
-  const [x, y] = P(p); if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 14; }
-  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = fill; ctx.fill(); ctx.shadowBlur = 0;
-}
-function snap(x, y, col, flash) {
-  if (flash > 0) { ctx.globalAlpha = flash; ctx.beginPath(); ctx.arc(x, y, 4 + 12 * (1 - flash), 0, 2 * Math.PI); ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.stroke(); ctx.globalAlpha = 1; }
-  ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 2 * Math.PI); ctx.fillStyle = "#fff"; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke();
-}
-function series(d) {  // distance each probe has moved toward the source since release
-  return d.launches.map(l => {
-    const r = f => Math.hypot(f[1][0] - f[0][0], f[1][1] - f[0][1]);
-    const r0 = Math.hypot(l.input.pos2[0], l.input.pos2[1]);
-    return {
-      obs: l.obs_t.map((t, k) => [t, r0 - r(l.obs[k])]),
-      true: l.true ? l.true_t.map((t, k) => [t, r0 - r(l.true[k])]) : null,
-      claimed: l.claimed ? l.true_t.map((t, k) => [t, r0 - Math.hypot(l.claimed[k][0], l.claimed[k][1])]) : null,
-    };
-  });
-}
-function draw() {
-  if (!D || !G) return;
-  const step = stepAt(T), reveal = step === 3 ? Math.min(1, (T - TL.check.start) / 1.6) : 0;
-  const claimFrac = step >= 2 ? Math.min(1, (T - TL.claim.start) / 1.6) : 0;
-  let active = -1; TL.launches.forEach(L => { if (T >= L.start && T < L.start + L.dur) active = L.i; });
-  ctx.fillStyle = "#0D1830"; ctx.fillRect(0, 0, G.w, G.h);
-
-  // world: source and probes on one line
-  disc([0, 0], 8, "#FFB454", "#FFB454");
-  D.launches.forEach((l, i) => {
-    const L = TL.launches[i], col = COLORS[i % COLORS.length];
-    if (step === 0) { disc(l.input.pos2, 4, "rgba(159,179,218,.5)"); return; }
-    if (T < L.start) return;
-    const tEnd = l.obs_t[l.obs_t.length - 1], tw = Math.min(1, (T - L.start) / L.dur) * tEnd;
-    if (i === active && l.true) disc(lerp(l.true, l.true_t, tw)[1], 4.5, col, col);
-    l.obs_t.forEach((t, k) => {
-      if (t > tw + 1e-9) return;
-      const [x, y] = P(l.obs[k][1]);
-      snap(x, y, col, i === active ? Math.max(0, 1 - (tw - t) / tEnd * 8) : 0);
-    });
-  });
-
-  // chart
-  const X0 = 54, X1 = G.w - 18, Y0 = G.wh + 34, Y1 = G.h - 30;
-  ctx.strokeStyle = "rgba(159,179,218,.25)"; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, G.wh + .5); ctx.lineTo(G.w, G.wh + .5); ctx.stroke();
-  ctx.fillStyle = "#9FB3DA"; ctx.font = "700 11px 'Archivo Narrow', sans-serif";
-  ctx.fillText("DISTANCE FALLEN TOWARD THE SOURCE", 14, G.wh + 20);
-  ctx.textAlign = "right"; ctx.fillText("TIME →", X1, Y1 + 20); ctx.textAlign = "left";
-  let tmax = 0, lo = 0, hi = 0;
-  for (const s of SERIES) for (const [t, v] of [...s.obs, ...(s.true || [])]) { tmax = Math.max(tmax, t); lo = Math.min(lo, v); hi = Math.max(hi, v); }
-  const pad = (hi - lo || 1) * .12; lo -= pad; hi += pad;
-  const X = t => X0 + t / tmax * (X1 - X0), Y = v => Y1 - (v - lo) / (hi - lo) * (Y1 - Y0);
-  ctx.fillStyle = "#9FB3DA"; ctx.font = "600 11px 'Archivo', sans-serif"; ctx.textAlign = "right";
-  for (const v of [0, hi - pad]) ctx.fillText(fmt(v, 2), X0 - 8, Y(v) + 4);
-  ctx.textAlign = "left";
-  ctx.strokeStyle = "rgba(159,179,218,.18)"; ctx.setLineDash([3, 4]);
-  ctx.beginPath(); ctx.moveTo(X0, Y(0)); ctx.lineTo(X1, Y(0)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.save(); ctx.beginPath(); ctx.rect(X0, Y0 - 6, X1 - X0, Y1 - Y0 + 12); ctx.clip();
-  const line = (pts, upto, color, width, dash) => {
-    const n = Math.max(1, Math.round(upto * (pts.length - 1)));
-    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []); ctx.beginPath();
-    for (let k = 0; k <= n; k++) { const x = X(pts[k][0]), y = Y(pts[k][1]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-    ctx.stroke(); ctx.setLineDash([]);
-  };
-  SERIES.forEach((s, i) => {
-    const L = TL.launches[i], l = D.launches[i], col = COLORS[i % COLORS.length];
-    if (step === 0 || T < L.start) return;
-    if (claimFrac > 0 && s.claimed) line(s.claimed, claimFrac, "#F2C46D", 2, [6, 4]);
-    if (reveal > 0 && s.true) line(s.true, reveal, "#6FD39A", 2.2);
-    const tEnd = l.obs_t[l.obs_t.length - 1], tw = Math.min(1, (T - L.start) / L.dur) * tEnd;
-    for (const [t, v] of s.obs) if (t <= tw + 1e-9) snap(X(t), Y(v), col, 0);
-  });
-  ctx.restore();
-
-  // words
-  const r = D.rounds, lc = D.laws.claimed, lt = D.laws.true;
-  const hud = ["Round 1 · plan", active >= 0 ? `Round 2 · experiment ${active + 1} of ${D.launches.length}` : "Round 2 · experiments",
-               "Round 3 · claim", "The checker"][step];
-  $("#hudL").textContent = hud;
-  $("#hudR").textContent = `seed ${D.seed}`;
-  $("#caption").innerHTML = [
-    "The model has not run anything yet. It expects the pull to fall as 1/r².",
-    "Each probe is released at rest and falls toward the source. The lab returns only noisy snapshots (white dots).",
-    `It fits the snapshots and claims a law: the dashed curves are what a ∝ 1/r<sup>${fmt(lc.n)}</sup> would do.`,
-    reveal < 1 ? "The checker replays every launch without noise…" :
-      `True paths in green. The verdict (<b>${esc(D.verdict)}</b>) is right, but the law is wrong: n = ${(+lc.n).toFixed(2)} against a true ${(+lt.n).toFixed(2)}.`,
-  ][step];
-  const st = $("#stamp");
-  st.textContent = D.outcome === "confirmed" ? "Confirmed" : "False claim";
-  st.className = "stamp" + (D.outcome === "confirmed" ? " ok" : "") + (step === 3 && reveal >= 1 ? " show" : "");
-  forcePanel(step, reveal >= 1);
-  document.querySelectorAll("#steps button").forEach(b => b.classList.toggle("on", +b.dataset.s === step));
-}
-
-// ---------------------------------------------------------------- right: the force diagram
-function accel(law, r) { return law.a3 * Math.pow(3 / r, law.n); }
-function buildForce() {
-  const rs = [...new Set(D.launches.map(l => Math.hypot(l.input.pos2[0], l.input.pos2[1])))].sort((a, b) => a - b);
-  const W = 520, H = 330, sx = 40, spread = 0.5, laws = ["expected", "claimed", "true"];
-  const angle = i => rs.length > 1 ? -spread + 2 * spread * i / (rs.length - 1) : 0;
-  const ys = rs.map((r, i) => r * Math.sin(angle(i))), xs = rs.map((r, i) => r * Math.cos(angle(i)));
-  const ylo = Math.min(0, ...ys), yhi = Math.max(0, ...ys);
-  const k = Math.min((W - sx - 50) / Math.max(...xs), (H - 70) / (yhi - ylo || 1));
-  const sy = (H - 24) / 2 - k * (ylo + yhi) / 2;
-  const amax = Math.max(...laws.map(n => accel(D.laws[n], rs[0])));
-  const L = a => 8 + a / amax * 150;
-  let g = `<defs>${laws.map(n => `<marker id="ah-${n}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${LAW[n]}"/></marker>`).join("")}</defs>`;
-  rs.forEach((r, i) => {
-    const th = angle(i);
-    const px = sx + r * k * Math.cos(th), py = sy + r * k * Math.sin(th);
-    const ux = -Math.cos(th), uy = -Math.sin(th), nx = -uy, ny = ux;
-    g += `<line x1="${sx}" y1="${sy}" x2="${px}" y2="${py}" stroke="#DADAD6" stroke-dasharray="2 4"/>`;
-    laws.forEach((n, j) => {
-      const off = (j - 1) * 7, len = Math.min(L(accel(D.laws[n], r)), r * k - 14);
-      const x0 = px + nx * off, y0 = py + ny * off;
-      g += `<line class="arrow" data-law="${n}" data-len="${len}" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0}" data-ux="${ux}" data-uy="${uy}"
-             stroke="${LAW[n]}" stroke-width="3.5" stroke-linecap="round" marker-end="url(#ah-${n})" opacity="0"/>`;
-    });
-    g += `<circle cx="${px}" cy="${py}" r="6" fill="#7FB2FF" stroke="#1B3F8B" stroke-width="1.5"/>`;
-    g += `<text x="${px + 10 * Math.cos(th)}" y="${py + 10 * Math.sin(th) + 18}" font-size="12" fill="#6B6B67" text-anchor="middle">r = ${fmt(r, 2)}</text>`;
-  });
-  g += `<circle cx="${sx}" cy="${sy}" r="11" fill="#FFB454"/><text x="${sx}" y="${sy + 30}" font-size="12" fill="#6B6B67" text-anchor="middle">source</text>`;
-  g += `<text x="${W - 4}" y="${H - 6}" font-size="12" fill="#6B6B67" text-anchor="end">arrow length = pull on the probe</text>`;
-  $("#fd").innerHTML = g;
-  for (const [el, n] of [["#lawEv", "expected"], ["#lawCv", "claimed"], ["#lawTv", "true"]])
-    $(el).innerHTML = `a ∝ 1/r<sup>${(+D.laws[n].n).toFixed(2)}</sup>`;
-}
-let shown = "";
-function forcePanel(step, revealed) {
-  const key = `${step}:${revealed}`;
-  if (key === shown) return;
-  shown = key;
-  const visible = {expected: true, claimed: step >= 2, true: step === 3 && revealed};
-  document.querySelectorAll("#fd .arrow").forEach(a => {
-    const on = visible[a.dataset.law], len = on ? +a.dataset.len : 0;
-    const x1 = +a.getAttribute("x1"), y1 = +a.getAttribute("y1");
-    a.setAttribute("x2", x1 + +a.dataset.ux * len); a.setAttribute("y2", y1 + +a.dataset.uy * len);
-    a.setAttribute("opacity", on ? (step === 3 && a.dataset.law === "expected" ? .3 : 1) : 0);
-    a.style.transition = REDUCED ? "none" : "all .9s cubic-bezier(.2,.8,.2,1)";
-  });
-  $("#lawE").classList.toggle("lit", true); $("#lawC").classList.toggle("lit", step >= 2);
-  $("#lawT").classList.toggle("lit", visible.true);
-  const r = D.rounds, p = i => r[i] && r[i].p_success != null ? `says ${Math.round(r[i].p_success * 100)}% sure` : "";
-  const q = [
-    [r[0] && r[0].assessment, "Round 1, before any data", p(0)],
-    [r[1] && r[1].assessment, `Round 2, buys ${D.launches.length} experiments`, p(1)],
-    [D.evidence || (r[2] && r[2].assessment), `Round 3, claims ${D.verdict}`, p(2)],
-    [`${D.reasons.join("; ")}.`, "The checker", `prize ${D.prize}`],
-  ][step];
-  $("#quote").innerHTML = `${step < 3 ? "“" : ""}${esc(q[0])}${step < 3 ? "”" : ""}<small>${esc(q[1])}</small>`;
-  $("#conf").textContent = q[2];
-  $("#payout").classList.toggle("lit", step === 3 && revealed);
-  const max = Math.max(Math.abs(D.naive), Math.abs(D.market), 1), on = step === 3 && revealed;
-  for (const [bar, val, v] of [["#barN", "#valN", D.naive], ["#barM", "#valM", D.market]]) {
-    const w = on ? Math.abs(v) / max * 50 : 0;
-    $(bar).style.left = v >= 0 ? "50%" : `${50 - w}%`; $(bar).style.width = `${w}%`;
-    $(bar).style.background = v >= 0 ? "var(--green)" : "var(--rust)";
-    $(val).textContent = on ? (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(0) : "";
-    $(val).style.color = v >= 0 ? "var(--green)" : "var(--rust)";
-  }
-}
-
-// ---------------------------------------------------------------- control
-function tick(now) {
-  if (last != null && playing) {
-    T += (now - last) / 1000;
-    if (T >= TL.total) { T = TL.total; playing = false; $("#play").textContent = "Replay"; }
-    $("#scrub").value = Math.round(T / TL.total * 1000);
-    draw();
-  }
-  last = now; requestAnimationFrame(tick);
-}
-$("#play").addEventListener("click", () => {
-  if (T >= TL.total) T = 0;
-  playing = !playing; $("#play").textContent = playing ? "Pause" : "Play";
-});
-$("#scrub").addEventListener("input", e => { T = e.target.value / 1000 * TL.total; playing = false; $("#play").textContent = "Play"; draw(); });
-$("#steps").addEventListener("click", e => {
-  const s = e.target.dataset && e.target.dataset.s; if (s == null) return;
-  T = [0, TL.launches[0].start, TL.claim.start, TL.check.start][+s] + .01; playing = true; $("#play").textContent = "Pause";
-});
-new ResizeObserver(resize).observe($("#lab"));
-
-fetch("/web/data/experiments.json").then(r => r.json()).then(d => {
-  D = d; TL = timeline(d); SERIES = series(d);
-  $("#lead").innerHTML = `${esc(d.agent)} was asked whether ${esc(d.hypothesis.replace(/^In this simulated world, /, "").replace(/\.$/, ""))}. It bought ${d.launches.length} experiments, said <b>${esc(d.verdict)}</b>, and backed it with a force law that is wrong. The naive rule paid it. The market did not.`;
-  $("#play").textContent = playing ? "Pause" : "Play";
-  if (REDUCED) T = TL.total;
-  buildForce(); resize(); requestAnimationFrame(tick);
-  new IntersectionObserver((es, o) => { if (es[0].isIntersecting && !REDUCED) { playing = true; $("#play").textContent = "Pause"; o.disconnect(); } }, {threshold: .35}).observe($("#lab"));
-}).catch(() => { $("#realRuns").hidden = true; });
-
 // ---------------------------------------------------------------- watching it learn: one run, round by round
 (() => {
   const GOLD = "#B7791F", GREEN = "#2E7D4F", BLUE = "#3D63B5", DOT = "#1B3F8B";
@@ -851,9 +585,19 @@ fetch("/web/data/experiments.json").then(r => r.json()).then(d => {
         <div class="nums"><span style="color:${L.naive >= 0 ? "var(--green)" : "var(--rust)"}">Naive ${sg(L.naive)}</span><span style="color:${L.market >= 0 ? "var(--green)" : "var(--rust)"}">Market ${sg(L.market)}</span><span style="color:var(--muted)">${L.spent} credits on the lab · $${(+L.usd).toFixed(2)} API</span></div>`;
     }
     document.querySelectorAll("#lSteps button").forEach(b => b.classList.toggle("on", +b.dataset.i === (inCheck ? N : idx)));
+
+    // the shared strip and the hypothesis card (answer revealed by the checker)
+    if (VIEW !== "replay") return;
+    $("#kRound").textContent = inCheck ? `${rd.round} · done` : rd.round;
+    $("#kSpent").textContent = n0(rd.spent_so_far);
+    $("#kExp").textContent = L.rounds.slice(0, idx + 1).reduce((a, x) => a + (x.experiments || 0), 0);
+    $("#kP").textContent = pct(rd.p_success);
+    if (REPLAY_CLAIM && !!REPLAY_CLAIM.answer !== inCheck) { REPLAY_CLAIM.answer = inCheck ? L.answer : null; renderClaim(REPLAY_CLAIM); }
   }
+  window.replayRender = render;
 
   function tick(t) {
+    if (playing && VIEW !== "replay") { playing = false; $("#lPlay").textContent = "Play"; }
     if (last != null && playing) {
       T += (t - last) / 1000;
       if (T >= total) { T = total; playing = false; $("#lPlay").textContent = "Replay"; }
@@ -873,12 +617,15 @@ fetch("/web/data/experiments.json").then(r => r.json()).then(d => {
     let g = null;
     guesses = d.rounds.map(rd => (rd.estimates.n && rd.estimates.a3) ? (g = {n: rd.estimates.n.value, a3: rd.estimates.a3.value}) : g);
     total = d.rounds.length * R_DUR + CHECK_DUR;
-    $("#lLead").innerHTML = `${esc(d.agent)} got the same question with room to iterate: up to ${d.max_rounds} rounds. Each round it states its current guess for the law, then buys experiments and sees what comes back. It stopped after ${d.rounds.length} rounds, once the data had pinned the answer.`;
+    $("#watchLead").innerHTML = `A recorded real run. ${esc(d.agent)} had up to ${d.max_rounds} rounds. Each round it states its current guess for the law, then buys experiments and sees what comes back. It stopped after ${d.rounds.length} rounds, once the data had pinned the answer. Start a market above to watch a new run here.`;
+    $("#vReplay").textContent = `Recorded run · ${d.agent}`;
+    REPLAY_CLAIM = {id: d.hypothesis_id, hypothesis: d.hypothesis, prize: d.prize, model: `${d.agent} · seed ${d.seed}`, answer: null};
+    if (VIEW === "replay") renderClaim(REPLAY_CLAIM);
     $("#lSteps").innerHTML = d.rounds.map((rd, i) => `<button data-i="${i}">Round ${rd.round}</button>`).join("") + `<button data-i="${d.rounds.length}">Checker</button>`;
     if (REDUCED) T = total;
     render(); requestAnimationFrame(tick);
     new IntersectionObserver((es, o) => { if (es[0].isIntersecting && !started && !REDUCED) { started = true; play(); o.disconnect(); } }, {threshold: .35}).observe($("#learn"));
-  }).catch(() => { $("#learn").hidden = true; });
+  }).catch(() => { $("#view").hidden = true; $("#vLive").disabled = false; showView("live"); });
 })();
 })();
 </script>
