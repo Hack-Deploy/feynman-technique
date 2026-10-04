@@ -30,7 +30,7 @@ def deny_live_api_by_default(
     if request.node.get_closest_marker("allow_live_env") is not None:
         return
 
-    for name in ("ANTHROPIC_API_KEY", "ENABLE_LIVE", "DM_MAX_USD"):
+    for name in ("ANTHROPIC_API_KEY", "ENABLE_LIVE", "DM_MAX_USD", "HF_TOKEN", "DM_HF_REPO"):
         monkeypatch.delenv(name, raising=False)
 
     from poc import bench

@@ -1,8 +1,8 @@
 """Run the bounty benchmark: every hypothesis in config.yaml × models × seeds.
 
-Runs on a hypothesis go in a fixed order (models, then seeds); each sees the public record of
-the failed runs before it. Every run happens even after a hypothesis is settled correctly;
-successes are never shown. Results are appended to attempts/poc_dp_bench.jsonl (resumable).
+Runs on a hypothesis go in a fixed order (models, then seeds); failed-run data are available
+through an opt-in purchase. Once a hypothesis is settled correctly, later runs on it are skipped.
+Successes are never shown. Results are appended to attempts/poc_dp_bench.jsonl (resumable).
 
     uv run python -m poc.bench --fake                         # scripted LLM, no API calls
     ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.bench --models claude-sonnet-5-5 --seeds 0
@@ -51,6 +51,17 @@ def public_record(records: list[AttemptRecord], hyp: C.Hypothesis, cfg: C.Config
             for r in failed[-cfg.ledger_max_entries:]]
 
 
+def solved_by(records: list[AttemptRecord], hypothesis_id: str) -> AttemptRecord | None:
+    """Return the first successful record for a hypothesis, if one exists."""
+    return next(
+        (
+            record for record in records
+            if record.extra.get("hypothesis_id") == hypothesis_id and record.passed
+        ),
+        None,
+    )
+
+
 def _done(records: list[AttemptRecord], hid: str, model: str, seed: int) -> bool:
     return any(r.extra.get("hypothesis_id") == hid and r.solver == model and r.seed == seed
                for r in records)
@@ -92,10 +103,19 @@ def main(argv: list[str] | None = None) -> None:
     hyps = [cfg.hypothesis(h) for h in args.hypotheses] if args.hypotheses else list(cfg.hypotheses)
     store = AttemptStore(args.store)
     records = store.load()
-    todo = [(h, m, s) for h in hyps for m in args.models for s in args.seeds
-            if not _done(records, h.id, m, s)]
-    print(f"{len(todo)} run(s) to do, {len(hyps) * len(args.models) * len(args.seeds) - len(todo)} "
-          f"already in {args.store}")
+    planned = [(h, m, s) for h in hyps for m in args.models for s in args.seeds]
+    solved = {h.id: solved_by(records, h.id) for h in hyps}
+    todo = [(h, m, s) for h, m, s in planned
+            if not _done(records, h.id, m, s) and solved[h.id] is None]
+    already = sum(_done(records, h.id, m, s) for h, m, s in planned)
+    closed = sum(
+        not _done(records, h.id, m, s) and solved[h.id] is not None
+        for h, m, s in planned
+    )
+    print(
+        f"{len(todo)} run(s) to do, {closed} skipped for solved claims, "
+        f"{already} already in {args.store}"
+    )
     if not todo:
         return
 
@@ -128,6 +148,12 @@ def main(argv: list[str] | None = None) -> None:
         spend_ledger = SpendLedger(cap=cap)
 
     for hyp, model, seed in todo:
+        solver = solved_by(records, hyp.id)
+        if solver is not None:
+            print(
+                f"{hyp.id}: solved by {solver.solver}; off the market, skipping {model}"
+            )
+            continue
         if args.fake:
             complete = ScriptedLLM.default()
             max_tokens = C.MAX_TOKENS

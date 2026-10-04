@@ -7,10 +7,13 @@ from __future__ import annotations
 import ast
 import dataclasses
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+from dm.types import SubmittedAttempt
 from poc import config as C
+from poc import bench
 from poc import protocol
 from poc.fake_llm import ScriptedLLM
 from poc.pricing import Account, experiment_price
@@ -42,10 +45,10 @@ class StubExecutor:
         return [{"pos2": [[3.0, 0.0]] * len(e["measurement_times"])} for e in exps]
 
 
-def make_agent(replies, cfg=CFG, ledger=(), on_round=None):
+def make_agent(replies, cfg=CFG, ledger=(), on_round=None, buy_record_first=False):
     from poc.agent import MarketAgent
     vendor = C.VENDOR_ROOT / "PhysicsSchool" / "prompts"
-    llm = ScriptedLLM(replies)
+    llm = ScriptedLLM(replies, buy_record_first=buy_record_first)
     account = Account(agent="m", hypothesis=HYP.id, budget=cfg.budget)
     agent = MarketAgent(
         cfg=cfg, hyp=HYP, account=account, ledger_entries=list(ledger), complete=llm,
@@ -65,6 +68,20 @@ def test_config_every_hypothesis_has_criteria_answer_and_prize():
     assert len(CFG.hypotheses) == 11
     for h in CFG.hypotheses:
         assert h.resolution_criteria and h.answer in C.ANSWERS and h.prize > 0
+
+
+def test_ledger_read_fee_defaults_and_rejects_negative(tmp_path):
+    assert CFG.ledger_read_fee == 30
+    original = C.CONFIG_PATH.read_text()
+    default_path = tmp_path / "default-fee.yaml"
+    default_path.write_text("\n".join(
+        line for line in original.splitlines() if not line.strip().startswith("read_fee:")
+    ))
+    assert C.load(default_path).ledger_read_fee == 30
+    path = tmp_path / "config.yaml"
+    path.write_text(original.replace("read_fee: 30", "read_fee: -1"))
+    with pytest.raises(ValueError, match="ledger.read_fee must be a finite number >= 0"):
+        C.load(path)
 
 
 def test_experiment_price_itemised():
@@ -102,10 +119,18 @@ def test_parse_verdict_and_withdraw():
     assert protocol.parse_withdraw("nothing") is None
 
 
+@pytest.mark.parametrize("raw", ["<buy_record/>", "<buy_record></buy_record>"])
+def test_parse_buy_record(raw):
+    assert protocol.parse_buy_record(raw)
+    assert not protocol.parse_buy_record("<run_experiment/>")
+
+
 def test_prompt_shows_hypothesis_criteria_prize_costs_not_answer():
     block = protocol.market_block(CFG, HYP)
     assert HYP.hypothesis in block and HYP.resolution_criteria in block
     assert f"{HYP.prize:g} credits" in block and "per measurement time" in block
+    assert "public-record fee also counts as cost" in block
+    assert "<buy_record/>" in block
     assert "answer" not in block.lower()
 
 
@@ -129,6 +154,25 @@ def test_round_callback_fires_once_after_each_round():
     agent.run()
 
     assert rounds == [1, 2]
+
+
+def test_penultimate_round_warning_allows_experiments():
+    cfg = dataclasses.replace(CFG, max_rounds=3)
+    agent, _, _ = make_agent([run_exp(), run_exp(), VERDICT], cfg=cfg)
+
+    agent.run()
+
+    assert "You may still run an experiment" in agent.conversation_log[1]["system_message"]
+
+
+def test_empty_no_tag_reply_gets_cutoff_feedback():
+    agent, _, _ = make_agent(["", VERDICT])
+
+    agent.run()
+
+    assert agent.conversation_log[0]["system_message"].startswith(
+        "ERROR: your reply was empty"
+    )
 
 
 def test_round_callback_errors_do_not_change_the_run(capsys):
@@ -181,12 +225,231 @@ def test_out_of_rounds():
     assert agent.outcome == "out_of_rounds" and len(agent.conversation_log) == 2
 
 
-def test_public_record_is_in_the_prompt():
+def test_prompt_offers_record_without_showing_its_data():
     entry = {"id": "x", "model": "other", "outcome": "verdict", "rounds": 3, "experiments": 2,
-             "spent": 70, "p_success": 0.9, "withdraw_reason": None, "data": "[...]"}
+             "spent": 70, "p_success": 0.9, "withdraw_reason": None,
+             "data": "[RAW_DATA_SENTINEL]"}
     agent, _, llm = make_agent([VERDICT], ledger=[entry])
     agent.run()
-    assert "other: no clear result after 3 round(s)" in llm.calls[0]["system"]
+    system = llm.calls[0]["system"]
+    assert "PUBLIC RECORD: 1 earlier run" in system
+    assert "30 credits" in system
+    assert "other: no clear result" not in system
+    assert "RAW_DATA_SENTINEL" not in system
+
+
+def _ledger_entry():
+    return {
+        "id": "earlier-run",
+        "model": "other",
+        "outcome": "withdrawn",
+        "rounds": 2,
+        "experiments": 1,
+        "spent": 15,
+        "p_success": 0.4,
+        "withdraw_reason": "not enough evidence",
+        "data": '[{"output":"RAW_DATA_SENTINEL"}]',
+    }
+
+
+def test_buy_record_is_paid_once_and_revealed_without_using_a_round():
+    ledger = [_ledger_entry()]
+    agent, account, llm = make_agent(
+        [VERDICT], ledger=ledger, buy_record_first=True
+    )
+
+    assert agent.run() == "refuted"
+
+    entry = agent.conversation_log[0]
+    record_charge = next(event for event in account.events if event["type"] == "record_charged")
+    assert record_charge["to"] == "market"
+    assert record_charge["amount"] == CFG.ledger_read_fee
+    assert record_charge["detail"] == {"entries": 1}
+    assert account.spent == pytest.approx(CFG.ledger_read_fee + CFG.round_fee)
+    assert account.lab_revenue() == pytest.approx(CFG.round_fee)
+    assert sum(event["amount"] for event in account.events if event["to"] == "market") == pytest.approx(
+        CFG.ledger_read_fee
+    )
+    assert account.lab_revenue() + sum(
+        event["amount"] for event in account.events if event["to"] == "market"
+    ) == pytest.approx(account.spent)
+    assert entry["record_bought"] is True
+    assert "<buy_record/>" in entry["buy_reply"]
+    assert len(agent.conversation_log) == 1
+    assert len(llm.calls) == 2
+    notice = llm.calls[1]["messages"][-1]["content"]
+    assert "other: withdrew after 2 round(s)" in notice
+    assert "RAW_DATA_SENTINEL" in notice
+    assert f"Record bought for {CFG.ledger_read_fee:g} credits" in notice
+
+
+def test_buy_then_walk_away_only_pays_the_record_fee():
+    reply = conf("0.2") + "<withdraw>not worth it</withdraw>"
+    agent, account, _ = make_agent(
+        [reply], ledger=[_ledger_entry()], buy_record_first=True
+    )
+
+    assert agent.run() is None
+
+    assert agent.outcome == "walked_away"
+    assert account.spent == pytest.approx(CFG.ledger_read_fee)
+    assert [event["amount"] for event in account.events if event["type"] == "round_charged"] == [0]
+
+
+def test_followup_buy_tag_is_ignored_and_does_not_charge_again():
+    second_buy_and_verdict = (
+        conf("0.9") + "<buy_record/>"
+        "<verdict>refuted</verdict><evidence>Offline evidence.</evidence>"
+    )
+    agent, account, llm = make_agent(
+        [second_buy_and_verdict], ledger=[_ledger_entry()], buy_record_first=True
+    )
+
+    assert agent.run() == "refuted"
+
+    assert len(llm.calls) == 2
+    assert sum(event["type"] == "record_charged" for event in account.events) == 1
+    assert agent.conversation_log[0]["record_bought"] is True
+
+
+def test_already_bought_record_request_is_explained_and_reasked():
+    cfg = dataclasses.replace(CFG, max_rounds=2)
+    second_buy = conf("0.7") + "<buy_record/>"
+    agent, account, llm = make_agent(
+        [run_exp(), second_buy, VERDICT],
+        cfg=cfg,
+        ledger=[_ledger_entry()],
+        buy_record_first=True,
+    )
+
+    assert agent.run() == "refuted"
+
+    assert sum(event["type"] == "record_charged" for event in account.events) == 1
+    assert agent.conversation_log[1]["record_bought"] is False
+    assert "<buy_record/>" in agent.conversation_log[1]["buy_reply"]
+    assert "already bought" in llm.calls[3]["messages"][-1]["content"]
+
+
+def test_buy_record_with_no_entries_is_not_charged():
+    agent, account, llm = make_agent([VERDICT], ledger=[], buy_record_first=True)
+
+    assert agent.run() == "refuted"
+
+    assert not agent.conversation_log[0]["record_bought"]
+    assert not any(event["type"] == "record_charged" for event in account.events)
+    assert account.spent == pytest.approx(CFG.round_fee)
+    assert "nothing to buy" in llm.calls[1]["messages"][-1]["content"]
+
+
+def test_buy_record_is_not_charged_when_unaffordable():
+    cfg = dataclasses.replace(CFG, budget=CFG.ledger_read_fee - 1)
+    agent, account, llm = make_agent(
+        [VERDICT], cfg=cfg, ledger=[_ledger_entry()], buy_record_first=True
+    )
+
+    assert agent.run() == "refuted"
+
+    assert not agent.conversation_log[0]["record_bought"]
+    assert not any(event["type"] == "record_charged" for event in account.events)
+    assert account.spent == pytest.approx(cfg.round_fee)
+    assert "cannot afford" in llm.calls[1]["messages"][-1]["content"]
+
+
+@pytest.mark.parametrize("bought,fee,seen", [
+    (True, CFG.ledger_read_fee, ["earlier-run"]),
+    (False, 0, []),
+])
+def test_attempt_record_tracks_public_record_purchase(
+    monkeypatch, tmp_path, bought, fee, seen
+):
+    import scienceagent.trajectory_logger
+    from poc import attempt
+
+    class FakeAgent:
+        def __init__(self, **_kwargs):
+            self._system = "system"
+            self.outcome = "walked_away"
+            self.verdict = None
+            self.evidence = None
+            self.withdraw_reason = "not worth it"
+            self.executor = SimpleNamespace(experiments=0)
+            self.record_bought = bought
+            self.record_fee = fee
+            self.conversation_log = [{
+                "round": 1,
+                "action": "walk_away",
+                "assessment": "not worth it",
+                "p_success": 0.2,
+                "record_bought": bought,
+                "round_fee": 0,
+                "experiments_cost": 0,
+                "spent_so_far": fee,
+            }]
+
+        def run(self):
+            return None
+
+    class FakeLogger:
+        def __init__(self, **_kwargs):
+            pass
+
+    monkeypatch.setattr(attempt, "MarketAgent", FakeAgent)
+    monkeypatch.setattr(scienceagent.trajectory_logger, "TrajectoryLogger", FakeLogger)
+    monkeypatch.setattr(C, "TRAJECTORIES_DIR", tmp_path / "trajectories")
+    monkeypatch.setattr(C, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    world_spec = {
+        "executor": StubExecutor(),
+        "mission": "mission",
+        "system_prompt": "prompt.md",
+        "instructions": "instructions.md",
+        "law_stub": "",
+        "experiment_format": "",
+    }
+
+    submitted = attempt.run_attempt(
+        "m", HYP.id, 0, [_ledger_entry()], cfg=CFG, world_spec=world_spec
+    )
+
+    assert submitted.extra["ledger_seen"] == seen
+    assert submitted.extra["record_bought"] is bought
+    assert submitted.extra["record_fee"] == fee
+
+
+def test_bench_fake_stops_after_claim_is_solved(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_attempt(model, hypothesis_id, seed, *_args, **_kwargs):
+        calls.append((model, hypothesis_id, seed))
+        hyp = CFG.hypothesis(hypothesis_id)
+        return SubmittedAttempt(
+            source="live",
+            protocol=C.PROTOCOL,
+            venue=C.VENUE,
+            world=hyp.world,
+            solver=model,
+            seed=seed,
+            stated_p_success=0.9,
+            rounds=1,
+            experiments=0,
+            lab_cost=CFG.round_fee,
+            extra={
+                "hypothesis_id": hypothesis_id,
+                "outcome": "verdict",
+                "agent_verdict": hyp.answer,
+            },
+        )
+
+    monkeypatch.setattr(bench, "run_attempt", fake_attempt)
+    store = tmp_path / "attempts.jsonl"
+    bench.main([
+        "--fake", "--hypotheses", HYP.id,
+        "--models", "model-a", "model-b",
+        "--seeds", "0", "1",
+        "--store", str(store),
+    ])
+
+    assert calls == [("model-a", HYP.id, 0)]
+    assert len(bench.AttemptStore(store).load()) == 1
 
 
 # ------------------------------------------------------------------ resolution and record

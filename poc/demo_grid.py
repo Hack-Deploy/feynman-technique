@@ -8,6 +8,7 @@ import os
 from dataclasses import replace
 from pathlib import Path
 
+from dm.store import AttemptStore
 from dm.types import AttemptRecord
 from poc import bench, config as C, fake_llm, live_cache, spend
 from poc.attempt import prompt_chars, run_attempt
@@ -15,39 +16,57 @@ from poc.llm import MeteredLLM, redact
 from poc.spend import CapReached, LiveSettings, ModelPrice, SpendLedger
 
 
-def _plan(settings: LiveSettings, cache_path: Path) -> tuple[list[dict], list[dict], C.Config]:
+def _plan(
+    settings: LiveSettings,
+    cache_path: Path,
+    order: list[tuple[str, str, int]] | None = None,
+    ignore_cached: bool = False,
+) -> tuple[list[dict], list[dict], C.Config]:
     cfg = replace(C.load(), max_rounds=settings.max_rounds)
-    entries = live_cache.load(cache_path)
+    entries = [] if ignore_cached else live_cache.load(cache_path)
     cached_keys = live_cache.done_keys(entries)
     cached_records = live_cache.records(entries)
     todo = []
     prompt_cache = {}
-    for hypothesis_id in settings.hypotheses:
+    planned = order if order is not None else [
+        (hypothesis_id, model.id, seed)
+        for hypothesis_id in settings.hypotheses
+        for model in settings.models
+        for seed in settings.seeds
+    ]
+    models = {model.id: model for model in settings.models}
+    solved_claims = {
+        hypothesis_id
+        for hypothesis_id in settings.hypotheses
+        if bench.solved_by(cached_records, hypothesis_id) is not None
+    }
+    for hypothesis_id, model_id, seed in planned:
+        if hypothesis_id in solved_claims:
+            continue
         hyp = cfg.hypothesis(hypothesis_id)
         public_entries = bench.public_record(cached_records, hyp, cfg)
         prompt_key = (hypothesis_id, tuple(entry["id"] for entry in public_entries))
         if prompt_key not in prompt_cache:
             prompt_cache[prompt_key] = prompt_chars(hypothesis_id, cfg, public_entries)
-        for model in settings.models:
-            for seed in settings.seeds:
-                key = (model.id, hypothesis_id, seed)
-                if key in cached_keys:
-                    continue
-                projection = spend.project_run_usd(
-                    model,
-                    prompt_cache[prompt_key],
-                    settings.max_rounds,
-                    settings.max_tokens,
-                    settings.chars_per_token,
-                    settings.data_chars_per_round,
-                )
-                todo.append({
-                    "hyp": hyp,
-                    "model": model,
-                    "seed": seed,
-                    "public_entries": public_entries,
-                    "projection": projection,
-                })
+        model = models[model_id]
+        key = (model.id, hypothesis_id, seed)
+        if key in cached_keys:
+            continue
+        projection = spend.project_run_usd(
+            model,
+            prompt_cache[prompt_key],
+            settings.max_rounds,
+            settings.max_tokens,
+            settings.chars_per_token,
+            settings.data_chars_per_round,
+        )
+        todo.append({
+            "hyp": hyp,
+            "model": model,
+            "seed": seed,
+            "public_entries": public_entries,
+            "projection": projection,
+        })
     return todo, entries, cfg
 
 
@@ -56,6 +75,8 @@ def _print_preflight(
     todo: list[dict],
     ledger: SpendLedger | None,
     out=print,
+    open_claims: int | None = None,
+    total_claims: int | None = None,
 ) -> dict:
     rows = []
     for model in settings.models:
@@ -88,6 +109,14 @@ def _print_preflight(
         f"Total worst-case: ${total:.6f}; ledger committed so far: ${committed:.6f}; "
         f"effective cap: {cap_text}; configured hard cap: ${settings.max_usd:.2f}"
     )
+    if note := spend.cap_note(settings):
+        out(note)
+    if open_claims is not None:
+        total_claims = total_claims if total_claims is not None else len(settings.hypotheses)
+        out(
+            f"Open claims: {open_claims}/{total_claims}; the projection above is the "
+            "worst case if none of these claims is solved."
+        )
     out(
         "Runs start only while spent + that run's worst case <= cap; every call is also "
         "checked against the cap before it is sent."
@@ -122,6 +151,20 @@ def _print_run(model: str, hyp: str, record: AttemptRecord, usd: float, out) -> 
     )
 
 
+def _reconcile_store(entries: list[dict], store_path: Path, out) -> None:
+    store = AttemptStore(store_path)
+    stored_ids = {record.attempt_id for record in store.load()}
+    for entry in entries:
+        if entry.get("source") != "real":
+            continue
+        record = AttemptRecord.from_dict(entry["record"])
+        if record.attempt_id in stored_ids:
+            continue
+        store.append([record])
+        stored_ids.add(record.attempt_id)
+        out(f"Repaired attempt store with cached record {record.attempt_id}")
+
+
 def run_grid(
     settings: LiveSettings,
     cache_path: Path,
@@ -129,14 +172,44 @@ def run_grid(
     transport_factory,
     confirm,
     out=print,
+    order: list[tuple[str, str, int]] | None = None,
+    extra_entry_fields: dict[tuple[str, str, int], dict] | None = None,
+    store_path: Path | None = None,
+    summary_fields: dict | None = None,
+    show_preflight: bool = True,
 ) -> dict:
     cache_path = Path(cache_path)
-    todo, entries, cfg = _plan(settings, cache_path)
-    _print_preflight(settings, todo, ledger, out)
-    total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)
+    todo, entries, cfg = _plan(settings, cache_path, order=order)
+    if store_path is not None:
+        _reconcile_store(entries, Path(store_path), out)
+    if show_preflight:
+        _print_preflight(settings, todo, ledger, out)
+    planned = order if order is not None else [
+        (hypothesis_id, model.id, seed)
+        for hypothesis_id in settings.hypotheses
+        for model in settings.models
+        for seed in settings.seeds
+    ]
+    cached_keys = live_cache.done_keys(entries)
+    cached_records = live_cache.records(entries)
+    solved_claims = {
+        hypothesis_id
+        for hypothesis_id in settings.hypotheses
+        if bench.solved_by(cached_records, hypothesis_id) is not None
+    }
+    closed = sum(
+        hypothesis_id in solved_claims
+        and (model_id, hypothesis_id, seed) not in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
+    skipped = sum(
+        (model_id, hypothesis_id, seed) in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
     result = {
         "done": 0,
-        "skipped": total_runs - len(todo),
+        "skipped": skipped,
+        "closed": closed,
         "stopped_reason": None,
     }
     if not todo:
@@ -145,16 +218,25 @@ def run_grid(
         result["stopped_reason"] = "declined"
         return result
 
-    cached_records = live_cache.records(entries)
     for index, item in enumerate(todo):
         model = item["model"]
         hyp = item["hyp"]
         seed = item["seed"]
+        solver = bench.solved_by(cached_records, hyp.id)
+        if solver is not None:
+            out(
+                f"{hyp.id}: solved by {solver.solver}; off the market, skipping {model.id}"
+            )
+            result["closed"] += 1
+            continue
         projection = item["projection"]["usd"]
         try:
             ledger.admit_run(projection)
         except CapReached:
-            remaining = len(todo) - index
+            remaining = sum(
+                bench.solved_by(cached_records, pending["hyp"].id) is None
+                for pending in todo[index:]
+            )
             out(
                 f"spend cap reached: {remaining} run(s) left; nothing more was spent"
             )
@@ -172,7 +254,9 @@ def run_grid(
         rounds = []
 
         def on_round(entry):
-            rounds.append(live_cache.compact_round(entry, usd_so_far=metered.usd))
+            compact = live_cache.compact_round(entry, usd_so_far=metered.usd)
+            compact["cut_off"] = metered.take_cut_off()
+            rounds.append(compact)
 
         try:
             public_entries = bench.public_record(cached_records, hyp, cfg)
@@ -201,10 +285,19 @@ def run_grid(
                 "rounds": rounds,
                 "usd": metered.usd,
             }
+            cache_key = (hyp.id, model.id, seed)
+            entry.update((extra_entry_fields or {}).get(cache_key, {}))
             live_cache.append(cache_path, entry)
+            if store_path is not None:
+                AttemptStore(store_path).append([record])
             entries.append(entry)
             cached_records.append(record)
-            live_cache.write_summary(cache_path, entries, settings)
+            live_cache.write_summary(
+                cache_path,
+                entries,
+                settings,
+                extra_fields=summary_fields,
+            )
             result["done"] += 1
             _print_run(model.id, hyp.id, record, metered.usd, out)
         except CapReached as exc:
@@ -243,19 +336,58 @@ def _persona_replies(slot: int, hyp, cfg: C.Config) -> list[str]:
     return replies
 
 
-def _run_fake_grid(settings: LiveSettings, cache_path: Path, out=print) -> dict:
-    todo, entries, cfg = _plan(settings, cache_path)
-    _print_preflight(settings, todo, None, out)
-    total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)
+def _run_fake_grid(
+    settings: LiveSettings,
+    cache_path: Path,
+    out=print,
+    order: list[tuple[str, str, int]] | None = None,
+    extra_entry_fields: dict[tuple[str, str, int], dict] | None = None,
+    store_path: Path | None = None,
+    summary_fields: dict | None = None,
+    show_preflight: bool = True,
+) -> dict:
+    todo, entries, cfg = _plan(settings, cache_path, order=order)
+    if show_preflight:
+        _print_preflight(settings, todo, None, out)
+    planned = order if order is not None else [
+        (hypothesis_id, model.id, seed)
+        for hypothesis_id in settings.hypotheses
+        for model in settings.models
+        for seed in settings.seeds
+    ]
+    cached_keys = live_cache.done_keys(entries)
+    cached_records = live_cache.records(entries)
+    solved_claims = {
+        hypothesis_id
+        for hypothesis_id in settings.hypotheses
+        if bench.solved_by(cached_records, hypothesis_id) is not None
+    }
+    closed = sum(
+        hypothesis_id in solved_claims
+        and (model_id, hypothesis_id, seed) not in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
+    skipped = sum(
+        (model_id, hypothesis_id, seed) in cached_keys
+        for hypothesis_id, model_id, seed in planned
+    )
     result = {
         "done": 0,
-        "skipped": total_runs - len(todo),
+        "skipped": skipped,
+        "closed": closed,
         "stopped_reason": None,
     }
     for item in todo:
         model = item["model"]
         hyp = item["hyp"]
         seed = item["seed"]
+        solver = bench.solved_by(cached_records, hyp.id)
+        if solver is not None:
+            out(
+                f"{hyp.id}: solved by {solver.solver}; off the market, skipping {model.id}"
+            )
+            result["closed"] += 1
+            continue
         slot = settings.models.index(model)
         fake = fake_llm.ScriptedLLM(_persona_replies(slot, hyp, cfg))
         rounds = []
@@ -290,9 +422,19 @@ def _run_fake_grid(settings: LiveSettings, cache_path: Path, out=print) -> dict:
             "rounds": rounds,
             "usd": 0.0,
         }
+        cache_key = (hyp.id, model.id, seed)
+        entry.update((extra_entry_fields or {}).get(cache_key, {}))
         live_cache.append(cache_path, entry)
+        if store_path is not None:
+            AttemptStore(store_path).append([record])
         entries.append(entry)
-        live_cache.write_summary(cache_path, entries, settings)
+        cached_records.append(record)
+        live_cache.write_summary(
+            cache_path,
+            entries,
+            settings,
+            extra_fields=summary_fields,
+        )
         result["done"] += 1
         _print_run(model.id, hyp.id, record, 0.0, out)
     return result

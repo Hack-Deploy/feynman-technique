@@ -17,7 +17,7 @@ def anthropic_transport(
 
     client = anthropic.Anthropic(
         api_key=os.environ.get("ANTHROPIC_API_KEY"),
-        timeout=300,
+        timeout=600,
     )
     params = {"model": model, "max_tokens": max_tokens, "messages": messages}
     if system is not None:
@@ -27,7 +27,7 @@ def anthropic_transport(
         block.text for block in response.content if getattr(block, "type", None) == "text"
     )
     usage = response.usage
-    return text, {
+    usage_data = {
         key: int(getattr(usage, key, 0) or 0)
         for key in (
             "input_tokens",
@@ -36,6 +36,8 @@ def anthropic_transport(
             "cache_read_input_tokens",
         )
     }
+    usage_data["stop_reason"] = getattr(response, "stop_reason", None)
+    return text, usage_data
 
 
 def redact(message: str) -> str:
@@ -73,16 +75,23 @@ class MeteredLLM:
             "usd": 0.0,
         }
         self.usd = 0.0
+        self.stop_reasons = []
+        self._seen_stop_reasons = 0
         self._previous_messages: list[dict] | None = None
         self._previous_system: str | None = None
         self._previous_usage: dict | None = None
+
+    def take_cut_off(self) -> bool:
+        new_stop_reasons = self.stop_reasons[self._seen_stop_reasons:]
+        self._seen_stop_reasons = len(self.stop_reasons)
+        return "max_tokens" in new_stop_reasons
 
     def __call__(
         self,
         model: str,
         messages: list[dict],
         system: str | None = None,
-        max_tokens: int = 3072,
+        max_tokens: int = 16000,
     ) -> str:
         current_messages = [dict(message) for message in messages]
         if (
@@ -136,6 +145,7 @@ class MeteredLLM:
             normalized_usage,
             call_usd,
         )
+        self.stop_reasons.append(usage.get("stop_reason"))
         self.calls += 1
         self.usd = round(self.usd + call_usd, 6)
         self.usage["calls"] = self.calls

@@ -43,6 +43,8 @@ def compact_round(entry: dict, usd_so_far: float | None = None) -> dict:
         "withdraw_reason": entry.get("withdraw_reason"),
         "reply": str(reply)[:4000] if reply is not None else None,
         "usd_so_far": usd_so_far if usd_so_far is not None else entry.get("usd_so_far"),
+        "cut_off": entry.get("cut_off", False),
+        "record_bought": entry.get("record_bought", False),
     }
 
 
@@ -152,7 +154,12 @@ def comparison(entries: list[dict], model_order: list) -> list[dict]:
     return rows
 
 
-def write_summary(path: Path, entries: list[dict], settings) -> None:
+def write_summary(
+    path: Path,
+    entries: list[dict],
+    settings,
+    extra_fields: dict | None = None,
+) -> None:
     summary = {
         "generated_from": str(path),
         "source": sorted({entry.get("source") for entry in entries}),
@@ -169,6 +176,7 @@ def write_summary(path: Path, entries: list[dict], settings) -> None:
         },
         "comparison": comparison(entries, settings.models),
     }
+    summary.update(extra_fields or {})
     out = summary_path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")

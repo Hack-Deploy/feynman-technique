@@ -61,6 +61,10 @@ def info() -> dict:
         reasons.append("DM_MAX_USD must be set to a positive amount.")
     run_cfg = replace(cfg, max_rounds=settings.max_rounds)
     attempt_records = _records(C.ATTEMPTS_PATH)
+    solved_records = {
+        hyp.id: bench.solved_by(attempt_records, hyp.id)
+        for hyp in cfg.hypotheses
+    }
     projected = {}
     for model in settings.models:
         per_hypothesis = []
@@ -85,9 +89,14 @@ def info() -> dict:
                 "hypothesis": hyp.hypothesis,
                 "resolution_criteria": hyp.resolution_criteria,
                 "prize": hyp.prize,
+                "solved_by": (
+                    solved_records[hyp.id].solver
+                    if solved_records[hyp.id] is not None else None
+                ),
             }
             for hyp in cfg.hypotheses
         ],
+        "ledger_read_fee": cfg.ledger_read_fee,
         "round_fee": cfg.round_fee,
         "experiment_costs": dict(cfg.experiment_costs),
         "max_rounds": cfg.max_rounds,
@@ -110,6 +119,7 @@ def info() -> dict:
             "reasons": reasons,
             "max_usd": max_usd,
             "hard_cap_usd": settings.max_usd,
+            "cap_note": spend.cap_note(settings),
             "spent_usd": totals["committed_usd"],
             "actual_usd": totals["actual_usd"],
             "remaining_usd": (
@@ -193,6 +203,10 @@ def _job_round_callback(job_id: str, metered: MeteredLLM | None = None):
             entry,
             usd_so_far=metered.usd if metered is not None else None,
         )
+        if metered is None:
+            compact["cut_off"] = False
+        else:
+            compact["cut_off"] = metered.take_cut_off()
         with _LOCK:
             _JOBS[job_id]["rounds"].append(compact)
 
@@ -287,6 +301,11 @@ def start(hypothesis_id: str, model: str, scripted: bool) -> dict:
             hyp = cfg.hypothesis(hypothesis_id)
         except KeyError:
             raise ValueError(f"unknown hypothesis: {hypothesis_id}") from None
+
+        if not scripted:
+            solver = bench.solved_by(_records(C.ATTEMPTS_PATH), hyp.id)
+            if solver is not None:
+                raise ValueError(f"{hyp.id} was solved by {solver.solver}; it is off the market.")
 
         projection = 0.0
         live_settings = None
@@ -459,7 +478,10 @@ def recorded_run(attempt_id: str) -> dict | None:
             })
             return {
                 "run": row,
-                "rounds": entry.get("rounds", []),
+                "rounds": [
+                    {**round_entry, "cut_off": round_entry.get("cut_off", False)}
+                    for round_entry in entry.get("rounds", [])
+                ],
                 "settings": entry.get("settings", {}),
                 "source": entry.get("source"),
             }

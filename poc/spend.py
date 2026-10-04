@@ -134,7 +134,7 @@ def project_run_usd(
     chars_per_token: float,
     data_chars_per_round: int,
 ) -> dict:
-    calls = 2 * max_rounds + 1
+    calls = 2 * max_rounds + 2
     base_tokens = math.ceil(base_chars / chars_per_token)
     growth = max_tokens + math.ceil(data_chars_per_round / chars_per_token)
     input_tokens = sum(base_tokens + call * growth for call in range(calls))
@@ -162,6 +162,20 @@ def effective_cap(settings: LiveSettings) -> float | None:
     if not math.isfinite(env_cap) or env_cap <= 0:
         return None
     return min(env_cap, settings.max_usd)
+
+
+def cap_note(settings: LiveSettings) -> str:
+    raw = os.environ.get("DM_MAX_USD")
+    try:
+        env_cap = float(raw)
+    except (TypeError, ValueError):
+        return ""
+    if math.isfinite(env_cap) and env_cap > settings.max_usd:
+        return (
+            f"DM_MAX_USD (${env_cap:g}) exceeds the configured hard cap "
+            f"(${settings.max_usd:g}); the hard cap is applied."
+        )
+    return ""
 
 
 class CapReached(RuntimeError):

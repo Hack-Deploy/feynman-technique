@@ -14,7 +14,7 @@ import scienceagent.llm_client
 import app
 import live_market
 from dm.store import AttemptStore
-from dm.types import SubmittedAttempt
+from dm.types import AttemptRecord, SubmittedAttempt
 from poc import bench, config as C, live_cache, spend
 from poc.llm import MeteredLLM, anthropic_transport
 
@@ -105,7 +105,9 @@ def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
             cache_creation_input_tokens=2,
             cache_read_input_tokens=1,
         ),
+        stop_reason="max_tokens",
     )
+    client_kwargs = {}
 
     class FakeMessages:
         def create(self, **kwargs):
@@ -113,6 +115,7 @@ def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
 
     class FakeAnthropic:
         def __init__(self, **kwargs):
+            client_kwargs.update(kwargs)
             self.messages = FakeMessages()
 
     monkeypatch.setattr(anthropic, "Anthropic", FakeAnthropic)
@@ -125,7 +128,9 @@ def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
         "output_tokens": 3,
         "cache_creation_input_tokens": 2,
         "cache_read_input_tokens": 1,
+        "stop_reason": "max_tokens",
     }
+    assert client_kwargs["timeout"] == 600
 
 
 def test_real_live_job_passes_metered_llm_to_run_attempt(monkeypatch, tmp_path):
@@ -181,11 +186,13 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     assert len(disabled["live"]["reasons"]) == 3
     assert all("answer" not in hyp for hyp in disabled["hypotheses"])
     assert '"answer":' not in json.dumps(disabled)
+    assert disabled["ledger_read_fee"] == C.load().ledger_read_fee
+    assert all(hyp["solved_by"] is None for hyp in disabled["hypotheses"])
 
     secret = "test-secret-never-return"
     monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
     monkeypatch.setenv("ENABLE_LIVE", "1")
-    monkeypatch.setenv("DM_MAX_USD", "5")
+    monkeypatch.setenv("DM_MAX_USD", "100")
     monkeypatch.setenv("DM_LIVE_MODELS", "claude-sonnet-5-5, claude-opus-5-5, custom-model")
     enabled = live_market.info()
     serialized = json.dumps(enabled)
@@ -197,14 +204,101 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     ]
     assert secret not in serialized
     assert '"answer":' not in serialized
-    assert enabled["live"]["hard_cap_usd"] == 5
-    assert enabled["live"]["max_usd"] == 5
+    assert enabled["live"]["hard_cap_usd"] == 50
+    assert enabled["live"]["max_usd"] == 50
+    assert "the hard cap is applied" in enabled["live"]["cap_note"]
     assert enabled["live"]["projected_usd_per_run"]["claude-sonnet-5-5"] > 0
     assert len(enabled["model_table"]) == 4
     status, headers, body = _request(f"{app_server}/api/live/info")
     assert status == 200
     assert "json" in headers.get("Content-Type", "").lower()
     assert json.loads(body)["live"]["enabled"] is True
+
+
+def _solved_record(hypothesis_id, solver="prior-solver"):
+    hyp = C.load().hypothesis(hypothesis_id)
+    return AttemptRecord(
+        attempt_id=f"solved-{hypothesis_id}",
+        source="live",
+        protocol=C.PROTOCOL,
+        venue=C.VENUE,
+        world=hyp.world,
+        solver=solver,
+        seed=0,
+        stated_p_success=0.9,
+        rounds=1,
+        experiments=0,
+        lab_cost=10,
+        verdict={"passed": True, "agent_verdict": hyp.answer, "answer": hyp.answer},
+        extra={"hypothesis_id": hypothesis_id},
+    )
+
+
+def test_info_reports_solved_by_and_record_fee():
+    hyp_id = "gravity-inverse-square"
+    AttemptStore(C.ATTEMPTS_PATH).append([_solved_record(hyp_id)])
+
+    data = live_market.info()
+
+    assert data["ledger_read_fee"] == C.load().ledger_read_fee
+    claim = next(hyp for hyp in data["hypotheses"] if hyp["id"] == hyp_id)
+    assert claim["solved_by"] == "prior-solver"
+
+
+def test_real_live_start_refuses_solved_claim_without_reserving_spend(
+    app_server,
+):
+    hyp_id = "gravity-inverse-square"
+    AttemptStore(C.ATTEMPTS_PATH).append([_solved_record(hyp_id)])
+
+    status, _, body = _post_start(
+        app_server, hypothesis_id=hyp_id, scripted=False, model="claude-sonnet-5-5"
+    )
+
+    assert status == 400
+    assert json.loads(body)["error"] == (
+        f"{hyp_id} was solved by prior-solver; it is off the market."
+    )
+    assert spend.SpendLedger(spend.LEDGER_PATH).totals()["committed_usd"] == 0
+
+
+def test_scripted_live_start_remains_available_for_solved_claim(monkeypatch):
+    hyp_id = "gravity-inverse-square"
+    AttemptStore(C.ATTEMPTS_PATH).append([_solved_record(hyp_id)])
+
+    def fake_run(model, hypothesis_id, seed, ledger, cfg=None, **_kwargs):
+        hyp = cfg.hypothesis(hypothesis_id)
+        return SubmittedAttempt(
+            source="live",
+            protocol=C.PROTOCOL,
+            venue=C.VENUE,
+            world=hyp.world,
+            solver=model,
+            seed=seed,
+            stated_p_success=0.8,
+            rounds=1,
+            experiments=0,
+            lab_cost=0,
+            extra={
+                "hypothesis_id": hyp.id,
+                "outcome": "verdict",
+                "agent_verdict": hyp.answer,
+                "prize": hyp.prize,
+                "first_p": 0.8,
+                "final_p": 0.8,
+            },
+        )
+
+    monkeypatch.setattr(live_market, "run_attempt", fake_run)
+    started = live_market.start(hyp_id, "scripted-demo", scripted=True)
+
+    deadline = time.monotonic() + 5
+    current = live_market.job(started["job_id"])
+    while current["state"] == "running" and time.monotonic() < deadline:
+        time.sleep(0.01)
+        current = live_market.job(started["job_id"])
+    assert current["state"] == "done"
+    assert current["run"]["hypothesis_id"] == hyp_id
 
 
 def test_live_start_refuses_disabled_and_over_budget_runs(app_server, monkeypatch):
@@ -284,7 +378,7 @@ def test_live_start_tracks_projection_without_calling_provider(monkeypatch):
     assert recorded[0]["key"]["model"] == "claude-sonnet-5-5"
 
 
-def test_scripted_http_run_and_seed_increment(app_server):
+def test_scripted_http_run_and_seed_increment(app_server, monkeypatch):
     status, _, body = _post_start(app_server)
     assert status == 200
     first = json.loads(body)
@@ -302,6 +396,23 @@ def test_scripted_http_run_and_seed_increment(app_server):
     assert result["run"]["model"] == "scripted-demo"
     assert result["run"]["rounds"] >= 2
     assert len(AttemptStore(live_market.DEMO_PATH).load()) == 1
+
+    scripted_record = AttemptStore(live_market.DEMO_PATH).load()[0]
+    scripted_entry = {
+        "record": scripted_record.to_dict(),
+        "rounds": [dict(round_entry) for round_entry in result["rounds"]],
+        "settings": {},
+        "source": "scripted",
+    }
+    scripted_entry["rounds"][0].pop("cut_off", None)
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            live_cache,
+            "load",
+            lambda path: [scripted_entry] if path == live_cache.SCRIPTED_PATH else [],
+        )
+        replay = live_market.recorded_run(scripted_record.attempt_id)
+    assert all(round_entry["cut_off"] is False for round_entry in replay["rounds"])
 
     status, _, body = _post_start(app_server)
     assert status == 200
@@ -369,8 +480,32 @@ def test_job_round_payload_caps_large_fields():
         "experiment_input": [{"payload": "x" * 700}],
         "llm_reply": "y" * 5000,
         "mse_fit_output": "z" * 900,
+        "record_bought": True,
     })
 
     assert len(compact["experiment_input"][0]["truncated"]) == 600
     assert len(compact["reply"]) == 4000
     assert len(compact["mse_fit"]) == 800
+    assert compact["cut_off"] is False
+    assert compact["record_bought"] is True
+
+
+def test_job_round_callback_marks_only_new_max_token_cutoffs():
+    job_id = "cutoff"
+    live_market._JOBS[job_id] = {"rounds": []}
+    cutoffs = iter((True, False))
+    metered = SimpleNamespace(usd=0.0, take_cut_off=lambda: next(cutoffs))
+    callback = live_market._job_round_callback(job_id, metered)
+
+    callback({"round": 1})
+    callback({"round": 2})
+
+    assert [row["cut_off"] for row in live_market._JOBS[job_id]["rounds"]] == [
+        True,
+        False,
+    ]
+
+    scripted_id = "scripted"
+    live_market._JOBS[scripted_id] = {"rounds": []}
+    live_market._job_round_callback(scripted_id)({"round": 1})
+    assert live_market._JOBS[scripted_id]["rounds"][0]["cut_off"] is False

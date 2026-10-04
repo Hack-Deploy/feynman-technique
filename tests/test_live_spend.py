@@ -6,6 +6,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -139,10 +140,10 @@ def test_projection_and_usage_pricing_are_exact():
     sonnet = ModelPrice("Sonnet", "sonnet", 2, 10)
     projection = spend.project_run_usd(sonnet, 100, 1, 10, 2, 20)
     assert projection == {
-        "calls": 3,
-        "input_tokens": 210,
-        "output_tokens": 30,
-        "usd": 0.00072,
+        "calls": 4,
+        "input_tokens": 320,
+        "output_tokens": 40,
+        "usd": 0.00104,
     }
     assert spend.usd_for_usage(sonnet, {
         "input_tokens": 100,
@@ -161,6 +162,26 @@ def test_projection_and_usage_pricing_are_exact():
     base = spend.project_run_usd(sonnet, 100, 1, 10, 2, 20)["usd"]
     assert spend.project_run_usd(sonnet, 100, 2, 10, 2, 20)["usd"] > base
     assert spend.project_run_usd(sonnet, 100, 1, 20, 2, 20)["usd"] > base
+
+
+def test_prompt_projection_includes_the_public_record():
+    from poc.attempt import prompt_chars
+
+    cfg = C.load()
+    hyp = cfg.hypotheses[0]
+    entry = {
+        "id": "failed-run",
+        "model": "previous-model",
+        "outcome": "withdrawn",
+        "rounds": 2,
+        "experiments": 1,
+        "spent": 15,
+        "p_success": 0.4,
+        "withdraw_reason": "not enough evidence",
+        "data": "x" * 500,
+    }
+
+    assert prompt_chars(hyp.id, cfg, [entry]) > prompt_chars(hyp.id, cfg, [])
 
 
 def test_live_models_table_and_validation(tmp_path):
@@ -286,6 +307,192 @@ def test_metered_llm_bounds_calls_and_never_sends_over_cap(tmp_path):
     assert calls == []
 
 
+def test_metered_llm_records_stop_reasons_and_defaults_to_16000_tokens(tmp_path):
+    price = ModelPrice("Sonnet", "sonnet", 2, 10)
+    requests = []
+    stop_reasons = iter(("max_tokens", "end_turn"))
+
+    def transport(model, system, messages, max_tokens):
+        requests.append(max_tokens)
+        return "ok", {
+            "input_tokens": 5,
+            "output_tokens": 2,
+            "stop_reason": next(stop_reasons),
+        }
+
+    metered = MeteredLLM(
+        "sonnet",
+        price,
+        SpendLedger(tmp_path / "metered-stop-reasons.jsonl", cap=1),
+        "metered-stop-reasons",
+        transport=transport,
+    )
+
+    metered("sonnet", [{"role": "user", "content": "first"}])
+    metered("sonnet", [{"role": "user", "content": "second"}], max_tokens=10)
+
+    assert requests == [16000, 10]
+    assert metered.stop_reasons == ["max_tokens", "end_turn"]
+    assert metered.take_cut_off() is True
+    assert metered.take_cut_off() is False
+
+
+def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
+    settings = spend.load_settings()
+    hyp = C.load().hypotheses[0]
+    settings = replace(
+        settings,
+        models=settings.models[:1],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=3,
+        max_tokens=32,
+    )
+    replies = iter((
+        ("", "max_tokens"),
+        (
+            "<assessment>No response content yet.</assessment><p_success>0.4</p_success>",
+            "end_turn",
+        ),
+        (
+            "<assessment>Evidence is sufficient.</assessment><p_success>0.7</p_success>"
+            "<verdict>supported</verdict><evidence>Offline response.</evidence>",
+            "end_turn",
+        ),
+    ))
+
+    def transport(_model, _system, _messages, _max_tokens):
+        text, stop_reason = next(replies)
+        return text, {
+            "input_tokens": 25,
+            "output_tokens": 0 if not text else 8,
+            "stop_reason": stop_reason,
+        }
+
+    cache = tmp_path / "cutoff-grid.jsonl"
+    messages = []
+    result = _run_grid(
+        settings,
+        cache,
+        SpendLedger(tmp_path / "cutoff-grid-spend.jsonl", cap=1),
+        lambda _model: transport,
+        out=lambda *parts: messages.append(" ".join(map(str, parts))),
+    )
+
+    assert result["done"] == 1, (result, messages)
+    rounds = live_cache.load(cache)[0]["rounds"]
+    assert [round_entry["cut_off"] for round_entry in rounds] == [True, False]
+
+
+def test_real_grid_closes_a_claim_after_a_successful_run(tmp_path):
+    settings = spend.load_settings()
+    hyp = next(
+        hypothesis for hypothesis in C.load().hypotheses
+        if hypothesis.answer == "supported"
+    )
+    settings = replace(
+        settings,
+        models=settings.models[:2],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=1,
+        max_tokens=32,
+    )
+    reply = (
+        "<assessment>Evidence is enough.</assessment><p_success>0.9</p_success>"
+        "<verdict>supported</verdict><evidence>Offline test.</evidence>"
+    )
+    calls = []
+
+    def transport_factory(model_id):
+        def transport(*_args):
+            calls.append(model_id)
+            return reply, {"input_tokens": 10, "output_tokens": 5}
+        return transport
+
+    first, second = (model.id for model in settings.models)
+    cache = tmp_path / "solved-grid.jsonl"
+    result = demo_grid.run_grid(
+        settings,
+        cache,
+        SpendLedger(tmp_path / "solved-grid-spend.jsonl", cap=1),
+        transport_factory=transport_factory,
+        confirm=True,
+        order=[(hyp.id, first, 0), (hyp.id, second, 0)],
+        show_preflight=False,
+    )
+
+    assert result["done"] == 1
+    assert result["closed"] == 1
+    assert calls == [first]
+    assert [entry["key"]["model"] for entry in live_cache.load(cache)] == [first]
+
+
+def test_run_grid_repairs_cache_store_split_after_store_append_failure(
+    monkeypatch, tmp_path
+):
+    settings = spend.load_settings()
+    hyp = C.load().hypotheses[0]
+    settings = replace(
+        settings,
+        models=settings.models[:1],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=3,
+        max_tokens=32,
+    )
+    cache = tmp_path / "runs.jsonl"
+    store = tmp_path / "attempts.jsonl"
+    transport_calls = []
+    original_append = demo_grid.AttemptStore.append
+    append_failed = False
+
+    def fail_once(self, records):
+        nonlocal append_failed
+        if not append_failed:
+            append_failed = True
+            raise OSError("simulated store failure")
+        return original_append(self, records)
+
+    monkeypatch.setattr(demo_grid.AttemptStore, "append", fail_once)
+
+    def transport_factory(model_id):
+        transport = _verdict_transport()
+
+        def call(*args):
+            transport_calls.append(model_id)
+            return transport(*args)
+
+        return call
+
+    run_options = {
+        "settings": settings,
+        "cache_path": cache,
+        "ledger": SpendLedger(tmp_path / "spend.jsonl", cap=1),
+        "transport_factory": transport_factory,
+        "confirm": True,
+        "out": lambda *_: None,
+        "store_path": store,
+        "show_preflight": False,
+    }
+    first = demo_grid.run_grid(**run_options)
+
+    assert first["stopped_reason"] == "error"
+    cached_entries = live_cache.load(cache)
+    assert len(cached_entries) == 1
+    assert demo_grid.AttemptStore(store).load() == []
+
+    resumed = demo_grid.run_grid(**run_options)
+
+    stored_records = demo_grid.AttemptStore(store).load()
+    assert resumed["done"] == 0
+    assert resumed["skipped"] == 1
+    assert [record.attempt_id for record in stored_records] == [
+        cached_entries[0]["record"]["attempt_id"]
+    ]
+    assert transport_calls == [settings.models[0].id]
+
+
 def test_metered_llm_voids_provider_status_errors_and_keeps_unknown_reservations(
     monkeypatch, tmp_path
 ):
@@ -324,16 +531,16 @@ def test_metered_llm_voids_provider_status_errors_and_keeps_unknown_reservations
 def test_live_market_reads_cumulative_spend_and_enforces_hard_cap(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("ENABLE_LIVE", "1")
-    monkeypatch.setenv("DM_MAX_USD", "20")
-    ledger = SpendLedger(spend.LEDGER_PATH, cap=5)
-    reservation = ledger.reserve("old-run", "claude-sonnet-5-5", 4.99)
-    ledger.settle(reservation, "old-run", "claude-sonnet-5-5", {}, 4.99)
+    monkeypatch.setenv("DM_MAX_USD", "50")
+    ledger = SpendLedger(spend.LEDGER_PATH, cap=50)
+    reservation = ledger.reserve("old-run", "claude-sonnet-5-5", 49.99)
+    ledger.settle(reservation, "old-run", "claude-sonnet-5-5", {}, 49.99)
 
     info = live_market.info()
-    assert info["live"]["hard_cap_usd"] == 5
-    assert info["live"]["max_usd"] == 5
-    assert info["live"]["spent_usd"] == 4.99
-    assert info["live"]["actual_usd"] == 4.99
+    assert info["live"]["hard_cap_usd"] == 50
+    assert info["live"]["max_usd"] == 50
+    assert info["live"]["spent_usd"] == 49.99
+    assert info["live"]["actual_usd"] == 49.99
     assert info["live"]["remaining_usd"] == 0.01
     with pytest.raises(PermissionError, match="Projected run spend exceeds.*DM_MAX_USD"):
         live_market.start("gravity-inverse-square", "claude-sonnet-5-5", scripted=False)
@@ -362,15 +569,31 @@ def test_demo_grid_refuses_live_mode_without_each_guard(monkeypatch, tmp_path, e
 
 @pytest.mark.allow_live_env
 def test_demo_grid_preflight_loads_cap_from_poc_env(monkeypatch, tmp_path, capsys):
+    monkeypatch.delenv("DM_MAX_USD", raising=False)
     env_path = tmp_path / "poc.env"
-    env_path.write_text("DM_MAX_USD=5\n")
+    env_path.write_text("DM_MAX_USD=50\n")
     monkeypatch.setattr(bench, "load_env", lambda: _LOAD_ENV(env_path))
     demo_grid.main([
         "--preflight",
         "--cache", str(tmp_path / "runs.jsonl"),
         "--ledger", str(tmp_path / "spend.jsonl"),
     ])
-    assert "effective cap: $5.000000" in capsys.readouterr().out
+    assert spend.effective_cap(spend.load_settings()) == 50
+    output = capsys.readouterr().out
+    assert "effective cap: $50.000000" in output
+
+    monkeypatch.setenv("DM_MAX_USD", "100")
+    bench.load_env()
+    assert spend.effective_cap(spend.load_settings()) == 50
+    demo_grid.main([
+        "--preflight",
+        "--cache", str(tmp_path / "runs-uncapped.jsonl"),
+        "--ledger", str(tmp_path / "spend-uncapped.jsonl"),
+    ])
+    assert "the hard cap is applied" in capsys.readouterr().out
+    monkeypatch.setenv("DM_MAX_USD", "40")
+    bench.load_env()
+    assert spend.effective_cap(spend.load_settings()) == 40
 
 
 def test_bench_live_uses_metered_ledger_and_stops_when_cap_is_reached(
@@ -463,9 +686,9 @@ def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):
         confirm=True,
         out=lambda *_: None,
     )
-    assert result["done"] == 8
+    assert result["done"] == 5
     entries = live_cache.load(cache)
-    assert len(entries) == 8
+    assert len(entries) == 5
     assert all(entry["record"]["llm_usage"]["input_tokens"] > 0 for entry in entries)
     assert live_cache.comparison(entries, settings.models)[0]["usd_spent"] > 0
 
@@ -479,11 +702,11 @@ def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):
         out=lambda *_: None,
     )
     assert resumed["done"] == 0
-    assert resumed["skipped"] == 8
+    assert resumed["skipped"] == 5
     assert calls == []
 
     interrupted_cache = tmp_path / "interrupted.jsonl"
-    interrupted_ledger = SpendLedger(tmp_path / "interrupted-spend.jsonl", cap=5)
+    interrupted_ledger = SpendLedger(tmp_path / "interrupted-spend.jsonl", cap=100)
     calls_seen = 0
 
     def interrupt_on_fourth_call(_model):
@@ -514,8 +737,8 @@ def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):
         confirm=True,
         out=lambda *_: None,
     )
-    assert resumed["done"] == 5
-    assert len(live_cache.load(interrupted_cache)) == 8
+    assert resumed["done"] == 2
+    assert len(live_cache.load(interrupted_cache)) == 5
 
     capped_ledger = SpendLedger(tmp_path / "capped-spend.jsonl", cap=0.00001)
     capped = _run_grid(
@@ -607,6 +830,7 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
         "gravity-inverse-square",
         seed=1,
     )
+    real_entry["rounds"][0]["cut_off"] = True
     live_cache.append(live_cache.RUNS_PATH, real_entry)
     status, body = _request(f"{app_server}/api/live/recorded")
     assert status == 200
@@ -624,6 +848,7 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
     detail = json.loads(body)
     assert detail["source"] == "real"
     assert detail["rounds"] == real_entry["rounds"]
+    assert detail["rounds"][0]["cut_off"] is True
     status, body = _request(f"{app_server}/api/live/recorded/run?id=unknown")
     assert status == 404
     assert json.loads(body) == {"error": "not found"}

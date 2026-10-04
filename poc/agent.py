@@ -1,7 +1,7 @@
 """The vendor DiscoveryAgent turned into a bounty hunter: it settles a posted hypothesis
 (supported / refuted) instead of submitting a law, pays per round and per experiment, states its
-assessment and p_success every round, may walk away or withdraw, and sees the public record of
-failed runs.
+assessment and p_success every round, may walk away or withdraw, and may buy access to the
+public record of failed runs.
 
 The vendor loop (``DiscoveryAgent.run``) cannot be extended from outside, so ``run`` is
 re-implemented here from vendor commit 450818fa. Critic, random-experiment and no-MSE modes
@@ -74,6 +74,8 @@ class MarketAgent(DiscoveryAgent):
         self.ledger_entries = ledger_entries
         self.on_round = on_round
         self._complete = complete or llm_client.complete
+        self.record_bought = False
+        self.record_fee = 0.0
         executor = MeteredExecutor(kwargs.pop("executor"), cfg, hyp, account)
         super().__init__(executor=executor, max_rounds=cfg.max_rounds, min_rounds=1,
                          critic=None, random_experiments=False, no_mse=False, **kwargs)
@@ -89,7 +91,9 @@ class MarketAgent(DiscoveryAgent):
         base = _load_system_prompt(self._system_prompt_path, self._instructions_path)
         return "\n\n".join([base.rstrip(), self._run_policy_note(),
                             protocol.market_block(self.cfg, self.hyp),
-                            protocol.ledger_block(self.ledger_entries)])
+                            protocol.record_offer_block(
+                                len(self.ledger_entries), self.cfg.ledger_read_fee
+                            )])
 
     def _run_policy_note(self) -> str:
         note = (
@@ -142,6 +146,8 @@ class MarketAgent(DiscoveryAgent):
         """Returns the verdict, or None if the agent walked away, withdrew or ran out of rounds."""
         self.conversation_log = []
         self.outcome = self.verdict = self.evidence = self.withdraw_reason = None
+        self.record_bought = False
+        self.record_fee = 0.0
         messages: list[dict] = []
         if self.mission:
             messages.append({"role": "user", "content": self.mission})
@@ -154,11 +160,14 @@ class MarketAgent(DiscoveryAgent):
                 "experiment_input": None, "experiment_output": None, "experiment_error": None,
                 "mse_fit_input": None, "mse_fit_output": None, "assessment": None,
                 "p_success": None, "verdict": None, "evidence": None,
-                "withdraw_reason": None,
+                "withdraw_reason": None, "record_bought": False, "buy_reply": None,
             }
             if self.max_rounds >= 2 and round_num == self.max_rounds - 1:
-                warn = (f"Warning: this is round {round_num} of {self.max_rounds}. Your next "
-                        "response MUST be your <verdict> or a withdrawal.")
+                warn = (
+                    f"Note: this is round {round_num} of {self.max_rounds}. You may still run "
+                    "an experiment or an MSE fit in this round. In round "
+                    f"{self.max_rounds} you must give your <verdict> or <withdraw>."
+                )
                 messages.append({"role": "user", "content": warn})
                 entry["system_message"] = _join_sys(entry["system_message"], warn)
             if round_num == self.max_rounds:
@@ -171,6 +180,40 @@ class MarketAgent(DiscoveryAgent):
             reply = self._ask(messages)
             entry["llm_reply"] = reply
             messages.append({"role": "assistant", "content": reply})
+            if protocol.parse_buy_record(reply):
+                entry["buy_reply"] = reply
+                fee = self.cfg.ledger_read_fee
+                if self.record_bought:
+                    notice = (
+                        "The public record was already bought; there is no additional charge. "
+                        "Now choose this round's action."
+                    )
+                elif not self.ledger_entries:
+                    notice = (
+                        "There are no earlier failed runs, so there is nothing to buy. "
+                        "No charge was made. Now choose this round's action."
+                    )
+                elif not self.account.can_afford(fee):
+                    notice = (
+                        f"The public record costs {fee:g} credits, which you cannot afford. "
+                        "No charge was made. Now choose this round's action."
+                    )
+                else:
+                    self.account.charge(
+                        "record_charged", fee, round_num, {"entries": len(self.ledger_entries)}
+                    )
+                    self.record_bought = True
+                    self.record_fee = fee
+                    entry["record_bought"] = True
+                    notice = (
+                        protocol.ledger_block(self.ledger_entries)
+                        + f"\n\nRecord bought for {fee:g} credits. Now choose this round's action."
+                    )
+                messages.append({"role": "user", "content": notice})
+                follow = self._ask(messages)
+                entry["llm_reply"] = follow
+                messages.append({"role": "assistant", "content": follow})
+                reply = follow
             self._read_confidence(reply, messages, entry)
 
             verdict = protocol.parse_verdict(reply)
@@ -199,7 +242,14 @@ class MarketAgent(DiscoveryAgent):
             experiment_block = _extract_tag(reply, "run_experiment")
             mse_fit_block = _extract_tag(reply, "run_mse_fit")
             if experiment_block is None and mse_fit_block is None:
+                empty_reply = not (reply or "").strip()
                 no_tag = (
+                    (
+                        "ERROR: your reply was empty (it may have been cut off at the token "
+                        "limit). "
+                    )
+                    if empty_reply else ""
+                ) + (
                     "ERROR: No <run_experiment>, <run_mse_fit>, <verdict> or <withdraw> tag found "
                     "in your response. Respond with one of these XML tags (no code fences), plus "
                     "<assessment> and <p_success>.\n\n"
