@@ -856,7 +856,7 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const act = rd.action === "experiment" ? (rd.experiments ? `Runs ${rd.experiments} experiment${rd.experiments === 1 ? "" : "s"}` : (rd.error ? "Experiment rejected" : "Experiment"))
       : rd.action === "mse_fit" ? "Fits a candidate law to its data" : rd.action === "final_law" ? "Submits its final law" : esc(rd.action || "");
     const said = rd.thinking.replace(/\*\*|`|^#+ /gm, "");
-    $("#oQuote").innerHTML = `“${esc(said.slice(0, 420))}${said.length > 420 ? "…" : ""}”<small>Round ${rd.round} · ${act}${rd.error ? ` · lab said: ${esc(String(rd.error).slice(0, 80))}` : ""}</small>`;
+    $("#oQuote").innerHTML = `${said ? `“${esc(said.slice(0, 420))}${said.length > 420 ? "…" : ""}”` : "No notes this round, only the law."}<small>Round ${rd.round} · ${act}${rd.error ? ` · lab said: ${esc(String(rd.error).slice(0, 80))}` : ""}</small>`;
     $("#oLaw").hidden = !cur; if (cur) $("#oLawSrc").textContent = cur.law;
     const v = $("#oVerdict"); v.classList.toggle("show", inCheck);
     if (inCheck) {
