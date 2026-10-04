@@ -251,13 +251,13 @@ def test_three_pages_removed_routes_static_and_api_data(app_server, monkeypatch)
         lambda: {"ara": {"available": False}, "forcebench": {"available": False}},
     )
 
-    for path in ("/", "/simulation", "/live", "/experiments"):
+    for path in ("/", "/simulation", "/live"):
         status, headers, _ = _request(f"{app_server}{path}")
         assert status == 200
         assert "text/html" in headers.get("Content-Type", "").lower()
 
     for path in (
-        "/report", "/real", "/index.html", "/api/data", "/api/bounty",
+        "/report", "/real", "/index.html", "/experiments", "/api/data", "/api/bounty",
         "/api/bounty/info", "/api/run", "/api/test",
     ):
         assert _request(f"{app_server}{path}")[0] == 404

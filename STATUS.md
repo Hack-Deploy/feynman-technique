@@ -687,3 +687,12 @@ rewards being right and knowing when you're right.
   real run") in the top bar. The narrow-screen top bar rule moved from experiments.html into
   `style.css` so four tabs fit at 390 px on every page. (Wide tables on / and /live still scroll
   sideways at 390 px; that predates this change.) Check: `uv run pytest -q` 701 passed, 12 skipped.
+
+## 2026-10-04 · Real runs moved into Live market, round by round
+
+The two replayed real runs (Haiku's paid false claim with the force diagram, and Opus closing in
+on the hidden law) now sit in /live section 2 "Round by round", under the live feed, which is
+unchanged. Tab 04 and the separate /experiments page are gone (route now 404s; test updated).
+The CSS is scoped (`.rr`, `.learn`, `.lverdict`, so `.round.verdict` cards are not hidden) and the
+scripts run in one IIFE. Both animations start when scrolled into view. Checked in a headless
+browser at 1280 and 390 px: three tabs, no page errors, no overflow from the new parts.

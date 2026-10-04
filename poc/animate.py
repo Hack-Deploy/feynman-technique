@@ -1,4 +1,4 @@
-"""Animation data for the /experiments page: one real run, replayed from the inside.
+"""Animation data for the two real runs replayed on /live (section 2, round by round).
 
 The run shown is the hook: a real model's false claim that the naive rule paid, in a power-law
 world (so its claimed force law can be drawn). For it: each launch's noisy snapshots (what the
