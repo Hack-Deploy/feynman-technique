@@ -358,3 +358,59 @@
 - "Right law" uses `identify_model` from `tests/forcebench_local.py` (local reporting only).
 - Check: `tests/test_real_app.py` 11 passed with `--runslow`; full suite 387 passed, 4 skipped,
   14 xfailed.
+
+## Bounty market v2, Phases 0–3: checked estimates, reference calibration, checker (2026-10-04)
+
+Branch `bounty-market-v2`. Claim being proven: counting clear claims rewards guessing and
+overconfidence; a market where agents pay for experiments and are paid only for checked answers
+rewards being right and knowing when you're right.
+
+- **Definitions (Phase 0).** A *claim* is a clear verdict (supported/refuted) plus an estimate of
+  every posted quantity. A claim is *confirmed* when every estimate is within the posted tolerance
+  of the true value and the verdict matches the decision rule applied to the agent's own
+  estimates. Agent answers: supported / refuted / inconclusive ("I don't know, stopping").
+  Checker outcomes: confirmed, false_claim, stopped, walked_away, declined, out_of_rounds.
+  Open problem for Q&A: in a real lab the judge is the preregistered criterion plus the sealed
+  commitment hash; judging is not solved there.
+- **Lab returns positions only** (`poc/lab.py`). The vendor executors noise positions but return
+  exact velocities, which would make one cheap experiment reveal every law and void noise,
+  precision and price. Reversible choice; the agent is told.
+- **Hypotheses (Phase 1).** 8 kept, 4 supported / 4 refuted: gravity (1/r², refuted), fractional
+  (1/r, refuted, new), yukawa, oscillator, dark matter, circle, ether, hubble. Dropped:
+  coulomb_easy (coefficient is exactly 1, guessable; repulsive contrary to its docs),
+  three_species (no clean scripted reference), extra_dimensions (r ≈ 0.2 needs sub-noise
+  displacements). Each posts numeric quantities a prior cannot supply plus a decision rule
+  (`supported_if`). `poc/truth.py` reads true values from the noise-free vendor executors
+  (velocity after 0.01 of a release at rest); nothing truth-derived is in the config or a prompt.
+- **Reference and calibration (Phase 2).** `poc/reference.py` fixed designs (p1 ≤ 10, launches
+  end before the probe nears the source), `poc/estimate.py` least-squares fits from noisy
+  positions. `uv run python -m poc.calibrate --write` on seeds 100–119 (never used by the bench):
+  tolerance = 3 × RMS, prize = reference cost / 0.3 rounded up to 10. round_fee cut 10 → 2.
+
+  | hypothesis | pass | margin / decision tol | ref cost | prize |
+  |---|---|---|---|---|
+  | gravity-inverse-square | 20/20 | 0.80 / 0.22 | 40 | 140 |
+  | fractional-2d-gravity | 20/20 | 0.85 / 0.59 | 39 | 130 |
+  | yukawa-screened | 20/20 | 4.86 / 3.9 | 66.5 | 230 |
+  | oscillator-time-varying | 20/20 | 1.9 / 0.058 | 24 | 80 |
+  | dark-matter-unseen-pull | 20/20 | 6.96 / 0.91 | 15 | 50 |
+  | circle-ordinary-gravity | 20/20 | 0.35 / 0.14 | 70 | 240 |
+  | ether-outward-push | 20/20 | 0.020 / 0.0017 | 34 | 120 |
+  | hubble-outward-push | 20/20 | 0.030 / 0.0016 | 34 | 120 |
+
+  Checkpoint 1: ✅ 8/8 solvable. Risk: H tolerances (±0.0017) are tight for an LLM design;
+  revisit after the pilot.
+- **Protocol, checker, bid rule (Phase 3).** First reply = bid: `<p_success>`, `<planned_cost>`,
+  `<plan>` (experiments, controls, analysis). Code bids only if p × prize > planned_cost
+  (`declined` otherwise, free). Claim = `<verdict>` + `<estimate>name = value ± σ</estimate>`, one
+  re-prompt if missing. `poc/checker.py` judges and flags rerun (same experiment ≥ 3×), off_plan
+  (spend > 2× planned), dropped_controls, changed_analysis (claim differs from a re-analysis of
+  all the agent's paid data by more than the tolerance). Flags never change payouts.
+- **Rewards and conservation.** `poc/ledger.py` (new, integer milli-credits, researcher/escrow/
+  agent/lab; dm/wallet.py only models agent→lab charges). Market: bond 30% of prize on a clear
+  claim, lost if false; calibration bonus 0.1 × prize × (1 − 4(p_bid − confirmed)²). Naive: prize
+  for any clear verdict. Every run is settled under both; `--rule` sets what the agent is told.
+- **Baselines** (`poc/baselines.py`, same text protocol): abstain, always_supported, coin_flip,
+  p_hacker, reference. Independence test covers static and dynamic imports of truth/checker.
+- Fixed: the budget check now reserves the current round's fee.
+- Check: `uv run pytest -q` 433 passed, 12 skipped, 14 xfailed; `--runslow` market tests 30 passed.

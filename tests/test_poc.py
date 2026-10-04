@@ -22,7 +22,8 @@ EXP = {"p1": 2.0, "p2": 1.0, "pos2": [3.0, 0.0], "velocity2": [0.0, 0.0],
 
 
 def conf(p="0.6"):
-    return f"<assessment>looks like 1/r</assessment><p_success>{p}</p_success>"
+    return (f"<assessment>looks like 1/r</assessment><p_success>{p}</p_success>"
+            "<planned_cost>20</planned_cost>")
 
 
 def run_exp(exp=EXP):
@@ -30,7 +31,8 @@ def run_exp(exp=EXP):
     return conf() + "<run_experiment>" + json.dumps([exp]) + "</run_experiment>"
 
 
-VERDICT = conf("0.8") + "<verdict>refuted</verdict><evidence>n = 1.0 ± 0.05</evidence>"
+VERDICT = (conf("0.8") + "<verdict>refuted</verdict><estimate>n = 1.0 ± 0.05\na3 = 0.053</estimate>"
+           "<evidence>n = 1.0 ± 0.05</evidence>")
 
 
 class StubExecutor:
@@ -60,10 +62,14 @@ def make_agent(replies, cfg=CFG, ledger=()):
 
 # ------------------------------------------------------------------ config and pricing
 
-def test_config_every_hypothesis_has_criteria_answer_and_prize():
-    assert len(CFG.hypotheses) == 11
+def test_config_every_hypothesis_has_criteria_answer_prize_quantities_and_rule():
+    assert len(CFG.hypotheses) == 8
     for h in CFG.hypotheses:
         assert h.resolution_criteria and h.answer in C.ANSWERS and h.prize > 0
+        assert h.quantities and all(q.tolerance > 0 for q in h.quantities)
+        assert h.supported_if.quantity in {q.name for q in h.quantities}
+    answers = [h.answer for h in CFG.hypotheses]
+    assert answers.count("supported") == answers.count("refuted")
 
 
 def test_experiment_price_itemised():
@@ -137,12 +143,12 @@ def test_later_withdrawal_pays_its_round():
 
 
 def test_missing_p_reprompts_once_then_records_none():
-    agent, _, llm = make_agent(["<run_mse_fit>x</run_mse_fit>", "still nothing", VERDICT])
+    agent, _, llm = make_agent([run_exp(), "<run_mse_fit>x</run_mse_fit>", "still nothing", VERDICT])
     agent.run()
-    first = agent.conversation_log[0]
-    assert "confidence_reprompt" in first and first["p_success"] is None
-    assert agent.conversation_log[1]["p_success"] == 0.8
-    assert len(llm.calls) == 3  # round 1, its re-prompt, round 2
+    second = agent.conversation_log[1]
+    assert "confidence_reprompt" in second and second["p_success"] is None
+    assert agent.conversation_log[2]["p_success"] == 0.8
+    assert len(llm.calls) == 4  # round 1, round 2, its re-prompt, round 3
 
 
 def test_over_budget_batch_is_refused_and_not_charged():
@@ -188,17 +194,29 @@ def test_ledger_entry_hides_conclusions_and_answer():
     assert '"pos2"' in e["data"]
 
 
-def test_resolve():
+def test_resolve_pays_only_checked_claims_but_naive_pays_any_clear_verdict():
     from dm.types import SubmittedAttempt
+    from poc import truth
     from poc.bench import resolve
 
-    def sub(outcome, verdict):
+    good = {k: {"value": v, "sigma": None} for k, v in truth.true_values(HYP).items()}
+    wrong = {k: {"value": v * 3, "sigma": None} for k, v in truth.true_values(HYP).items()}
+
+    def sub(outcome, verdict, est=None):
+        events = [{"type": "round_charged", "amount": 10, "round": 1}]
         return SubmittedAttempt(source="live", protocol=C.PROTOCOL, venue=C.VENUE, world=HYP.world,
                                 solver="m", seed=0, stated_p_success=0.5, rounds=1, experiments=0,
                                 lab_cost=10, extra={"hypothesis_id": HYP.id, "outcome": outcome,
-                                                    "agent_verdict": verdict})
-    assert resolve(HYP, sub("verdict", HYP.answer)).passed
-    assert resolve(HYP, sub("verdict", HYP.answer)).extra["prize_paid"] == HYP.prize
+                                                    "agent_verdict": verdict, "estimates": est or {},
+                                                    "account_events": events, "bid_p": 0.5})
+    ok = resolve(HYP, sub("verdict", HYP.answer, good))
+    assert ok.passed and ok.extra["prize_paid"] == HYP.prize
+    assert ok.extra["settlements"]["market"]["profit"] == pytest.approx(HYP.prize - 10)
+    bad = resolve(HYP, sub("verdict", HYP.answer, wrong))
+    assert not bad.passed and bad.verdict["outcome"] == "false_claim"
+    assert bad.extra["settlements"]["naive"]["profit"] == pytest.approx(HYP.prize - 10)
+    assert bad.extra["settlements"]["market"]["profit"] == pytest.approx(
+        -10 - CFG.claim_bond * HYP.prize)
     assert not resolve(HYP, sub("verdict", "inconclusive")).passed
     assert not resolve(HYP, sub("walked_away", None)).passed
 

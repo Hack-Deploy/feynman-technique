@@ -25,6 +25,7 @@ VENUE = "discoverphysics"
 PROTOCOL = "discoverphysics_market"
 VERDICTS = ("supported", "refuted", "inconclusive")
 ANSWERS = ("supported", "refuted")
+RULES = ("market", "naive")
 
 ATTEMPTS_PATH = ROOT / "attempts" / "poc_dp_bench.jsonl"
 TRANSCRIPTS_DIR = ROOT / "attempts" / "transcripts" / "poc_dp"
@@ -36,6 +37,41 @@ COST_KEYS = ("per_experiment", "per_measurement", "per_time_unit", "per_particle
 
 
 @dataclass(frozen=True)
+class Quantity:
+    name: str
+    meaning: str
+    tolerance: float  # a claim is confirmed only if |estimate − truth| <= tolerance
+
+
+@dataclass(frozen=True)
+class Rule:
+    """Turns estimates into a verdict: supported if ``quantity`` is above / below / between /
+    outside the given bound(s), refuted otherwise. Public: it is part of the posting."""
+
+    quantity: str
+    kind: str  # above | below | between | outside
+    bounds: tuple[float, ...]
+
+    def verdict(self, estimates: dict[str, float]) -> str | None:
+        x = estimates.get(self.quantity)
+        if x is None or not math.isfinite(x):
+            return None
+        if self.kind == "above":
+            ok = x > self.bounds[0]
+        elif self.kind == "below":
+            ok = x < self.bounds[0]
+        elif self.kind == "between":
+            ok = self.bounds[0] <= x <= self.bounds[1]
+        else:
+            ok = not (self.bounds[0] <= x <= self.bounds[1])
+        return "supported" if ok else "refuted"
+
+    def margin(self, x: float) -> float:
+        """Distance from x to the nearest decision boundary."""
+        return min(abs(x - b) for b in self.bounds)
+
+
+@dataclass(frozen=True)
 class Hypothesis:
     id: str
     world: str
@@ -43,7 +79,15 @@ class Hypothesis:
     resolution_criteria: str
     answer: str  # hidden from the agent
     prize: float
+    quantities: tuple[Quantity, ...] = ()
+    supported_if: Rule | None = None
     particles: int | None = None  # override when the agent does not place particles itself
+
+    def quantity(self, name: str) -> Quantity:
+        for q in self.quantities:
+            if q.name == name:
+                return q
+        raise KeyError(name)
 
 
 @dataclass(frozen=True)
@@ -51,7 +95,10 @@ class Config:
     max_rounds: int
     noise_std: float
     budget: float | None
-    payout_rule: str
+    market_payout_rule: str
+    naive_payout_rule: str
+    claim_bond: float
+    calibration_bonus: float
     round_fee: float
     experiment_costs: dict[str, float]
     hypotheses: tuple[Hypothesis, ...]
@@ -72,10 +119,21 @@ def _amount(value, name: str) -> float:
     return x
 
 
+def _rule(d: dict, hid: str, names: set[str]) -> Rule:
+    kinds = [k for k in ("above", "below", "between", "outside") if k in d]
+    if len(kinds) != 1 or d.get("quantity") not in names:
+        raise ValueError(f"config.yaml: {hid}: supported_if needs a quantity and one of "
+                         "above/below/between/outside")
+    raw = d[kinds[0]]
+    bounds = tuple(float(b) for b in (raw if isinstance(raw, list) else [raw]))
+    if len(bounds) != (2 if kinds[0] in ("between", "outside") else 1):
+        raise ValueError(f"config.yaml: {hid}: wrong number of bounds for {kinds[0]}")
+    return Rule(quantity=d["quantity"], kind=kinds[0], bounds=bounds)
+
+
 def load(path: Path = CONFIG_PATH) -> Config:
     d = yaml.safe_load(Path(path).read_text())
     default_prize = _amount(d.get("default_prize", 100), "default_prize")
-    payout_rule = str(d.get("payout_rule", "")).strip()
     costs = d.get("experiment_costs") or {}
     unknown = sorted(set(costs) - set(COST_KEYS))
     if unknown:
@@ -88,6 +146,12 @@ def load(path: Path = CONFIG_PATH) -> Config:
         criteria = str(h.get("resolution_criteria") or "").strip()
         if not criteria:
             raise ValueError(f"config.yaml: {h['id']}: resolution_criteria is required")
+        quantities = tuple(Quantity(name=str(q["name"]), meaning=str(q["meaning"]),
+                                    tolerance=_amount(q["tolerance"], f"{h['id']}.tolerance"))
+                           for q in h.get("quantities") or [])
+        if not quantities:
+            raise ValueError(f"config.yaml: {h['id']}: at least one quantity is required")
+        names = {q.name for q in quantities}
         hypotheses.append(Hypothesis(
             id=str(h["id"]),
             world=str(h["world"]),
@@ -95,6 +159,8 @@ def load(path: Path = CONFIG_PATH) -> Config:
             resolution_criteria=criteria,
             answer=answer,
             prize=_amount(h.get("prize", default_prize), f"{h['id']}.prize"),
+            quantities=quantities,
+            supported_if=_rule(h.get("supported_if") or {}, h["id"], names),
             particles=int(h["particles"]) if h.get("particles") is not None else None,
         ))
     ids = [h.id for h in hypotheses]
@@ -109,7 +175,10 @@ def load(path: Path = CONFIG_PATH) -> Config:
         max_rounds=max_rounds,
         noise_std=_amount(d.get("noise_std", 0.075), "noise_std"),
         budget=None if budget is None else _amount(budget, "budget"),
-        payout_rule=payout_rule,
+        market_payout_rule=str(d.get("market_payout_rule", "")).strip(),
+        naive_payout_rule=str(d.get("naive_payout_rule", "")).strip(),
+        claim_bond=_amount(d.get("claim_bond", 0), "claim_bond"),
+        calibration_bonus=_amount(d.get("calibration_bonus", 0), "calibration_bonus"),
         round_fee=_amount(d.get("round_fee", 0), "round_fee"),
         experiment_costs={k: _amount(costs.get(k, 0), k) for k in COST_KEYS},
         hypotheses=tuple(hypotheses),
