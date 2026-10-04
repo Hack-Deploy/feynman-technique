@@ -6,10 +6,16 @@ import json
 
 
 class ScriptedLLM:
-    def __init__(self, replies: list[str]):
+    def __init__(self, replies: list[str], *, buy_record_first: bool = False):
         if not replies:
             raise ValueError("need at least one reply")
         self.replies = list(replies)
+        if buy_record_first:
+            self.replies.insert(
+                0,
+                "<assessment>I want to inspect earlier experiments.</assessment>"
+                "<p_success>0.6</p_success><buy_record/>",
+            )
         self.calls: list[dict] = []
 
     def __call__(self, model: str, messages: list[dict], system: str | None = None,

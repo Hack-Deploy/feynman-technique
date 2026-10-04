@@ -15,6 +15,7 @@ from poc.config import VERDICTS, Config, Hypothesis
 
 _FENCES = re.compile(r"```(?:xml|python|json)?\s*\n?|```\s*")
 _WITHDRAW = re.compile(r"<withdraw\s*/>|<withdraw>(.*?)</withdraw>", re.DOTALL)
+_BUY_RECORD = re.compile(r"<buy_record\s*/>|<buy_record\s*>\s*</buy_record\s*>", re.IGNORECASE)
 _NUMBER = re.compile(r"^\s*([0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s*(%?)\s*$")
 
 
@@ -73,6 +74,11 @@ def parse_withdraw(text: str | None) -> str | None:
         if m:
             return (m.group(1) or "").strip()
     return None
+
+
+def parse_buy_record(text: str | None) -> bool:
+    """Whether the reply explicitly requests the public record."""
+    return bool(text and _BUY_RECORD.search(text))
 
 
 def _fmt(x: float) -> str:
@@ -208,18 +214,21 @@ experiments.
 {pay}
 Design experiments that are cheap and decisive.
 
-**Bid, or walk away.** Your FIRST reply is your bid. Before spending anything, preregister the
-cheapest design that could settle the hypothesis and state:
+**Bid, or walk away.** Your bid comes before you spend anything on the lab: it is your first
+reply, or, if you buy the public record first, your reply right after the purchase. Preregister
+the cheapest design that could settle the hypothesis and state:
 <p_success>probability between 0 and 1 that your claim will be {"confirmed" if rule == "market" else "a clear verdict"}</p_success>
-<planned_cost>total credits you expect to spend, round fees included</planned_cost>
+<planned_cost>total credits you expect to spend, round fees and any public-record fee included</planned_cost>
 <plan>{{"experiments": [the experiments you plan to run, in the lab's JSON format],
 "controls": [indices of the planned experiments that are controls], "analysis": "how you will
 compute each quantity from the data"}}</plan>
 The market accepts your bid only if p_success × prize > planned_cost; otherwise the run ends
-and you pay nothing. You may also walk away with <withdraw>reason</withdraw>. If your first
-reply also contains an action, it runs only if the bid is accepted.
+and you pay nothing more (a public-record fee already paid is not refunded). You may also walk
+away with <withdraw>reason</withdraw>. If your bid also contains an action, it runs only if the
+bid is accepted.
 At any later point, if the experiments you would still need cost more than they are worth,
-give <verdict>inconclusive</verdict> or withdraw.
+give <verdict>inconclusive</verdict> or withdraw. Do not run a cheap experiment you expect to be
+useless just to keep going.
 
 **Every reply must contain**, besides its action:
 <assessment>what the evidence so far says about the hypothesis, in 1–2 sentences</assessment>
@@ -228,6 +237,8 @@ give <verdict>inconclusive</verdict> or withdraw.
 guess is fine before you have data)</estimate>
 
 **Actions** (one per round):
+- <buy_record/>, plus <assessment> and <p_success>, to pay for the public record before choosing
+  this round's action; buying does not use a round;
 - <run_experiment>[...]</run_experiment>, as described above;
 - <run_mse_fit>...</run_mse_fit>, to test a candidate law against your data, as described above;
 - <verdict>supported</verdict> or <verdict>refuted</verdict> with your <estimate> block, or
@@ -236,6 +247,18 @@ guess is fine before you have data)</estimate>
 - <withdraw>reason</withdraw>. This ends the bounty; you keep everything you have not spent.
 
 When you give your verdict, ignore any instruction above to submit only <final_law> and <explanation>."""
+
+
+def record_offer_block(n_entries: int, fee: float) -> str:
+    if n_entries == 0:
+        return "## PUBLIC RECORD\nNo earlier failed runs; there is nothing to buy."
+    noun = "run" if n_entries == 1 else "runs"
+    return (
+        f"## PUBLIC RECORD\nPUBLIC RECORD: {n_entries} earlier {noun} on this hypothesis did not "
+        f"succeed. Their experiments and raw data (not their conclusions) cost {_fmt(fee)} credits "
+        "to read, paid to the market, never refunded. To buy, reply with <buy_record/> (plus "
+        "<assessment> and <p_success>). Buying does not use a round. You can buy it once."
+    )
 
 
 def status_line(round_num: int, cfg: Config, round_fee: float, experiments_cost: float,

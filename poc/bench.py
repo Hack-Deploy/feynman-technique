@@ -1,8 +1,9 @@
 """Run the bounty benchmark: every hypothesis in config.yaml × models × seeds.
 
-Runs on a hypothesis go in a fixed order (models, then seeds); each sees the public record of
-the failed runs before it. Every run happens even after a hypothesis is settled correctly;
-successes are never shown. Results are appended to attempts/poc_dp_bench.jsonl (resumable).
+Runs on a hypothesis go in a fixed order (models, then seeds). Blind by default; with --record,
+earlier failed runs are offered for purchase. Every planned run happens, so agents compare on the
+same hypotheses; --close-solved skips a hypothesis once it is confirmed, as the live market does.
+Successes are never shown. Results are appended to attempts/poc_dp_bench.jsonl (resumable).
 
     uv run python -m poc.bench --fake                         # scripted LLM, no API calls
     uv run python -m poc.bench --baselines --seeds 0 1 2      # scripted agents, no API calls
@@ -65,6 +66,19 @@ def public_record(records: list[AttemptRecord], hyp: C.Hypothesis, cfg: C.Config
             for r in failed[-cfg.ledger_max_entries:]]
 
 
+def _same_setup(r: AttemptRecord, rule: str | None, experiments: bool | None) -> bool:
+    return ((rule is None or r.extra.get("rule", "market") == rule)
+            and (experiments is None or r.extra.get("experiments_enabled", True) == experiments))
+
+
+def solved_by(records: list[AttemptRecord], hypothesis_id: str, *, rule: str | None = None,
+              experiments: bool | None = None) -> AttemptRecord | None:
+    """The first confirmed record for a hypothesis, if any; ``rule`` and ``experiments`` (when
+    given) count only runs under that reward rule and lab access."""
+    return next((r for r in records if r.extra.get("hypothesis_id") == hypothesis_id
+                 and r.passed and _same_setup(r, rule, experiments)), None)
+
+
 def _done(records: list[AttemptRecord], hid: str, model: str, seed: int, rule: str,
           experiments: bool) -> bool:
     return any(r.extra.get("hypothesis_id") == hid and r.solver == model and r.seed == seed
@@ -100,7 +114,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--prior-only", action="store_true",
                     help="no lab: one reply from prior knowledge (the experimenting control)")
     ap.add_argument("--record", action="store_true",
-                    help="show the public record of earlier failed runs (default: blind)")
+                    help="offer the public record of earlier failed runs for purchase "
+                         "(default: blind, nothing to buy)")
+    ap.add_argument("--close-solved", action="store_true",
+                    help="market mode: skip a hypothesis once a run under the same rule and lab "
+                         "access is confirmed (default: every planned run happens)")
     ap.add_argument("--max-rounds", type=int,
                     help="live runs only: override live.max_rounds in poc/live_models.yaml")
     ap.add_argument("--max-usd", type=float,
@@ -124,10 +142,18 @@ def main(argv: list[str] | None = None) -> None:
     experiments = not args.prior_only
     store = AttemptStore(args.store)
     records = store.load()
-    todo = [(h, m, s) for h in hyps for m in models for s in args.seeds
+    planned = [(h, m, s) for h in hyps for m in models for s in args.seeds]
+    already = sum(_done(records, h.id, m, s, args.rule, experiments) for h, m, s in planned)
+    todo = [(h, m, s) for h, m, s in planned
             if not _done(records, h.id, m, s, args.rule, experiments)]
-    print(f"{len(todo)} run(s) to do, {len(hyps) * len(models) * len(args.seeds) - len(todo)} "
-          f"already in {args.store}")
+    if args.close_solved:
+        open_ = [t for t in todo
+                 if solved_by(records, t[0].id, rule=args.rule, experiments=experiments) is None]
+        closed, todo = len(todo) - len(open_), open_
+        print(f"{len(todo)} run(s) to do, {closed} skipped for solved claims, "
+              f"{already} already in {args.store}")
+    else:
+        print(f"{len(todo)} run(s) to do, {already} already in {args.store}")
     if not todo:
         return
 
@@ -158,6 +184,11 @@ def main(argv: list[str] | None = None) -> None:
         spend_ledger = SpendLedger(cap=cap)
 
     for hyp, model, seed in todo:
+        if args.close_solved:
+            solver = solved_by(records, hyp.id, rule=args.rule, experiments=experiments)
+            if solver is not None:
+                print(f"{hyp.id}: solved by {solver.solver}; off the market, skipping {model}")
+                continue
         ledger = public_record(records, hyp, run_cfg) if args.record else []
         max_tokens = C.MAX_TOKENS
         usage = None

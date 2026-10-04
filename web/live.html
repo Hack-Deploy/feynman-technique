@@ -126,7 +126,7 @@
   <div>
     <p class="label">Live market</p>
     <h1>A real AI model bets on a real question.</h1>
-    <p class="lead">Pick a claim about a hidden world. A frontier model reads it, the prize and the record of everyone who failed before. Each round it pays a fee, may buy an experiment, and says how likely it is to get the answer right.</p>
+    <p class="lead">Pick a claim about a hidden world. A frontier model reads the prize and can pay to read earlier failed runs before bidding. Each round it pays a fee, may buy an experiment, and says how likely it is to get the answer right.</p>
     <p class="sub">It ends with a verdict (supported, refuted or inconclusive), or it walks away. Only a correct, clear verdict wins the prize. The answer is hidden from the model and revealed here only at the end.</p>
   </div>
   <div class="fig">
@@ -135,7 +135,7 @@
       <g font-size="13" fill="#4D4D4D">
         <rect x="20" y="20" width="200" height="90" rx="10" fill="#EEF2F9"/>
         <text x="36" y="46" font-size="12" font-weight="700" letter-spacing="2" fill="#1B3F8B">MODEL SEES</text>
-        <text x="36" y="70">claim · how it's judged</text><text x="36" y="90">prize · prices · past failures</text>
+        <text x="36" y="70">claim · how it's judged</text><text x="36" y="90">prize · prices · failures (paid)</text>
         <rect x="300" y="20" width="200" height="90" rx="10" fill="#161616"/>
         <text x="316" y="46" font-size="12" font-weight="700" letter-spacing="2" fill="#9DB3E0">HIDDEN</text>
         <text x="316" y="70" fill="#ddd">the true answer</text><text x="316" y="90" fill="#ddd">(supported or refuted)</text>
@@ -164,6 +164,7 @@
     <button class="btn" id="go">Start the market</button>
   </div>
   <div id="hypCard"></div>
+  <div id="claimStatus"></div>
   <p class="note" id="costNote" style="margin-top:10px"></p>
 </section>
 
@@ -259,7 +260,7 @@
 <section id="record">
   <p class="label rust">4 · The public record</p>
   <h2>Every run is kept, especially the failures.</h2>
-  <p class="sub">The next model sees the failed runs for its claim before it bids. Below: runs played by real models only.</p>
+  <p class="sub" id="recordNote">Models can buy failed runs for their claim; solved claims leave the market. Below: runs played by real models only.</p>
   <div id="leader"></div>
   <div id="runs"><p class="wait">Loading…</p></div>
 </section>
@@ -310,12 +311,15 @@ function setMode(m) {
   document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
   $("#model").disabled = m === "demo";
   costNote();
+  if (INFO) renderHyp();
 }
 function costNote() {
   const ec = INFO.experiment_costs || {};
   const parts = Object.entries(ec).map(([k, v]) => `${v} ${k.replace("per_", "per ").replace(/_/g, " ")}`).join(", ");
-  $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}. Up to ${INFO.max_rounds} rounds.` +
-    (MODE === "live" ? ` Real models play up to ${INFO.live.max_rounds} rounds; worst-case API cost for one run with this model: $${usd((INFO.live.projected_usd_per_run || {})[$("#model").value])}.` : "");
+  $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}; failed public-record data cost ${INFO.ledger_read_fee} to read.` +
+    ` Up to ${INFO.max_rounds} rounds.` +
+    (MODE === "live" ? ` Real models play up to ${INFO.live.max_rounds} rounds; worst-case API cost for one run with this model: $${usd((INFO.live.projected_usd_per_run || {})[$("#model").value])}.` : "") +
+    (INFO.live.cap_note ? ` ${INFO.live.cap_note}` : "");
 }
 function renderHyp() {
   const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
@@ -323,6 +327,11 @@ function renderHyp() {
   $("#hypCard").innerHTML = `<div class="q"><div class="h">“${esc(h.hypothesis)}”</div>
     <div class="crit"><b>How it will be judged:</b> ${esc(h.resolution_criteria)}</div>
     <div class="meta"><span class="pill info">world: ${esc(h.world)}</span><span class="pill pass">prize ${h.prize} credits</span><span class="pill">answer hidden</span></div></div>`;
+  const closed = MODE === "live" && h.solved_by;
+  $("#claimStatus").innerHTML = closed
+    ? `<p class="pill warn">Solved by ${esc(h.solved_by)}. This claim is closed.</p>`
+    : "";
+  $("#go").disabled = Boolean(closed);
 }
 
 function chart(rounds, el = "#pChart") {
@@ -346,6 +355,8 @@ function roundCard(r) {
   if (r.verdict) what += `<p><b>Verdict: ${esc(r.verdict)}</b>${r.evidence ? " · " + esc(r.evidence) : ""}</p>`;
   if (r.withdraw_reason) what += `<p><b>Reason:</b> ${esc(r.withdraw_reason)}</p>`;
   if (r.experiment_error) what += `<p class="pill fail">${esc(r.experiment_error)}</p>`;
+  if (r.cut_off) what += `<p class="pill fail">Reply cut off at the token limit (max_tokens in poc/live_models.yaml)</p>`;
+  if (r.record_bought) what += `<p class="pill pass">bought the public record (${n0(INFO?.ledger_read_fee ?? 30)} credits)</p>`;
   const exp = r.experiment_input && r.experiment_input.length ? `<details><summary>Experiment it ordered (${r.n_experiments})</summary><pre>${esc(JSON.stringify(r.experiment_input, null, 1))}</pre></details>` : "";
   const fit = r.mse_fit ? `<details><summary>Formula it fitted</summary><pre>${esc(r.mse_fit)}</pre></details>` : "";
   const reply = r.reply ? `<details><summary>Full reply</summary><pre>${esc(r.reply)}</pre></details>` : "";
@@ -380,7 +391,8 @@ async function poll(id) {
     renderJob(j);
     if (j.state === "running") { POLL = setTimeout(() => poll(id), 1200); return; }
   } catch (e) { $("#result").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
-  $("#go").disabled = false;
+  renderHyp();
+  loadRecorded();
 }
 $("#go").addEventListener("click", async () => {
   clearTimeout(POLL);
@@ -398,7 +410,7 @@ $("#go").addEventListener("click", async () => {
     if (!s.ok) throw new Error(s.error || "could not start");
     location.hash = "watch";
     poll(s.job_id);
-  } catch (e) { $("#feed").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; $("#go").disabled = false; }
+  } catch (e) { $("#feed").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; renderHyp(); }
 });
 
 function runsTable(rows, title) {
@@ -497,12 +509,16 @@ async function openReplay(id) {
 }
 $("#repPlay").addEventListener("click", () => REPLAY && playReplay());
 $("#repAll").addEventListener("click", () => { if (REPLAY) { clearTimeout(REPLAY.timer); showReplay(REPLAY.rounds.length); } });
-fetch("/api/live/recorded").then(r => r.json()).then(renderRecorded)
-  .catch(e => { $("#recBanner").innerHTML = `<p class="pill fail">Could not load recorded runs: ${esc(e.message)}</p>`; });
+function loadRecorded() {
+  return fetch("/api/live/recorded", {cache: "no-store"}).then(r => r.json()).then(renderRecorded)
+    .catch(e => { $("#recBanner").innerHTML = `<p class="pill fail">Could not load recorded runs: ${esc(e.message)}</p>`; });
+}
+loadRecorded();
 
 fetch("/api/live/info").then(r => r.json()).then(info => {
   INFO = info;
-  $("#hyp").innerHTML = info.hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}</option>`).join("");
+  $("#hyp").innerHTML = info.hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}${h.solved_by ? " · solved, off the market" : ""}</option>`).join("");
+  $("#recordNote").textContent = `Models can buy failed runs for their claim for ${info.ledger_read_fee} credits. Solved claims leave the market. Below: runs played by real models only.`;
   const label = Object.fromEntries((info.model_table || []).map(m => [m.id, m.label]));
   $("#model").innerHTML = info.models.map(m => `<option value="${esc(m)}">${esc(label[m] ? label[m] + " · " + m : m)}</option>`).join("");
   $("#model").addEventListener("change", costNote);

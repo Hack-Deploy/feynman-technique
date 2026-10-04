@@ -1,8 +1,10 @@
-"""Credits for one run: researcher, escrow, agent and lab, in integer milli-credits.
+"""Credits for one run: researcher, escrow, agent, lab and market, in integer milli-credits.
 
 Every movement is an event. The total over all accounts never changes; ``Ledger.close``
 raises if it did or if anything is left in escrow. The same run is settled under both reward
 rules, each on its own ledger:
+
+Charges are agent → lab (rounds, experiments) and agent → market (a public-record purchase).
 
 - market: prize_posted → charges → bond_posted (clear claim) → prize_paid + bond_returned
   (confirmed) or prize_refunded + bond_forfeited (otherwise) → calibration_bonus (bid accepted);
@@ -15,7 +17,7 @@ import math
 
 from poc import config as C
 
-ACCOUNTS = ("researcher", "escrow", "agent", "lab")
+ACCOUNTS = ("researcher", "escrow", "agent", "lab", "market")
 CHARGE_TYPES = ("round_charged", "experiments_charged")
 
 
@@ -69,6 +71,8 @@ def settle(rule: str, cfg: C.Config, prize: float, charges: list[dict], outcome:
     for e in charges:
         if e["type"] in CHARGE_TYPES and e["amount"]:
             ledger.transfer(e["type"], "agent", "lab", e["amount"], round=e.get("round"))
+        elif e["type"] == "record_charged" and e["amount"]:
+            ledger.transfer(e["type"], "agent", "market", e["amount"], round=e.get("round"))
     clear = outcome == "verdict" and agent_verdict in C.ANSWERS
     bond = bonus = 0.0
     if rule == "naive":

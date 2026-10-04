@@ -484,12 +484,13 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 
 - Added the configured Anthropic model-price table, cumulative append-only spend ledger,
   per-call metering and reservations, bounded run projections, and resumable multi-model grid.
-  The configured hard cap is $5; `DM_MAX_USD` can only lower it.
+  The configured hard cap is $50; `DM_MAX_USD` can only lower it.
 - Added the deterministic scripted grid at `attempts/fixtures/live/scripted_demo.jsonl` and
   its derived summary, plus real/scripted recorded-run APIs and documentation. The ledger and
   lock remain git-ignored. No real API calls were made.
-- Preflight with an empty live cache: $4.661748 total worst-case across 8 runs; the largest
-  model total is Claude Opus 5.5 at $2.071888. This is below the configured $5 cap.
+- With `max_tokens: 16000` and `DM_MAX_USD=50`, preflight projects $17.693172 worst-case
+  across 8 runs: Sonnet 5.5 $3.931816, Sonnet 5 $3.931816, Opus 5.5 $7.863632, and
+  Haiku 4.5 $1.965908. The configured $50 hard cap applies if the environment cap is higher.
 - Checks after merging `origin/real-attempts`: targeted live/POC suite 47 passed; full suite
   657 passed, 5 skipped, 0 xfailed, no XPASS.
 
@@ -810,3 +811,91 @@ got there: refuted in 3 rounds with n = 2.0 ± 0.35 (true 2.00, window ±0.59), 
 claim) as `{"runs": [...]}`. /live section 2 has one button per recorded run; the pull axis
 scales to each run's true law and readings, and the claim label (1/r, 1/r²) comes from the run.
 756 passed.
+## Live real-run metering fix (2026-10-03)
+
+- Real `/live` attempts now pass `MeteredLLM` to `run_attempt`, so provider calls use
+  per-call reservations and settlement. Scripted runs are unchanged.
+- Verification: `uv run pytest -q tests/test_live_market.py tests/test_live_spend.py
+  tests/test_llm_guard.py tests/readiness/live_market_readiness_test.py` — 67 passed.
+
+## Stale ForceBench grid fallback (2026-10-04)
+
+- Generated ForceBench grids with results but no `top_model` key now fall back to the
+  committed snapshot when available; a present `top_model: null` remains output data.
+- Verification: `uv run pytest -q -p no:cacheprovider tests/test_real_snapshots.py
+  tests/test_real_app.py` — 16 passed, 1 skipped.
+
+## Live reasoning budget, hard cap, and randomized reruns (2026-10-04)
+
+- Live reasoning uses `max_tokens: 16000` and an explicit 600-second Anthropic timeout.
+  Stop reasons are retained; rounds stopped by `max_tokens` are marked in the cache and
+  replay, and empty replies and the penultimate-round prompt are clearer.
+- The configured hard cap is $50. If `DM_MAX_USD` is higher, preflight and `/api/live/info`
+  explain that the configured cap applies.
+- `poc.rerun_all` covers every configured claim and model at seed 0. It creates a seeded,
+  independent model permutation per claim and executes position-major; interrupted runs
+  resume their cached order. Purge archives live records and transcripts without touching
+  the spend ledger or scripted fixtures.
+- No-call preflight with inline `DM_MAX_USD=50`: the 8-run demo grid projects $17.693172
+  ($3.931816 each for Sonnet 5.5 and Sonnet 5, $7.863632 for Opus 5.5, and $1.965908 for
+  Haiku 4.5). The 44-run rerun-all plan used order seed `1845679887` and projects $97.557075
+  ($21.679350 each for Sonnet 5.5 and Sonnet 5, $43.358700 for Opus 5.5, and $10.839675
+  for Haiku 4.5), with the effective cap at $50.
+
+## Hugging Face live-data sharing and warm start (2026-10-04)
+
+- Added `huggingface-hub>=1.0,<2` as a main dependency and locked `huggingface-hub 1.33.0`.
+- `poc.hf_data` pushes only allow-listed live records to a private dataset by default,
+  scans uploads for secrets, supports a network-free dry run, and archives conflicts before
+  pulling a warm-start dataset. `HF_TOKEN` and `DM_HF_REPO` are documented in the env template.
+- Focused live/rerun/Hugging Face suite: 109 passed. Full suite:
+  `uv run pytest -q -p no:cacheprovider` — 698 passed, 3 skipped, 34 warnings.
+- Recorded-run replay also defaults missing legacy `cut_off` fields to false;
+  `tests/test_live_market.py::test_scripted_http_run_and_seed_increment` passed.
+- Follow-up: cutoff tracking now lives in `MeteredLLM` and is consumed by both live and grid
+  callbacks; public Hugging Face pulls need no token, and the dataset defaults to
+  `arushisinha98/discovery-market-live`. README documents the cold-start pull and resume path.
+- No paid API calls were made and no vendor files were edited.
+
+## PR #28 review fixes
+
+- Grid resumes reconcile cached real attempts into the store; rerun-all enforces cached order
+  seeds; HF pulls replace allow-listed local data after archiving it; archive destinations retry
+  timestamp collisions.
+- Focused suite: 47 passed (`tests/test_rerun_all.py`, `tests/test_hf_data.py`,
+  `tests/test_live_spend.py`, `tests/test_live_market.py`).
+- Full suite: `uv run pytest -q` — 704 passed, 3 skipped, 34 warnings.
+
+## Solved claims and paid public-record reads (2026-10-04)
+
+- A successful record closes its claim to subsequent real runs across the benchmark, live
+  market, and grid; scripted runs remain repeatable. Grid runs re-check closure before spend
+  admission and count skipped runs separately.
+- The public record contains failed runs only. Models may buy it for 30 credits paid to the
+  market; the purchase does not consume a round or count as lab revenue. Rerun-all uses a
+  seeded model permutation per claim in claim-major order and resumes unsolved claims.
+- No-call preflights with `DM_MAX_USD=50` and empty caches: the 8-run, 2-claim grid projects
+  $21.577464 total ($4.794992 per Sonnet, $9.589984 Opus, $2.397496 Haiku). The 44-run
+  rerun-all plan used order seed `1409326446` and projects $118.955628 total ($26.434584
+  per Sonnet, $52.869168 Opus, $13.217292 Haiku); 11 claims are open and the effective cap
+  is $50.
+- Focused suite: 135 passed. Full suite: `uv run pytest -q` — 724 passed, 3 skipped,
+  34 warnings. No paid API or Hugging Face calls were made; vendor files were untouched.
+
+## Merge origin/main into bounty-market-v2 (2026-10-04)
+
+- Public record: main's paid opt-in (`<buy_record/>`, `ledger.read_fee` 30) replaces the free
+  `--record` prompt block. Blind stays the default (nothing to buy); `--record` offers failed runs
+  for purchase. The bid's `planned_cost` includes any record fee. `poc/ledger.py` gains a
+  `market` account so the fee settles agent → market and conservation still holds.
+- Solved claims: main closes a claim after its first confirmed run. Kept for the live market
+  (`/live`, `rerun_all`, grid). `poc.bench` keeps every planned run by default so agents compare
+  on the same claims; `--close-solved` opts in and counts only runs with the same rule and lab
+  access. `/live` now counts only real-model runs as solving a claim (the bench store also holds
+  baselines, and `baseline:reference` would otherwise close nearly every claim).
+- `/live` keeps listing real-model runs only, with main's record-fee note.
+- Main's tests adapted to this branch's protocol (bid in round 1, estimates on a verdict,
+  checker-confirmed passes): scripted grid tests use true-value estimates.
+- Check: all touched test files pass. The only full-suite failure is
+  `test_poc_never_imports_the_oracle`, caused by the untracked `poc/original.py`, which is not
+  part of this merge.
