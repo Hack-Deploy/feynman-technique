@@ -613,6 +613,26 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 - Focused suite: 135 passed. Full suite: `uv run pytest -q` — 724 passed, 3 skipped,
   34 warnings. No paid API or Hugging Face calls were made; vendor files were untouched.
 
+## Noisy velocity observations and repeatable experiments (2026-10-04)
+
+- Added attempt-seeded Gaussian noise (σ = 0.05) to observed velocities alongside the
+  vendor's position noise (σ = 0.075), making velocity-derived findings account for
+  measurement uncertainty.
+- The prompt, live info, UI, and docs disclose both noise levels and that identical
+  experiments can be repeated for fresh independent readings, at full price each time.
+- Left the committed scripted fallback (`attempts/fixtures/live/scripted_demo.jsonl`) as is:
+  regenerating it under the solved-claim rule shrinks it from 8 runs to 3 and drops the
+  four-model comparison. It is a labelled scripted stand-in, recorded before velocity noise.
+- Focused suite: `uv run pytest -q tests/test_poc.py tests/test_live_market.py
+  tests/test_rerun_all.py tests/test_live_spend.py` — 92 passed. No paid calls or vendor
+  edits.
+
+## Hugging Face push replaces remote live data (2026-10-04)
+
+- Push deletes stale remote allow-listed live files in the upload commit while leaving
+  the dataset card and non-allow-listed files alone; older versions remain in commit history.
+- The dry-run output ends with a note that remote allow-listed files missing locally will be deleted.
+
 ## Peptide-HLA venue (2026-10-04)
 - **Built**: a second venue judged by a laboratory measurement instead of a simulation.
   `data/protein/make_claims.py` fetches the Track 3 stability table (28,165 measured 9-mers,

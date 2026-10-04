@@ -90,6 +90,8 @@ uv run python -m poc.hf_data push
 
 Push creates a private dataset unless `--public` is supplied and uploads only allow-listed
 live records. `--dry-run` lists files and sizes without network calls.
+Push replaces the dataset's allow-listed live data with yours; older versions stay in the
+dataset's commit history.
 
 ## How the simulation works
 

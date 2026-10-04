@@ -205,7 +205,7 @@ function setMode(m) {
 function costNote() {
   const ec = INFO.experiment_costs || {};
   const parts = Object.entries(ec).map(([k, v]) => `${v} ${k.replace("per_", "per ").replace(/_/g, " ")}`).join(", ");
-  $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}; failed public-record data cost ${INFO.ledger_read_fee} to read.` +
+  $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}; failed public-record data cost ${INFO.ledger_read_fee} to read. Measurements are noisy: positions ±${INFO.noise_std}, velocities ±${INFO.velocity_noise_std} (1σ). Repeating an experiment gives a fresh reading at full price.` +
     ` Up to ${INFO.max_rounds} rounds.` +
     (MODE === "live" ? ` Real models play up to ${INFO.live.max_rounds} rounds; worst-case API cost for one run with this model: $${usd((INFO.live.projected_usd_per_run || {})[$("#model").value])}.` : "") +
     (INFO.live.cap_note ? ` ${INFO.live.cap_note}` : "");

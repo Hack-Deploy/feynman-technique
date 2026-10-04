@@ -71,43 +71,6 @@ This is textbook immunology, but nobody on the team checked it against a source.
 an immunologist at hand, a two-minute read of this page is worth it, particularly for anything
 stated as fact rather than as our own design choice.
 
-## Explaining it to the team in two minutes
-
-Say it in this order. Each paragraph is one breath.
-
-> Our physics worlds prove the market works when we already know the answer. This is the same
-> market, but the answer is a measurement somebody made in a lab.
-
-> Every cell shreds the proteins inside it and displays the fragments on its surface, held in
-> a groove by a protein called HLA. T cells walk past and read those fragments. If one looks
-> wrong, from a virus or a tumour, the T cell kills the cell.
-
-> The fragment does not stay in the groove forever. Half-life is how long until half of them
-> have fallen out. That matters because a T cell has to actually turn up and look. Fall out in
-> two minutes and nobody sees you. Stay for hours and you get seen. So predicting that number
-> is a real job people do, for cancer vaccines.
-
-> We took 28,165 of those measurements, hid six, and asked an AI to predict them. It pays per
-> round and per measurement it looks up for other peptides on the same receptor. The one it is
-> being judged on is deleted before it starts, so it cannot be looked up, only predicted.
-
-> Three are true and three are false. Two are rigged: on that receptor almost everything goes
-> one way, and the hidden answer goes the other. The free solver scores four out of six and
-> loses money on both of those. On one it said it was 92% sure, answered no, and the real
-> measurement was 108 hours.
-
-> So the point is not that it is accurate. The point is we find out whether it knows when it
-> is out of its depth, because being wrong costs it money.
-
-If someone asks how to run it:
-
-```bash
-git pull && uv run python data/protein/make_claims.py && uv run python app.py
-```
-
-The 6.6 MB table is not committed; that middle command fetches it. Then open tab 04 · Protein,
-pick DAYRRIHSL, and press start.
-
 ## Data
 
 Track 3 peptide-HLA stability set: 28,165 measured 9-mers, each a peptide, an allele and a

@@ -98,6 +98,8 @@ def info() -> dict:
         ],
         "ledger_read_fee": cfg.ledger_read_fee,
         "round_fee": cfg.round_fee,
+        "noise_std": cfg.noise_std,
+        "velocity_noise_std": cfg.velocity_noise_std,
         "experiment_costs": dict(cfg.experiment_costs),
         "max_rounds": cfg.max_rounds,
         "budget": cfg.budget,
