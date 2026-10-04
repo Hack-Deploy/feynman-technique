@@ -23,6 +23,7 @@ from pathlib import Path
 
 import animations
 import live_market
+import protein_market
 import real_data
 
 ROOT = Path(__file__).resolve().parent
@@ -49,6 +50,7 @@ PAGE_ROUTES = {
     "/simulation": "simulation.html",
     "/live": "live.html",
     "/experiments": "experiments.html",
+    "/protein": "protein.html",
 }
 STATIC_EXTENSIONS = {".css", ".js", ".svg", ".png", ".json"}
 
@@ -142,6 +144,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "unknown claim"}, 404)
             else:
                 self._json(animations.build(claim))
+        elif path == "/api/protein/info":
+            self._json(protein_market.info())
+        elif path == "/api/protein/dist":
+            claim_id = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("claim", [""])[0]
+            try:
+                self._json(protein_market.distribution(claim_id))
+            except KeyError:
+                self._json({"error": "unknown claim"}, 404)
+        elif path == "/api/protein/job":
+            job_id = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("id", [""])[0]
+            result = protein_market.job(job_id)
+            self._json(result if result else {"error": "not found"}, 200 if result else 404)
         elif path == "/api/live/info":
             self._json(live_market.info())
         elif path == "/api/live/runs":
@@ -207,6 +221,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"ok": False, "error": f"The attempt failed: {exc}"}, 500)
             finally:
                 _BUSY.release()
+        elif path == "/api/protein/start":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length) or b"{}")
+                self._json(protein_market.start(
+                    str(body.get("claim", "")),
+                    str(body.get("model", protein_market.MODEL_DEFAULT)),
+                    bool(body.get("scripted", True))))
+            except KeyError:
+                self._json({"error": "unknown claim"}, 404)
+            except (ValueError, TypeError) as exc:
+                self._json({"error": str(exc)[:200]}, 400)
         elif path == "/api/live/start":
             length = int(self.headers.get("Content-Length", 0))
             try:

@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · Protein</title>
+<link rel="stylesheet" href="/web/style.css">
+<style>
+  .hero { padding-top: 56px; }
+  .status { padding: 14px 16px; border-radius: 10px; margin-top: 20px; font-size: 15px; }
+  .status.on { background: var(--green-soft); }
+  .status.off { background: var(--amber-soft); }
+  .claims { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 15px; }
+  .claims th { text-align: left; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); border-bottom: 1.5px solid var(--ink); padding: 8px 10px 8px 0; }
+  .claims td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .claims tr.sel td { background: var(--soft); }
+  .claims tr.pick { cursor: pointer; }
+  .claims tr.pick:hover td { background: var(--faint); }
+  .pep { font: 600 15px var(--mono); }
+  .pill { display: inline-block; font: 700 11px var(--narrow); letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; background: var(--faint); color: var(--body); }
+  .pill.hard { background: var(--rust-soft); color: var(--rust); }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 22px; }
+  .mode { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .mode button { font: 600 14px var(--sans); padding: 8px 14px; border: 0; background: #fff; cursor: pointer; }
+  .mode button.on { background: var(--navy); color: #fff; }
+  .mode button:disabled { color: #aaa; cursor: not-allowed; }
+  .board { display: grid; grid-template-columns: 1.25fr 1fr; gap: 28px; margin-top: 24px; align-items: start; }
+  @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
+  .rd { border-left: 4px solid var(--line); padding: 10px 0 10px 16px; margin-bottom: 10px; }
+  .rd.lookup { border-left-color: var(--navy); }
+  .rd.verdict { border-left-color: var(--green); }
+  .rd.walk_away, .rd.no_action, .rd.lookup_refused { border-left-color: var(--rust); }
+  .rd .t { display: flex; gap: 12px; flex-wrap: wrap; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .rd p { font-size: 15px; margin-top: 4px; color: var(--body); }
+  .data { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .m { font: 600 12px var(--mono); padding: 2px 7px; border-radius: 4px; background: var(--faint); }
+  .m.hi { background: var(--green-soft); color: var(--green); }
+  .m.lo { background: var(--rust-soft); color: var(--rust); }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .kv div { background: var(--faint); border-radius: 8px; padding: 10px 12px; }
+  .kv span { display: block; font: 700 11px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .kv b { font: 700 22px var(--narrow); }
+  .result { margin-top: 14px; padding: 16px 18px; border-radius: 10px; }
+  .result.win { background: var(--green-soft); }
+  .result.lose { background: var(--rust-soft); }
+  .result.none { background: var(--faint); }
+  .result b { display: block; font: 700 21px var(--narrow); margin-bottom: 4px; }
+  .wait { color: var(--muted); font-size: 15px; }
+  .pulse { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--rust); animation: p 1s infinite alternate; margin-right: 6px; }
+  @keyframes p { from { opacity: .25 } to { opacity: 1 } }
+  .note { font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .bio { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 20px; }
+  @media (max-width: 900px) { .bio { grid-template-columns: 1fr; } }
+  .bio h3 { font-size: 17px; margin-bottom: 8px; }
+  .bio svg { width: 100%; height: auto; display: block; background: var(--faint); border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <a class="brand" href="/">Discovery Market</a>
+  <nav class="tabs">
+    <a href="/"><span>01</span>Vision</a>
+    <a href="/simulation"><span>02</span>How it works</a>
+    <a href="/live"><span>03</span>Live market</a>
+    <a href="/experiments"><span>04</span>Experiments</a>
+    <a class="on" href="/protein"><span>05</span>Protein</a>
+  </nav>
+</div></div>
+
+<main>
+<section class="hero">
+  <span class="label">Real lab data</span>
+  <h1>Can an AI predict a measurement it hasn't seen?</h1>
+  <p class="lead">Somebody in a lab measured how long each of 28,165 peptides stays attached to an immune receptor. We hid six of those measurements. An AI has to predict them, and it pays for every piece of evidence it looks at. Hiding the answer is the normal way to test a prediction. The change here is that being wrong costs it money.</p>
+
+  <div class="status" id="status"></div>
+
+  <h2 style="margin-top:40px">The six questions</h2>
+  <p>Each one asks whether a peptide stays attached for more than an hour. Three are yes and three are no, so guessing the same answer every time gets you half of them. On the two marked <span class="pill hard">hard</span>, most peptides on that receptor go the other way, so anything copying the usual pattern gets it wrong.</p>
+  <table class="claims"><thead>
+    <tr><th>Peptide</th><th>Allele</th><th>Claim</th><th></th></tr>
+  </thead><tbody id="claimRows"></tbody></table>
+
+  <div class="controls">
+    <div class="mode" id="mode">
+      <button data-s="1" class="on">Scripted demo · free</button>
+      <button data-s="0" id="btnReal">Real model · paid</button>
+    </div>
+    <button class="btn" id="btnStart">Start the market</button>
+    <span class="wait" id="pick"></span>
+  </div>
+  <p class="note" id="prices"></p>
+</section>
+
+<section>
+  <span class="label">The evidence</span>
+  <h2>How long does it stay in the groove?</h2>
+  <p>An HLA molecule holds a short peptide in a groove on its surface and shows it to the immune system. The peptide does not stay forever. Half-life is how long until half of the copies have fallen out. That is the number being predicted here.</p>
+
+  <div class="bio">
+    <div>
+      <h3>The peptide under test</h3>
+      <svg id="groove" viewBox="0 0 520 220" role="img" aria-label="Peptide held in the HLA binding groove"></svg>
+      <p class="note">Positions 2 and 9 sit deepest in the groove and do most of the holding. The rest face outward, toward the immune cell.</p>
+    </div>
+    <div>
+      <h3>Falling out over time</h3>
+      <svg id="decay" viewBox="0 0 520 220" role="img" aria-label="Fraction of peptide still bound over time"></svg>
+      <p class="note">Each grey line is a peptide the AI paid to measure. The red line is the one it is being judged on, drawn only once the answer is revealed.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="label">Round by round</span>
+  <h2>How it went.</h2>
+  <div class="board">
+    <div id="rounds"><p class="wait">Pick a question above and press start.</p></div>
+    <div>
+      <div class="kv">
+        <div><span>Round</span><b id="kRound">–</b></div>
+        <div><span>Spent</span><b id="kSpent">–</b></div>
+        <div><span>Measurements bought</span><b id="kBought">–</b></div>
+        <div><span>Stated chance</span><b id="kConf">–</b></div>
+      </div>
+      <div id="result"></div>
+      <p class="note">Green means the measured half-life was over an hour, red means under. The peptide being tested never shows up here.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const st = { info: null, claim: null, scripted: true, poll: null, dist: null };
+
+function renderClaims() {
+  $("claimRows").innerHTML = st.info.claims.map(c => `
+    <tr class="pick ${c.id === st.claim ? "sel" : ""}" data-id="${esc(c.id)}">
+      <td class="pep">${esc(c.peptide)}</td>
+      <td>${esc(c.allele)}</td>
+      <td>stays attached over an hour?</td>
+      <td><span class="pill ${c.difficulty === "hard" ? "hard" : ""}">${esc(c.difficulty)}</span></td>
+    </tr>`).join("");
+  $("claimRows").querySelectorAll("tr").forEach(tr => tr.onclick = () => {
+    st.claim = tr.dataset.id; renderClaims(); loadDist();
+    $("result").innerHTML = ""; $("rounds").innerHTML = '<p class="wait">Pick a question above and press start.</p>';
+  });
+  const c = st.info.claims.find(x => x.id === st.claim);
+  $("pick").textContent = c ? `${c.peptide} on ${c.allele}` : "";
+}
+
+function chip(p, v) {
+  return `<span class="m ${v > 1 ? "hi" : "lo"}">${esc(p)} ${v}h</span>`;
+}
+
+function renderRounds(rounds, running) {
+  if (!rounds.length) { $("rounds").innerHTML = `<p class="wait"><span class="pulse"></span>Starting…</p>`; return; }
+  $("rounds").innerHTML = rounds.map(r => {
+    const bought = r.bought ? Object.entries(r.bought) : [];
+    const conf = r.confidence != null ? `stated chance ${Math.round(r.confidence * 100)}%` : "";
+    return `<div class="rd ${esc(r.action || "")}">
+      <div class="t"><span>Round ${r.round}</span><span>${esc((r.action || "").replace(/_/g, " "))}</span><span>cost ${r.cost}</span><span>${conf}</span></div>
+      <p>${esc(r.assessment || r.reason || r.note || "")}</p>
+      ${bought.length ? `<div class="data">${bought.map(([p, v]) => chip(p, v)).join("")}</div>` : ""}
+      ${r.verdict ? `<p><b>Verdict: ${esc(r.verdict)}</b></p>` : ""}
+    </div>`;
+  }).join("") + (running ? `<p class="wait"><span class="pulse"></span>Thinking…</p>` : "");
+  const last = rounds[rounds.length - 1];
+  const bought = rounds.reduce((n, r) => n + Object.keys(r.bought || {}).length, 0);
+  $("kRound").textContent = last.round;
+  $("kSpent").textContent = (100 - last.balance).toFixed(0);
+  $("kBought").textContent = bought;
+  $("kConf").textContent = last.confidence != null ? Math.round(last.confidence * 100) + "%" : "–";
+}
+
+function renderResult(res) {
+  if (!res) { $("result").innerHTML = ""; return; }
+  const cls = res.correct === true ? "win" : res.correct === false ? "lose" : "none";
+  const head = res.correct === true ? `Right. It wins ${res.prize} credits.`
+    : res.correct === false ? "Wrong. It loses what it spent."
+    : "It never gave an answer, so there is no payout.";
+  $("result").innerHTML = `<div class="result ${cls}"><b>${head}</b>
+    ${res.verdict ? `It said “${esc(res.verdict)}”. ` : ""}
+    The hidden measurement was <b style="display:inline">${res.measured_thalf_hours} hours</b>, so the real answer is “${esc(res.answer)}”.
+    It spent ${res.spent} credits and ended ${res.net > 0 ? "up" : "down"} ${Math.abs(res.net)}.</div>`;
+}
+
+// Amino-acid colouring, the usual biochemistry grouping.
+const AA = {
+  A:"hyd",V:"hyd",L:"hyd",I:"hyd",M:"hyd",F:"hyd",W:"hyd",P:"hyd",G:"hyd",
+  S:"pol",T:"pol",C:"pol",Y:"pol",N:"pol",Q:"pol",
+  D:"neg",E:"neg", K:"pos",R:"pos",H:"pos",
+};
+const AA_FILL = { hyd:"#E8DCC8", pol:"#CFE0E8", neg:"#F2CFC6", pos:"#D6D2EA", "":"#E4E4E0" };
+const AA_EDGE = { hyd:"#9A7F4E", pol:"#5B8A9E", neg:"#A23B1E", pos:"#5B52A3", "":"#9A9A96" };
+
+function drawGroove() {
+  const d = st.dist; if (!d) return;
+  const pep = d.claim.peptide, anchors = new Set(d.anchors || []);
+  const W = 520, cx = W / 2, n = pep.length, gap = 44, x0 = cx - (n - 1) * gap / 2, y = 112;
+  let g = "";
+  // the two alpha helices that form the walls of the groove, seen from the side
+  g += `<path d="M34 72 Q${cx} 42 486 72" fill="none" stroke="#B9C6D8" stroke-width="22" stroke-linecap="round"/>`;
+  g += `<path d="M34 158 Q${cx} 188 486 158" fill="none" stroke="#B9C6D8" stroke-width="22" stroke-linecap="round"/>`;
+  g += `<text x="26" y="62" font-size="12" fill="#6B6B67">HLA groove</text>`;
+  // the peptide backbone
+  g += `<path d="M${x0} ${y} L${x0 + (n - 1) * gap} ${y}" stroke="#6B6B67" stroke-width="3"/>`;
+  for (let i = 0; i < n; i++) {
+    const c = pep[i], cls = AA[c] || "", x = x0 + i * gap, anchor = anchors.has(i + 1);
+    const r = anchor ? 19 : 15;
+    if (anchor) g += `<path d="M${x} ${y} L${x} ${i + 1 === 2 ? y + 34 : y + 34}" stroke="#9A7F4E" stroke-width="3" stroke-dasharray="3 3"/>`;
+    g += `<circle cx="${x}" cy="${y}" r="${r}" fill="${AA_FILL[cls]}" stroke="${AA_EDGE[cls]}" stroke-width="${anchor ? 3 : 1.5}"/>`;
+    g += `<text x="${x}" y="${y + 5}" font-size="${anchor ? 17 : 15}" font-weight="700" text-anchor="middle" fill="#161616">${c}</text>`;
+    g += `<text x="${x}" y="${y + 46}" font-size="11" text-anchor="middle" fill="${anchor ? "#9A7F4E" : "#9A9A96"}">${anchor ? "anchor" : "P" + (i + 1)}</text>`;
+  }
+  g += `<text x="${cx}" y="26" font-size="14" font-weight="700" text-anchor="middle" fill="#161616">${esc(pep)}</text>`;
+  g += `<text x="${cx}" y="206" font-size="12" text-anchor="middle" fill="#6B6B67">on ${esc(d.claim.allele)}</text>`;
+  $("groove").innerHTML = g;
+}
+
+function drawDecay(bought, answer) {
+  const d = st.dist; if (!d) return;
+  const W = 520, H = 220, L = 54, R = 16, TOP = 18, BOT = 42, h = H - TOP - BOT, w = W - L - R;
+  const TMAX = 6;  // hours on the x axis
+  const X = t => L + t / TMAX * w, Y = f => TOP + (1 - f) * h;
+  const curve = half => {
+    const k = Math.LN2 / Math.max(half, 0.01);
+    return Array.from({ length: 61 }, (_, i) => {
+      const t = i / 60 * TMAX;
+      return `${X(t).toFixed(1)},${Y(Math.exp(-k * t)).toFixed(1)}`;
+    }).join(" ");
+  };
+  let g = "";
+  for (const f of [0, 0.5, 1]) {
+    g += `<line x1="${L}" y1="${Y(f)}" x2="${W - R}" y2="${Y(f)}" stroke="${f === 0.5 ? "#B9B9B4" : "#DADAD6"}" ${f === 0.5 ? 'stroke-dasharray="4 4"' : ""}/>`;
+    g += `<text x="${L - 8}" y="${Y(f) + 4}" font-size="11" text-anchor="end" fill="#6B6B67">${f * 100}%</text>`;
+  }
+  for (const t of [0, 1, 2, 4, 6]) {
+    g += `<text x="${X(t)}" y="${H - 22}" font-size="11" text-anchor="middle" fill="#6B6B67">${t}</text>`;
+  }
+  g += `<text x="${L + w / 2}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#161616">hours</text>`;
+  g += `<text x="${L - 30}" y="${TOP + h / 2}" font-size="11" text-anchor="middle" fill="#6B6B67" transform="rotate(-90 ${L - 30} ${TOP + h / 2})">still bound</text>`;
+  // the one-hour mark the question turns on
+  g += `<line x1="${X(1)}" y1="${TOP}" x2="${X(1)}" y2="${TOP + h}" stroke="#161616" stroke-width="2" stroke-dasharray="5 4"/>`;
+  g += `<text x="${X(1) + 6}" y="${TOP + 12}" font-size="12" font-weight="700" fill="#161616">one hour</text>`;
+  const vals = Object.values(bought || {});
+  vals.forEach(v => { g += `<polyline points="${curve(v)}" fill="none" stroke="#1B3F8B" stroke-width="1.5" opacity="0.5"/>`; });
+  if (!vals.length) {
+    g += `<text x="${L + w / 2}" y="${TOP + h / 2}" font-size="13" text-anchor="middle" fill="#9A9A96">no measurements bought yet</text>`;
+  }
+  if (answer != null) {
+    g += `<polyline points="${curve(answer)}" fill="none" stroke="#A23B1E" stroke-width="3.5"/>`;
+    const yAt1 = Y(Math.exp(-Math.LN2 / Math.max(answer, 0.01)));
+    g += `<circle cx="${X(1)}" cy="${yAt1}" r="5" fill="#A23B1E"/>`;
+    const low = yAt1 < TOP + 46;  // the curve hugs the top: drop the label clear of "one hour"
+    g += `<text x="${X(1) + 12}" y="${low ? TOP + 56 : yAt1 - 10}" font-size="13" font-weight="700" fill="#A23B1E">the answer: ${answer} h</text>`;
+  }
+  $("decay").innerHTML = g;
+}
+
+function drawBio(bought, answer) { drawGroove(); drawDecay(bought, answer); }
+
+async function loadDist() {
+  st.dist = await (await fetch(`/api/protein/dist?claim=${encodeURIComponent(st.claim)}`)).json();
+  drawBio({}, null);
+}
+
+async function startRun() {
+  if (!st.claim) { $("pick").textContent = "Pick a claim first."; return; }
+  clearInterval(st.poll);
+  $("btnStart").disabled = true; $("result").innerHTML = "";
+  renderRounds([], true);
+  const r = await (await fetch("/api/protein/start", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ claim: st.claim, scripted: st.scripted, model: st.info.model }),
+  })).json();
+  if (r.error) { $("rounds").innerHTML = `<p class="wait">${esc(r.error)}</p>`; $("btnStart").disabled = false; return; }
+  st.poll = setInterval(async () => {
+    const j = await (await fetch(`/api/protein/job?id=${encodeURIComponent(r.job)}`)).json();
+    if (j.error) { clearInterval(st.poll); $("btnStart").disabled = false; return; }
+    renderRounds(j.rounds || [], j.state === "running");
+    const bought = Object.assign({}, ...(j.rounds || []).map(r => r.bought || {}));
+    drawBio(bought, j.state === "done" && j.result ? j.result.measured_thalf_hours : null);
+    if (j.state !== "running") {
+      clearInterval(st.poll); $("btnStart").disabled = false;
+      if (j.state === "error") $("rounds").innerHTML += `<p class="wait">${esc(j.error)}</p>`;
+      else renderResult(j.result);
+    }
+  }, 500);
+}
+
+(async function init() {
+  st.info = await (await fetch("/api/protein/info")).json();
+  st.claim = st.info.claims[0].id;
+  renderClaims();
+  const p = st.info.prices;
+  $("prices").textContent = `It starts with ${p.budget} credits. Each round costs ${p.round_fee}, each measurement it looks up costs ${p.per_lookup}, and it gets at most ${p.max_rounds} rounds. A right answer pays ${p.prize}.`;
+  $("status").className = "status " + (st.info.live ? "on" : "off");
+  $("status").innerHTML = st.info.live
+    ? `Real models are on. “Real model · paid” runs ${esc(st.info.model)} and spends credits.`
+    : `Real models are off, so a simple built-in solver runs instead, for free. It buys a batch of measurements and then goes with whatever most of them say. That shortcut is exactly what the two hard questions are there to catch. To run a real model, set <code>ANTHROPIC_API_KEY</code>, <code>ENABLE_LIVE=1</code> and <code>DM_MAX_USD</code>, then restart the app.`;
+  $("btnReal").disabled = !st.info.live;
+  $("mode").onclick = e => {
+    const b = e.target.closest("button"); if (!b || b.disabled) return;
+    st.scripted = b.dataset.s === "1";
+    $("mode").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  };
+  $("btnStart").onclick = startRun;
+  await loadDist();
+})();
+</script>
+</body>
+</html>
