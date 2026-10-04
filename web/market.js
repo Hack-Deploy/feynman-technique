@@ -97,6 +97,59 @@
       node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
     });
   }
+  // Two leaderboards of the same runs, joined agent by agent: where each one ranks if every claim
+  // is paid (left) and if only confirmed answers are paid (right).
+  const shift = r => r.market_rank - r.naive_rank;  // > 0: falls when only confirmed answers pay
+  // Coloured only when the agent's own record explains the move; otherwise it moved because others did.
+  const trend = r => shift(r) >= 2 && r.false_claims ? 'down' : shift(r) <= -2 && r.confirmed ? 'up' : 'same';
+  function slope(el, rows, { fresh = new Set(), onPick } = {}) {
+    if (!rows.length) { el.innerHTML = '<div class="card empty">No agents on this board yet. Be the first to submit one.</div>'; return; }
+    const n = rows.length, RH = 52;
+    const left = order(rows, 'naive'), right = order(rows, 'market');
+    const y = i => i * RH + RH / 2;
+    const tag = r => `<span class="cf">${r.confirmed}/${r.runs} confirmed</span>${r.false_claims ? `<span class="fc"><span class="dot"> · </span><span class="neg">${r.false_claims} false</span></span>` : ''}`;
+    const cell = (r, side) => {
+      const rank = side === 'l' ? r.naive_rank : r.market_rank, v = side === 'l' ? r.naive_pct : r.market_pct;
+      return `<div class="sl-row ${trend(r)} ${fresh.has(r.key) ? 'new' : ''}" data-key="${esc(r.key)}" tabindex="0" role="button" aria-label="${esc(r.name)}: #${r.naive_rank} if every claim paid, #${r.market_rank} if only confirmed answers paid">
+        <span class="sl-rk">${rank}</span>${avatar(r, 'sm')}<span class="sl-nm"><b>${esc(r.name)}</b><small>${fresh.has(r.key) ? '<span class="badge new">New</span> · ' : ''}${tag(r)}</small></span><span class="sl-pct ${v >= 0 ? 'pos' : 'neg'}">${pct(v)}</span></div>`;
+    };
+    const lines = left.map(r => {
+      const a = y(left.indexOf(r)), b = y(right.indexOf(r)), w = trend(r) === 'same' ? 2 : Math.min(6, 2 + Math.abs(shift(r)) * 0.45);
+      return `<path class="${trend(r)}" data-key="${esc(r.key)}" d="M0 ${a} C50 ${a} 50 ${b} 100 ${b}" stroke-width="${w}" pathLength="1"/>`;
+    }).join('');
+    el.innerHTML = `<div class="card slope">
+      <div class="sl-head"><div><b>If every claim paid</b><small>How a leaderboard that scores claims ranks them</small></div><span></span><div><b>Only confirmed answers paid</b><small>This market: the checker has to confirm it</small></div></div>
+      <div class="sl-body" style="--rh:${RH}px">
+        <div class="sl-col l">${left.map(r => cell(r, 'l')).join('')}</div>
+        <svg class="sl-lines" viewBox="0 0 100 ${n * RH}" preserveAspectRatio="none" style="height:${n * RH}px" aria-hidden="true">${lines}</svg>
+        <div class="sl-col r">${right.map(r => cell(r, 'r')).join('')}</div>
+      </div>
+      <div class="sl-key"><span><i class="down"></i>Drops: its claims were wrong</span><span><i class="up"></i>Rises: its answers held up</span><span><i class="same"></i>Moves only because others moved</span></div>
+    </div>`;
+    const box = el.querySelector('.slope');
+    const mark = key => {
+      box.classList.toggle('hl', !!key);
+      box.querySelectorAll('[data-key]').forEach(x => x.classList.toggle('on', x.dataset.key === key));
+    };
+    box.querySelectorAll('.sl-row').forEach(node => {
+      const pick = () => onPick && onPick(rows.find(r => r.key === node.dataset.key));
+      node.addEventListener('mouseenter', () => mark(node.dataset.key));
+      node.addEventListener('focus', () => mark(node.dataset.key));
+      node.addEventListener('mouseleave', () => mark(null));
+      node.addEventListener('blur', () => mark(null));
+      node.addEventListener('click', pick);
+      node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+  }
+  // One sentence for the agent that falls furthest and the one that rises furthest.
+  function headline(rows) {
+    const byShift = [...rows].sort((a, b) => shift(b) - shift(a));
+    const f = byShift[0], u = byShift.filter(r => trend(r) === 'up').at(-1);
+    if (!f || trend(f) !== 'down') return '';
+    const fell = `<b>${esc(f.name)}</b> is <b>#${f.naive_rank}</b> if every claim pays, and <b class="neg">#${f.market_rank}</b> when only confirmed answers do${f.false_claims ? `: the checker rejected ${f.false_claims} of its claims` : ''}.`;
+    const rose = u ? ` <b>${esc(u.name)}</b> climbs from #${u.naive_rank} to <b class="pos">#${u.market_rank}</b>.` : '';
+    return `<p class="headline">${fell}${rose}</p>`;
+  }
   function faller(rows, rule) {
     const f = [...rows].sort((a, b) => (b.market_rank - b.naive_rank) - (a.market_rank - a.naive_rank))[0];
     if (!f || f.market_rank - f.naive_rank < 2) return '';
@@ -228,5 +281,5 @@
     document.addEventListener('keydown', e => { if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); input.focus(); } });
   }
 
-  window.DM = { world, esc, n0, cr, pct, avatar, icon, gauge, split, board, faller, activity, openDrawer, runDetail, toast, submit, venue, search, KIND, OUTCOME };
+  window.DM = { world, esc, n0, cr, pct, avatar, icon, gauge, split, board, slope, headline, faller, activity, openDrawer, runDetail, toast, submit, venue, search, KIND, OUTCOME };
 })();

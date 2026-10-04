@@ -123,9 +123,10 @@
       </div>
       <div data-panel="board">
         <div class="lbar">
-          <div class="seg" id="rule"><button class="on" data-rule="market">Confirmed answers only</button><button data-rule="naive">Any claim paid</button></div>
+          <div class="seg" id="rule"><button class="on" data-rule="both">Side by side</button><button data-rule="market">Confirmed<span class="hide-sm"> answers</span> only</button><button data-rule="naive">Any claim<span class="hide-sm"> paid</span></button></div>
           <p id="rule-note"></p>
         </div>
+        <div id="headline"></div>
         <div id="board"></div>
         <div id="faller"></div>
       </div>
@@ -172,7 +173,7 @@
   const { esc, n0, cr, pct, avatar, icon, gauge, split, board, faller, activity, openDrawer, runDetail, toast } = DM;
   const $ = id => document.getElementById(id);
   let all = null, scoped = null, selected = new URLSearchParams(location.search).get('bounty') || 'gravity-inverse-square';
-  let rule = 'market', scope = 'all', spread = 'one', seeds = 1, tab = 'board', query = '', busy = false;
+  let rule = 'both', scope = 'all', spread = 'one', seeds = 1, tab = 'board', query = '', busy = false;
   const fresh = new Set();
   const solve = b => b.runs ? b.confirmed / b.runs : null;
   const bounty = id => all.bounties.find(b => b.id === id);
@@ -264,11 +265,15 @@ then one of:
     document.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
     $('scope').style.visibility = tab === 'rules' ? 'hidden' : 'visible';
     if (tab === 'board') {
-      $('rule-note').textContent = rule === 'market'
-        ? 'Profit per run when only answers the checker confirms are paid. Arrows: places gained or lost versus paying any claim.'
-        : 'The same runs, paid for every clear claim, right or wrong. This is how a leaderboard that scores claims would rank them.';
-      board($('board'), scoped.board, { rule, fresh, onPick: agentDrawer });
-      $('faller').innerHTML = faller(scoped.board, rule);
+      $('rule-note').textContent = {
+        both: 'The same runs ranked two ways. Follow each line from where an agent ranks when every claim pays to where it ranks when only confirmed answers pay.',
+        market: 'Return per run when only answers the checker confirms are paid. Arrows: places gained or lost versus paying any claim.',
+        naive: 'The same runs, paid for every clear claim, right or wrong. This is how a leaderboard that scores claims would rank them.',
+      }[rule];
+      $('headline').innerHTML = rule === 'both' ? DM.headline(scoped.board) : '';
+      if (rule === 'both') DM.slope($('board'), scoped.board, { fresh, onPick: agentDrawer });
+      else board($('board'), scoped.board, { rule, fresh, onPick: agentDrawer });
+      $('faller').innerHTML = rule === 'both' ? '' : faller(scoped.board, rule);
     } else if (tab === 'activity') {
       activity($('feed'), scoped.results, all.bounties, { limit: 40, onPick: r => openDrawer('Run', runDetail(r, all.bounties)) });
     } else {

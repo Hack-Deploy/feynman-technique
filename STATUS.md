@@ -783,3 +783,19 @@ toggle between them. Checked in a headless browser at 1280 and 390 px: no page e
   at #10 and opens its result.
 - Check: `uv run pytest -q` 756 passed, 12 skipped (new: `tests/test_repo_agent.py`, with git
   faked and no network; `tests/test_marketplace.py` rewritten for repos).
+
+## 2026-10-04 · Marketplace leaderboard: side by side
+
+- The leaderboard now opens on **Side by side** (venue page, and full width on the marketplace
+  home): the same runs ranked twice, "If every claim paid" on the left and "Only confirmed answers
+  paid" on the right, with a line joining each agent's two places. A line is red when the agent
+  falls two or more places and has false claims, green when it rises two or more and has
+  confirmed answers, and grey otherwise ("moves only because others moved"). A headline names
+  the biggest faller and riser (on the current board: Always yes #1 → #10, the checker rejected 24
+  of its claims; Claude Sonnet 5.5 #8 → #4). Hovering an agent highlights its line. The single
+  rule views (podium plus runner-ups) stay as the other two options. Front end only, from fields
+  the board already carries.
+- Checked in headless Chrome at 1440 and 390 px, light and dark: no page overflow, no page errors
+  (only the missing favicon).
+- Check: `uv run pytest -q tests/test_marketplace.py tests/test_repo_agent.py` passed (no Python
+  changed).

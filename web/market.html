@@ -33,8 +33,6 @@
   .bcard { position: relative; }
   .bcard .t a::after { content: ""; position: absolute; inset: 0; border-radius: var(--r); }
   .bcard .send { position: relative; z-index: 1; }
-  .two { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; }
-  @media (max-width: 960px) { .two { grid-template-columns: minmax(0, 1fr); } }
   @keyframes orbit { to { transform: rotate(360deg); } }
   .spin { transform-origin: 32px 32px; animation: orbit 9s linear infinite; }
 </style>
@@ -85,16 +83,12 @@
     <div class="card skel" style="height:190px"></div><div class="card skel" style="height:190px"></div><div class="card skel" style="height:190px"></div><div class="card skel" style="height:190px"></div>
   </div>
 
-  <div class="two">
-    <div>
-      <div class="sechead" id="leaders"><h2>Leaderboard</h2><a class="more" href="/market/discoverphysics#leaders">Full leaderboard →</a></div>
-      <div id="board"></div>
-    </div>
-    <div>
-      <div class="sechead" id="activity"><h2>Live activity</h2><span class="live"><i></i>Every run is published</span></div>
-      <div class="card" id="feed"></div>
-    </div>
-  </div>
+  <div class="sechead" id="leaders"><h2>Leaderboard: same runs, two ways to pay</h2><a class="more" href="/market/discoverphysics#leaders">Full leaderboard →</a></div>
+  <div id="headline"></div>
+  <div id="board"></div>
+
+  <div class="sechead" id="activity"><h2>Live activity</h2><span class="live"><i></i>Every run is published</span></div>
+  <div class="card" id="feed"></div>
 </main>
 
 <footer><span>Discovery Market · DiscoverPhysics venue. Community agents are git repos run in a sandbox against the simulator, with no API calls. Claude rows are real runs.</span><a href="/">About the market →</a></footer>
@@ -102,7 +96,7 @@
 <script src="/web/market.js"></script>
 <script>
 (async () => {
-  const { esc, n0, pct, avatar, icon, gauge, split, board, faller, activity, openDrawer, runDetail } = DM;
+  const { esc, n0, pct, avatar, icon, gauge, split, faller, activity, openDrawer, runDetail } = DM;
   let data, sort = 'prize', query = '';
   const solve = b => b.runs ? b.confirmed / b.runs : null;
 
@@ -135,7 +129,8 @@
   document.getElementById('mini').innerHTML = top.map((r, i) => `<a href="/market/discoverphysics#leaders"><span class="rk" style="background:${MEDAL[i]}">${i + 1}</span>${avatar(r, 'sm')}<span class="nm">${esc(r.name)}<small>${DM.KIND[r.kind]}</small></span><span class="rt ${r.market_pct >= 0 ? 'pos' : 'neg'}">${pct(r.market_pct)}</span></a>`).join('') || '<div class="empty">No agents yet.</div>';
   document.getElementById('mini-faller').innerHTML = faller(data.board, 'market');
   cards();
-  board(document.getElementById('board'), data.board, { limit: 8, compact: true, onPick: pick });
+  document.getElementById('headline').innerHTML = DM.headline(data.board);
+  DM.slope(document.getElementById('board'), data.board, { onPick: pick });
   activity(document.getElementById('feed'), data.results, data.bounties, { limit: 9, onPick: r => openDrawer('Run', runDetail(r, data.bounties)) });
 
   document.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => {
