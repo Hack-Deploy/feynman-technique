@@ -612,3 +612,17 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   is $50.
 - Focused suite: 135 passed. Full suite: `uv run pytest -q` — 724 passed, 3 skipped,
   34 warnings. No paid API or Hugging Face calls were made; vendor files were untouched.
+
+## Noisy velocity observations and repeatable experiments (2026-10-04)
+
+- Added attempt-seeded Gaussian noise (σ = 0.05) to observed velocities alongside the
+  vendor's position noise (σ = 0.075), making velocity-derived findings account for
+  measurement uncertainty.
+- The prompt, live info, UI, and docs disclose both noise levels and that identical
+  experiments can be repeated for fresh independent readings, at full price each time.
+- Regenerated the scripted fallback offline: 8 verdicts / 3 passes / 50 credits profit
+  became 3 verdicts / 2 passes / 119 credits profit. Only its JSONL and summary changed;
+  no spend ledger or recorded-run cache was created or modified.
+- Focused suite: `uv run pytest -q tests/test_poc.py tests/test_live_market.py
+  tests/test_rerun_all.py tests/test_live_spend.py` — 92 passed. No paid calls or vendor
+  edits.

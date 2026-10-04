@@ -124,6 +124,8 @@ clearing-prize chart, the profit-per-model chart, and "Did they know their chanc
 
 > The live market runs the same game on a harder benchmark with eleven worlds. For this
 > demo I'll use the free scripted mode, so no paid model is called.
+> Its observations include independent Gaussian noise: positions σ = 0.075 and velocities σ = 0.05.
+> Results can be inconclusive; repeating an experiment gives a fresh reading at full price.
 
 *Pick a claim — e.g. "gravity-inverse-square" — and a model. Use **Scripted demo · free** unless you've set up a key. Click **Start the market**.*
 
