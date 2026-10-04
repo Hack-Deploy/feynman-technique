@@ -243,3 +243,21 @@ def test_baselines_run_end_to_end_and_conserve(name):
         assert {"rerun"} <= {f["flag"] for f in r.verdict["ruling"]["flags"]}
     if name == "always_supported":
         assert r.extra["settlements"]["naive"]["profit"] > 0 > r.extra["settlements"]["market"]["profit"]
+
+
+@pytest.mark.slow
+def test_animation_scene_has_true_paths_and_no_nan():
+    import json
+    from poc import animate, baselines
+    from poc.attempt import run_attempt
+    from poc.bench import resolve
+
+    hyp = CFG.hypothesis("gravity-inverse-square")
+    s = run_attempt(baselines.PREFIX + "p_hacker", hyp.id, 0, [], cfg=CFG,
+                    complete=baselines.make(baselines.PREFIX + "p_hacker", CFG, hyp, 0))
+    scene = animate.scene(resolve(hyp, s, CFG), CFG)
+    json.dumps(scene, allow_nan=False)
+    assert scene["outcome"] == "false_claim" and scene["launches"]
+    first = scene["launches"][0]
+    assert first["true"] and len(first["true"]) == animate.FRAMES + 1
+    assert first["claimed"] and first["single_estimate"]

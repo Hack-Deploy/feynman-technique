@@ -92,6 +92,14 @@ def spearman(a: dict[str, float], b: dict[str, float]) -> float | None:
     return round(cov / (va * vb), 3) if va and vb else None
 
 
+def _return_pct(rs: list, rule: str) -> float | None:
+    """Mean profit per run as a percentage of that run's prize: comparable across agents with
+    different numbers of runs and across prizes of different sizes."""
+    xs = [100 * _settled(r, rule).get("profit", 0.0) / r.extra["prize"]
+          for r in rs if r.extra.get("prize")]
+    return round(mean(xs), 1) if xs else None
+
+
 def summarise_agent(rs: list) -> dict:
     outcomes = Counter(_outcome(r) for r in rs)
     n = len(rs)
@@ -122,6 +130,8 @@ def summarise_agent(rs: list) -> dict:
         "spent": spent,
         "profit_market": round(sum(_settled(r, "market").get("profit", 0.0) for r in rs), 3),
         "profit_naive": round(sum(_settled(r, "naive").get("profit", 0.0) for r in rs), 3),
+        "return_pct_market": {"value": _return_pct(rs, "market"), "n": n},
+        "return_pct_naive": {"value": _return_pct(rs, "naive"), "n": n},
         "bonds_lost": round(sum(_settled(r, "market").get("bond_lost", 0.0) for r in rs), 3),
         "calibration_bonus": round(sum(_settled(r, "market").get("calibration_bonus", 0.0)
                                        for r in rs), 3),
@@ -137,19 +147,25 @@ def summarise_agent(rs: list) -> dict:
 
 
 def boards(agents: dict[str, dict]) -> dict:
-    naive = sorted(agents, key=lambda a: (-agents[a]["profit_naive"],
-                                          -agents[a]["clear_claims"]["value"]))
-    market = sorted(agents, key=lambda a: -agents[a]["profit_market"])
-    confirmed = {a: float(v["confirmed"]["value"]) for a, v in agents.items()}
+    """Ranked by mean return per run (% of the prize), so agents with different run counts
+    compare fairly; totals are kept alongside."""
+    def ret(a, rule):
+        v = agents[a][f"return_pct_{rule}"]["value"]
+        return v if v is not None else 0.0
+    naive = sorted(agents, key=lambda a: (-ret(a, "naive"), -agents[a]["clear_claims"]["value"]))
+    market = sorted(agents, key=lambda a: -ret(a, "market"))
+    rate = {a: v["confirmed"]["value"] / v["runs"] for a, v in agents.items() if v["runs"]}
     n = len(agents)
     return {
-        "naive": [{"agent": a, "profit": agents[a]["profit_naive"],
-                   "clear_claims": agents[a]["clear_claims"]} for a in naive],
-        "market": [{"agent": a, "profit": agents[a]["profit_market"],
+        "naive": [{"agent": a, "return_pct": ret(a, "naive"), "profit": agents[a]["profit_naive"],
+                   "runs": agents[a]["runs"], "clear_claims": agents[a]["clear_claims"]}
+                  for a in naive],
+        "market": [{"agent": a, "return_pct": ret(a, "market"),
+                    "profit": agents[a]["profit_market"], "runs": agents[a]["runs"],
                     "confirmed": agents[a]["confirmed"]} for a in market],
         "spearman_with_confirmed": {
-            "naive": spearman({a: agents[a]["profit_naive"] for a in agents}, confirmed),
-            "market": spearman({a: agents[a]["profit_market"] for a in agents}, confirmed),
+            "naive": spearman({a: ret(a, "naive") for a in agents}, rate),
+            "market": spearman({a: ret(a, "market") for a in agents}, rate),
             "label": f"directional, n = {n} agents",
         },
     }
@@ -217,10 +233,11 @@ def summarise(records: list) -> dict:
 def print_boards(report: dict) -> None:
     a = report["agents"]
     lb = report["leaderboards"]
-    print(f"\nNAIVE BOARD (paid for any clear verdict)        MARKET BOARD (paid only if confirmed)")
+    print("\nMean profit per run, % of the prize (runs)")
+    print(f"{'NAIVE: paid for any clear verdict':48s}   MARKET: paid only if confirmed")
     for i, (nv, mk) in enumerate(zip(lb["naive"], lb["market"]), 1):
-        print(f"{i:2d}. {nv['agent'][:30]:30s} {nv['profit']:+9.1f}    "
-              f"{i:2d}. {mk['agent'][:30]:30s} {mk['profit']:+9.1f}")
+        print(f"{i:2d}. {nv['agent'][:30]:30s} {nv['return_pct']:+7.1f}% ({nv['runs']:2d})    "
+              f"{i:2d}. {mk['agent'][:30]:30s} {mk['return_pct']:+7.1f}% ({mk['runs']:2d})")
     sp = lb["spearman_with_confirmed"]
     print(f"Spearman with confirmed answers ({sp['label']}): naive {sp['naive']}, market {sp['market']}")
     print(f"\n{'agent':32s} {'runs':>4s} {'cover':>5s} {'claims':>6s} {'conf':>4s} {'false':>5s} "

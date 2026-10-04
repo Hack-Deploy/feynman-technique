@@ -47,6 +47,7 @@ PAGE_ROUTES = {
     "/": "vision.html",
     "/simulation": "simulation.html",
     "/live": "live.html",
+    "/experiments": "experiments.html",
 }
 STATIC_EXTENSIONS = {".css", ".js", ".svg", ".png", ".json"}
 
