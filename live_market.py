@@ -110,6 +110,7 @@ def info() -> dict:
             "reasons": reasons,
             "max_usd": max_usd,
             "hard_cap_usd": settings.max_usd,
+            "cap_note": spend.cap_note(settings),
             "spent_usd": totals["committed_usd"],
             "actual_usd": totals["actual_usd"],
             "remaining_usd": (
@@ -188,11 +189,20 @@ _compact_round = live_cache.compact_round
 
 
 def _job_round_callback(job_id: str, metered: MeteredLLM | None = None):
+    seen_stop_reasons = 0
+
     def callback(entry: dict) -> None:
+        nonlocal seen_stop_reasons
         compact = live_cache.compact_round(
             entry,
             usd_so_far=metered.usd if metered is not None else None,
         )
+        if metered is None:
+            compact["cut_off"] = False
+        else:
+            new_stop_reasons = metered.stop_reasons[seen_stop_reasons:]
+            compact["cut_off"] = "max_tokens" in new_stop_reasons
+            seen_stop_reasons = len(metered.stop_reasons)
         with _LOCK:
             _JOBS[job_id]["rounds"].append(compact)
 
@@ -459,7 +469,10 @@ def recorded_run(attempt_id: str) -> dict | None:
             })
             return {
                 "run": row,
-                "rounds": entry.get("rounds", []),
+                "rounds": [
+                    {**round_entry, "cut_off": round_entry.get("cut_off", False)}
+                    for round_entry in entry.get("rounds", [])
+                ],
                 "settings": entry.get("settings", {}),
                 "source": entry.get("source"),
             }

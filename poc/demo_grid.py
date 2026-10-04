@@ -8,6 +8,7 @@ import os
 from dataclasses import replace
 from pathlib import Path
 
+from dm.store import AttemptStore
 from dm.types import AttemptRecord
 from poc import bench, config as C, fake_llm, live_cache, spend
 from poc.attempt import prompt_chars, run_attempt
@@ -15,39 +16,50 @@ from poc.llm import MeteredLLM, redact
 from poc.spend import CapReached, LiveSettings, ModelPrice, SpendLedger
 
 
-def _plan(settings: LiveSettings, cache_path: Path) -> tuple[list[dict], list[dict], C.Config]:
+def _plan(
+    settings: LiveSettings,
+    cache_path: Path,
+    order: list[tuple[str, str, int]] | None = None,
+    ignore_cached: bool = False,
+) -> tuple[list[dict], list[dict], C.Config]:
     cfg = replace(C.load(), max_rounds=settings.max_rounds)
-    entries = live_cache.load(cache_path)
+    entries = [] if ignore_cached else live_cache.load(cache_path)
     cached_keys = live_cache.done_keys(entries)
     cached_records = live_cache.records(entries)
     todo = []
     prompt_cache = {}
-    for hypothesis_id in settings.hypotheses:
+    planned = order if order is not None else [
+        (hypothesis_id, model.id, seed)
+        for hypothesis_id in settings.hypotheses
+        for model in settings.models
+        for seed in settings.seeds
+    ]
+    models = {model.id: model for model in settings.models}
+    for hypothesis_id, model_id, seed in planned:
         hyp = cfg.hypothesis(hypothesis_id)
         public_entries = bench.public_record(cached_records, hyp, cfg)
         prompt_key = (hypothesis_id, tuple(entry["id"] for entry in public_entries))
         if prompt_key not in prompt_cache:
             prompt_cache[prompt_key] = prompt_chars(hypothesis_id, cfg, public_entries)
-        for model in settings.models:
-            for seed in settings.seeds:
-                key = (model.id, hypothesis_id, seed)
-                if key in cached_keys:
-                    continue
-                projection = spend.project_run_usd(
-                    model,
-                    prompt_cache[prompt_key],
-                    settings.max_rounds,
-                    settings.max_tokens,
-                    settings.chars_per_token,
-                    settings.data_chars_per_round,
-                )
-                todo.append({
-                    "hyp": hyp,
-                    "model": model,
-                    "seed": seed,
-                    "public_entries": public_entries,
-                    "projection": projection,
-                })
+        model = models[model_id]
+        key = (model.id, hypothesis_id, seed)
+        if key in cached_keys:
+            continue
+        projection = spend.project_run_usd(
+            model,
+            prompt_cache[prompt_key],
+            settings.max_rounds,
+            settings.max_tokens,
+            settings.chars_per_token,
+            settings.data_chars_per_round,
+        )
+        todo.append({
+            "hyp": hyp,
+            "model": model,
+            "seed": seed,
+            "public_entries": public_entries,
+            "projection": projection,
+        })
     return todo, entries, cfg
 
 
@@ -88,6 +100,8 @@ def _print_preflight(
         f"Total worst-case: ${total:.6f}; ledger committed so far: ${committed:.6f}; "
         f"effective cap: {cap_text}; configured hard cap: ${settings.max_usd:.2f}"
     )
+    if note := spend.cap_note(settings):
+        out(note)
     out(
         "Runs start only while spent + that run's worst case <= cap; every call is also "
         "checked against the cap before it is sent."
@@ -129,10 +143,16 @@ def run_grid(
     transport_factory,
     confirm,
     out=print,
+    order: list[tuple[str, str, int]] | None = None,
+    extra_entry_fields: dict[tuple[str, str, int], dict] | None = None,
+    store_path: Path | None = None,
+    summary_fields: dict | None = None,
+    show_preflight: bool = True,
 ) -> dict:
     cache_path = Path(cache_path)
-    todo, entries, cfg = _plan(settings, cache_path)
-    _print_preflight(settings, todo, ledger, out)
+    todo, entries, cfg = _plan(settings, cache_path, order=order)
+    if show_preflight:
+        _print_preflight(settings, todo, ledger, out)
     total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)
     result = {
         "done": 0,
@@ -201,10 +221,19 @@ def run_grid(
                 "rounds": rounds,
                 "usd": metered.usd,
             }
+            cache_key = (hyp.id, model.id, seed)
+            entry.update((extra_entry_fields or {}).get(cache_key, {}))
             live_cache.append(cache_path, entry)
+            if store_path is not None:
+                AttemptStore(store_path).append([record])
             entries.append(entry)
             cached_records.append(record)
-            live_cache.write_summary(cache_path, entries, settings)
+            live_cache.write_summary(
+                cache_path,
+                entries,
+                settings,
+                extra_fields=summary_fields,
+            )
             result["done"] += 1
             _print_run(model.id, hyp.id, record, metered.usd, out)
         except CapReached as exc:
@@ -243,9 +272,19 @@ def _persona_replies(slot: int, hyp, cfg: C.Config) -> list[str]:
     return replies
 
 
-def _run_fake_grid(settings: LiveSettings, cache_path: Path, out=print) -> dict:
-    todo, entries, cfg = _plan(settings, cache_path)
-    _print_preflight(settings, todo, None, out)
+def _run_fake_grid(
+    settings: LiveSettings,
+    cache_path: Path,
+    out=print,
+    order: list[tuple[str, str, int]] | None = None,
+    extra_entry_fields: dict[tuple[str, str, int], dict] | None = None,
+    store_path: Path | None = None,
+    summary_fields: dict | None = None,
+    show_preflight: bool = True,
+) -> dict:
+    todo, entries, cfg = _plan(settings, cache_path, order=order)
+    if show_preflight:
+        _print_preflight(settings, todo, None, out)
     total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)
     result = {
         "done": 0,
@@ -290,9 +329,18 @@ def _run_fake_grid(settings: LiveSettings, cache_path: Path, out=print) -> dict:
             "rounds": rounds,
             "usd": 0.0,
         }
+        cache_key = (hyp.id, model.id, seed)
+        entry.update((extra_entry_fields or {}).get(cache_key, {}))
         live_cache.append(cache_path, entry)
+        if store_path is not None:
+            AttemptStore(store_path).append([record])
         entries.append(entry)
-        live_cache.write_summary(cache_path, entries, settings)
+        live_cache.write_summary(
+            cache_path,
+            entries,
+            settings,
+            extra_fields=summary_fields,
+        )
         result["done"] += 1
         _print_run(model.id, hyp.id, record, 0.0, out)
     return result

@@ -203,7 +203,8 @@ function costNote() {
   const ec = INFO.experiment_costs || {};
   const parts = Object.entries(ec).map(([k, v]) => `${v} ${k.replace("per_", "per ").replace(/_/g, " ")}`).join(", ");
   $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}. Up to ${INFO.max_rounds} rounds.` +
-    (MODE === "live" ? ` Real models play up to ${INFO.live.max_rounds} rounds; worst-case API cost for one run with this model: $${usd((INFO.live.projected_usd_per_run || {})[$("#model").value])}.` : "");
+    (MODE === "live" ? ` Real models play up to ${INFO.live.max_rounds} rounds; worst-case API cost for one run with this model: $${usd((INFO.live.projected_usd_per_run || {})[$("#model").value])}.` : "") +
+    (INFO.live.cap_note ? ` ${INFO.live.cap_note}` : "");
 }
 function renderHyp() {
   const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
@@ -234,6 +235,7 @@ function roundCard(r) {
   if (r.verdict) what += `<p><b>Verdict: ${esc(r.verdict)}</b>${r.evidence ? " · " + esc(r.evidence) : ""}</p>`;
   if (r.withdraw_reason) what += `<p><b>Reason:</b> ${esc(r.withdraw_reason)}</p>`;
   if (r.experiment_error) what += `<p class="pill fail">${esc(r.experiment_error)}</p>`;
+  if (r.cut_off) what += `<p class="pill fail">Reply cut off at the token limit (max_tokens in poc/live_models.yaml)</p>`;
   const exp = r.experiment_input && r.experiment_input.length ? `<details><summary>Experiment it ordered (${r.n_experiments})</summary><pre>${esc(JSON.stringify(r.experiment_input, null, 1))}</pre></details>` : "";
   const fit = r.mse_fit ? `<details><summary>Formula it fitted</summary><pre>${esc(r.mse_fit)}</pre></details>` : "";
   const reply = r.reply ? `<details><summary>Full reply</summary><pre>${esc(r.reply)}</pre></details>` : "";

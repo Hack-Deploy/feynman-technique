@@ -157,8 +157,11 @@ class MarketAgent(DiscoveryAgent):
                 "withdraw_reason": None,
             }
             if self.max_rounds >= 2 and round_num == self.max_rounds - 1:
-                warn = (f"Warning: this is round {round_num} of {self.max_rounds}. Your next "
-                        "response MUST be your <verdict> or a withdrawal.")
+                warn = (
+                    f"Note: this is round {round_num} of {self.max_rounds}. You may still run "
+                    "an experiment or an MSE fit in this round. In round "
+                    f"{self.max_rounds} you must give your <verdict> or <withdraw>."
+                )
                 messages.append({"role": "user", "content": warn})
                 entry["system_message"] = _join_sys(entry["system_message"], warn)
             if round_num == self.max_rounds:
@@ -199,7 +202,14 @@ class MarketAgent(DiscoveryAgent):
             experiment_block = _extract_tag(reply, "run_experiment")
             mse_fit_block = _extract_tag(reply, "run_mse_fit")
             if experiment_block is None and mse_fit_block is None:
+                empty_reply = not (reply or "").strip()
                 no_tag = (
+                    (
+                        "ERROR: your reply was empty (it may have been cut off at the token "
+                        "limit). "
+                    )
+                    if empty_reply else ""
+                ) + (
                     "ERROR: No <run_experiment>, <run_mse_fit>, <verdict> or <withdraw> tag found "
                     "in your response. Respond with one of these XML tags (no code fences), plus "
                     "<assessment> and <p_success>.\n\n"

@@ -112,6 +112,10 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
         "system_prompt": agent._system, "outcome": agent.outcome, "verdict": agent.verdict,
         "account_events": account.events, "rounds": agent.conversation_log,
     }, indent=2, default=str))
+    try:
+        transcript_record_path = str(transcript.relative_to(C.ROOT))
+    except ValueError:
+        transcript_record_path = str(transcript)
 
     return SubmittedAttempt(
         source="live",
@@ -127,7 +131,7 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
         lab_cost=account.spent,
         submitted_law=None,
         explanation=agent.evidence,
-        transcript_path=str(transcript.relative_to(C.ROOT)),
+        transcript_path=transcript_record_path,
         extra={
             "hypothesis_id": hyp.id,
             "hypothesis": hyp.hypothesis,

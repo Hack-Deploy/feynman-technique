@@ -41,8 +41,34 @@ dependencies. Never edit files under `vendor/`; wrap vendor behavior in project 
 
 The `/live` page's scripted and recorded modes make no API calls. To run real models,
 follow [the live-market instructions in `poc/README.md`](poc/README.md#run-the-live-market-with-your-key):
-they cover the no-key spend preflight, the multi-model grid, the explicit $5 cap,
+they cover the no-key spend preflight, the multi-model grid, the configured $50 hard cap,
 committing recorded runs, and the persistent append-only spend ledger.
+
+To preview a fresh randomized model order for every claim and archive the current live
+record before rerunning the full grid:
+
+```bash
+uv run python -m poc.rerun_all --preflight
+ENABLE_LIVE=1 uv run python -m poc.rerun_all --purge
+```
+
+The purge archives the live cache, summary, benchmark store, and transcripts; it never
+deletes them or touches the spend ledger. The run still requires a positive `DM_MAX_USD`
+cap (for example, set `DM_MAX_USD=50` in `poc/.env`) and an API key.
+
+## Share / warm start
+
+Set `HF_TOKEN` in `poc/.env`; optionally set `DM_HF_REPO=ORG/NAME` to omit `--repo`.
+The push creates a private dataset by default and uploads only the allow-listed live records:
+
+```bash
+uv run python -m poc.hf_data push --repo ORG/NAME --dry-run
+uv run python -m poc.hf_data push --repo ORG/NAME
+uv run python -m poc.hf_data pull --repo ORG/NAME
+```
+
+`--dry-run` lists the upload files and sizes without network calls. Use `--public` only
+when you intend the dataset to be public. Pulling archives any local files it will replace.
 
 ## How the simulation works
 

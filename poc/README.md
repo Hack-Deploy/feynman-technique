@@ -35,6 +35,7 @@ uv run pytest tests/test_poc.py -q
 uv run python -m poc.bench --fake                       # scripted LLM, real simulator, no API
 uv run python -m poc.demo_grid --fake                   # multi-model recorded demo, no API
 uv run python -m poc.demo_grid --preflight              # worst-case live spend, no key needed
+uv run python -m poc.rerun_all --preflight               # randomized position-major full-grid plan
 uv run python -m poc.report --dashboard                 # summary + output/poc_dashboard.html
 ```
 
@@ -48,27 +49,52 @@ uv run python -m poc.report --dashboard                 # summary + output/poc_d
 cp poc/.env.example poc/.env
 # Set ANTHROPIC_API_KEY in poc/.env.
 uv run python -m poc.demo_grid --preflight
-ENABLE_LIVE=1 DM_MAX_USD=5 uv run python -m poc.demo_grid
+ENABLE_LIVE=1 DM_MAX_USD=50 uv run python -m poc.demo_grid
 # Add --yes to skip the confirmation prompt.
 git add attempts/fixtures/live/runs.jsonl attempts/fixtures/live/runs.summary.json && git commit -m "Live demo runs"
 uv run python app.py
 # Open http://127.0.0.1:8000/live and scroll to "3 · Recorded runs".
 ```
 
+For a fresh run of every configured claim against every configured model, first inspect the
+randomized per-claim order and worst-case spend, then confirm the archive and rerun:
+
+```bash
+uv run python -m poc.rerun_all --preflight
+ENABLE_LIVE=1 uv run python -m poc.rerun_all --purge
+```
+
+Set `DM_MAX_USD=50` in `poc/.env` (or the shell). The purge archives the current live cache,
+summary, benchmark store and transcript directory under `attempts/archive/`; it does not touch
+the spend ledger or scripted-demo fixtures. The command asks once before archiving and running.
+
 An interrupted call (crash or Ctrl-C mid-request) leaves its reservation open and counted at its
 worst case, so the cap stays safe; Anthropic may still have billed tokens for that request.
-Claude Opus 5.5 always thinks, and `max_tokens` (3072, `live.max_tokens`) covers thinking plus
-the answer. If Opus replies come back cut off, raise it in `poc/live_models.yaml` and rerun the
-preflight.
+Thinking models use `max_tokens: 16000` for both reasoning and the answer. Anthropic's explicit
+client timeout is 600 seconds; replies stopped at the token limit are flagged in the round and
+replay views.
 
 The spend ledger at `attempts/live_spend.jsonl` is git-ignored, shared by the app and CLI, and
 cumulative. Open reservations count toward the cap until settled or voided. The effective cap
-is the lower of `DM_MAX_USD` and `live.max_usd` in `poc/live_models.yaml` (default $5); rerun the
-same command to resume from the cached runs.
+is the lower of `DM_MAX_USD` and `live.max_usd` in `poc/live_models.yaml` (both default to $50);
+the configured hard cap is reported when a larger environment value is supplied.
 
 The report covers, per model: outcomes, correct verdicts, Brier score for the final p and for the
 bid-time p, a reliability table, experiments, spend, cost per correct verdict, and profit. It also
 breaks results down by how many failed runs a run had seen.
+
+## Share / warm start
+
+Set `HF_TOKEN` in `poc/.env` and either pass a dataset name or set `DM_HF_REPO`:
+
+```bash
+uv run python -m poc.hf_data push --repo ORG/NAME --dry-run
+uv run python -m poc.hf_data push --repo ORG/NAME
+uv run python -m poc.hf_data pull --repo ORG/NAME
+```
+
+Push is private unless `--public` is supplied. The dry run makes no network calls;
+pull archives local copies before replacing them.
 
 ## Files
 

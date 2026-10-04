@@ -105,7 +105,9 @@ def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
             cache_creation_input_tokens=2,
             cache_read_input_tokens=1,
         ),
+        stop_reason="max_tokens",
     )
+    client_kwargs = {}
 
     class FakeMessages:
         def create(self, **kwargs):
@@ -113,6 +115,7 @@ def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
 
     class FakeAnthropic:
         def __init__(self, **kwargs):
+            client_kwargs.update(kwargs)
             self.messages = FakeMessages()
 
     monkeypatch.setattr(anthropic, "Anthropic", FakeAnthropic)
@@ -125,7 +128,9 @@ def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
         "output_tokens": 3,
         "cache_creation_input_tokens": 2,
         "cache_read_input_tokens": 1,
+        "stop_reason": "max_tokens",
     }
+    assert client_kwargs["timeout"] == 600
 
 
 def test_real_live_job_passes_metered_llm_to_run_attempt(monkeypatch, tmp_path):
@@ -185,7 +190,7 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     secret = "test-secret-never-return"
     monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
     monkeypatch.setenv("ENABLE_LIVE", "1")
-    monkeypatch.setenv("DM_MAX_USD", "5")
+    monkeypatch.setenv("DM_MAX_USD", "100")
     monkeypatch.setenv("DM_LIVE_MODELS", "claude-sonnet-5-5, claude-opus-5-5, custom-model")
     enabled = live_market.info()
     serialized = json.dumps(enabled)
@@ -197,8 +202,9 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     ]
     assert secret not in serialized
     assert '"answer":' not in serialized
-    assert enabled["live"]["hard_cap_usd"] == 5
-    assert enabled["live"]["max_usd"] == 5
+    assert enabled["live"]["hard_cap_usd"] == 50
+    assert enabled["live"]["max_usd"] == 50
+    assert "the hard cap is applied" in enabled["live"]["cap_note"]
     assert enabled["live"]["projected_usd_per_run"]["claude-sonnet-5-5"] > 0
     assert len(enabled["model_table"]) == 4
     status, headers, body = _request(f"{app_server}/api/live/info")
@@ -284,7 +290,7 @@ def test_live_start_tracks_projection_without_calling_provider(monkeypatch):
     assert recorded[0]["key"]["model"] == "claude-sonnet-5-5"
 
 
-def test_scripted_http_run_and_seed_increment(app_server):
+def test_scripted_http_run_and_seed_increment(app_server, monkeypatch):
     status, _, body = _post_start(app_server)
     assert status == 200
     first = json.loads(body)
@@ -302,6 +308,23 @@ def test_scripted_http_run_and_seed_increment(app_server):
     assert result["run"]["model"] == "scripted-demo"
     assert result["run"]["rounds"] >= 2
     assert len(AttemptStore(live_market.DEMO_PATH).load()) == 1
+
+    scripted_record = AttemptStore(live_market.DEMO_PATH).load()[0]
+    scripted_entry = {
+        "record": scripted_record.to_dict(),
+        "rounds": [dict(round_entry) for round_entry in result["rounds"]],
+        "settings": {},
+        "source": "scripted",
+    }
+    scripted_entry["rounds"][0].pop("cut_off", None)
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            live_cache,
+            "load",
+            lambda path: [scripted_entry] if path == live_cache.SCRIPTED_PATH else [],
+        )
+        replay = live_market.recorded_run(scripted_record.attempt_id)
+    assert all(round_entry["cut_off"] is False for round_entry in replay["rounds"])
 
     status, _, body = _post_start(app_server)
     assert status == 200
@@ -374,3 +397,25 @@ def test_job_round_payload_caps_large_fields():
     assert len(compact["experiment_input"][0]["truncated"]) == 600
     assert len(compact["reply"]) == 4000
     assert len(compact["mse_fit"]) == 800
+    assert compact["cut_off"] is False
+
+
+def test_job_round_callback_marks_only_new_max_token_cutoffs():
+    job_id = "cutoff"
+    live_market._JOBS[job_id] = {"rounds": []}
+    metered = SimpleNamespace(usd=0.0, stop_reasons=[])
+    callback = live_market._job_round_callback(job_id, metered)
+
+    metered.stop_reasons.append("max_tokens")
+    callback({"round": 1})
+    callback({"round": 2})
+
+    assert [row["cut_off"] for row in live_market._JOBS[job_id]["rounds"]] == [
+        True,
+        False,
+    ]
+
+    scripted_id = "scripted"
+    live_market._JOBS[scripted_id] = {"rounds": []}
+    live_market._job_round_callback(scripted_id)({"round": 1})
+    assert live_market._JOBS[scripted_id]["rounds"][0]["cut_off"] is False
