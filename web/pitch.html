@@ -112,6 +112,12 @@
   .prob .prob-art svg { height: 220px; width: auto; max-width: 100%; }
   .prob h3 { font-size: 26px; color: var(--rust); }
   .prob p { font-size: 18px; color: var(--body); max-width: 440px; }
+  .discover { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22180%22%20viewBox%3D%220%200%20260%20180%22%3E%3Cg%20transform%3D%22translate%2830%2030%29%20rotate%2825%29%22%3E%3Crect%20x%3D%22-17.0%22%20y%3D%22-7%22%20width%3D%2234%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-12.0%22%20y%3D%22-4%22%20width%3D%2213.6%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28120%2080%29%20rotate%28-35%29%22%3E%3Crect%20x%3D%22-14.0%22%20y%3D%22-7%22%20width%3D%2228%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-9.0%22%20y%3D%22-4%22%20width%3D%2211.2%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28200%2022%29%20rotate%2860%29%22%3E%3Crect%20x%3D%22-15.0%22%20y%3D%22-7%22%20width%3D%2230%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-10.0%22%20y%3D%22-4%22%20width%3D%2212.0%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2870%20140%29%20rotate%2810%29%22%3E%3Crect%20x%3D%22-16.0%22%20y%3D%22-7%22%20width%3D%2232%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-11.0%22%20y%3D%22-4%22%20width%3D%2212.8%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28170%20150%29%20rotate%28-20%29%22%3E%3Crect%20x%3D%22-13.0%22%20y%3D%22-7%22%20width%3D%2226%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-8.0%22%20y%3D%22-4%22%20width%3D%2210.4%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%28240%20100%29%20rotate%2845%29%22%3E%3Crect%20x%3D%22-15.0%22%20y%3D%22-7%22%20width%3D%2230%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-10.0%22%20y%3D%22-4%22%20width%3D%2212.0%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2820%2090%29%20rotate%28-60%29%22%3E%3Crect%20x%3D%22-11.0%22%20y%3D%22-7%22%20width%3D%2222%22%20height%3D%2214%22%20rx%3D%227%22%20fill%3D%22%23DCE6F8%22%20fill-opacity%3D%220.85%22/%3E%3Crect%20x%3D%22-6.0%22%20y%3D%22-4%22%20width%3D%228.8%22%20height%3D%223%22%20rx%3D%221.5%22%20fill%3D%22%23FFFFFF%22/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(120deg, #1B3F8B 0%, #2F5DB8 45%, #5C8FE0 100%);
+    background-size: 260px 180px, 100% 100%; background-repeat: repeat, no-repeat;
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    animation: discover-float 24s linear infinite; }
+  @keyframes discover-float { from { background-position: 0 0, 0 0; } to { background-position: 260px -180px, 0 0; } }
+  @media (prefers-reduced-motion: reduce) { .discover { animation: none; } }
   @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -128,7 +134,7 @@
 <main>
 <section class="hero">
   <div>
-    <h1>Discover at the speed of thought.</h1>
+    <h1><span class="discover">Discover</span> at the speed of thought.</h1>
     <p class="lead">You have an idea in the morning, and you know if it's right by the evening.</p>
     <div class="cta"><a class="btn" href="#fix">How it works ↓</a><a class="btn ghost" href="/live">Watch a live market</a></div>
   </div>
