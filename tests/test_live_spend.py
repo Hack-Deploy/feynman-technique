@@ -112,7 +112,9 @@ def _resolved_entry(model: str, source: str, hyp_id: str, seed: int = 0) -> dict
 def _verdict_transport():
     reply = (
         "<assessment>Evidence is sufficient.</assessment><p_success>0.7</p_success>"
-        "<verdict>supported</verdict><evidence>Offline scripted transport.</evidence>"
+        "<planned_cost>5</planned_cost><verdict>supported</verdict>"
+        "<estimate>n = 1\na3 = 0.05\nH = 0.05\ndrift = 0</estimate>"
+        "<evidence>Offline scripted transport.</evidence>"
     )
     return fake_llm.scripted_transport(
         [reply],
@@ -348,7 +350,14 @@ def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
         max_rounds=3,
         max_tokens=32,
     )
+    # Round 1 is the bid; round 2 is cut off and re-prompted; round 3 gives the verdict.
     replies = iter((
+        (
+            "<assessment>Bid.</assessment><p_success>0.6</p_success>"
+            "<planned_cost>10</planned_cost><run_mse_fit>def discovered_law(*a):\n"
+            "    return None\n</run_mse_fit>",
+            "end_turn",
+        ),
         ("", "max_tokens"),
         (
             "<assessment>No response content yet.</assessment><p_success>0.4</p_success>",
@@ -356,7 +365,8 @@ def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
         ),
         (
             "<assessment>Evidence is sufficient.</assessment><p_success>0.7</p_success>"
-            "<verdict>supported</verdict><evidence>Offline response.</evidence>",
+            "<verdict>supported</verdict>" + fake_llm.estimate_block(hyp)
+            + "<evidence>Offline response.</evidence>",
             "end_turn",
         ),
     ))
@@ -381,7 +391,7 @@ def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
 
     assert result["done"] == 1, (result, messages)
     rounds = live_cache.load(cache)[0]["rounds"]
-    assert [round_entry["cut_off"] for round_entry in rounds] == [True, False]
+    assert [round_entry["cut_off"] for round_entry in rounds] == [False, True, False]
 
 
 def test_real_grid_closes_a_claim_after_a_successful_run(tmp_path):
@@ -398,9 +408,13 @@ def test_real_grid_closes_a_claim_after_a_successful_run(tmp_path):
         max_rounds=1,
         max_tokens=32,
     )
+    from poc import truth
+
+    estimates = "\n".join(f"{name} = {value}" for name, value in truth.true_values(hyp).items())
     reply = (
         "<assessment>Evidence is enough.</assessment><p_success>0.9</p_success>"
-        "<verdict>supported</verdict><evidence>Offline test.</evidence>"
+        f"<planned_cost>5</planned_cost><verdict>supported</verdict><estimate>{estimates}"
+        "</estimate><evidence>Offline test.</evidence>"
     )
     calls = []
 
@@ -632,7 +646,7 @@ def test_bench_live_uses_metered_ledger_and_stops_when_cap_is_reached(
 
     reservation = ledger.reserve("test-over-cap", model, 4.99)
     ledger.settle(reservation, "test-over-cap", model, {"input_tokens": 1}, 4.99)
-    bench.main([*args, "--hypotheses", "coulomb-source-strength"])
+    bench.main([*args, "--hypotheses", "hubble-outward-push"])
 
     output = capsys.readouterr().out
     assert "spend cap reached; stopping live grid" in output
@@ -816,13 +830,11 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
     status, body = _request(f"{app_server}/api/live/recorded")
     assert status == 200
     scripted = json.loads(body)
-    assert scripted["source"] == "scripted"
-    assert len(scripted["comparison"]) == 4
-    assert len(scripted["runs"]) == 4
-    for row, entry in zip(scripted["comparison"], scripted_entries):
-        record = AttemptRecord.from_dict(entry["record"])
-        expected = report.summarise([record])["models"][record.solver]["brier_final_p"]
-        assert row["brier"] == expected
+    assert scripted["source"] == "none"  # scripted stand-ins are never listed
+    assert scripted["scripted_count"] == 4
+    assert scripted["runs"] == []
+    scripted_id = scripted_entries[0]["record"]["attempt_id"]
+    assert _request(f"{app_server}/api/live/recorded/run?id={scripted_id}")[0] == 404
 
     real_entry = _resolved_entry(
         settings.models[0].id,
@@ -839,6 +851,9 @@ def test_recorded_api_selects_real_runs_and_returns_details(app_server):
     assert real["real_count"] == 1
     assert real["scripted_count"] == 4
     assert len(real["runs"]) == 1
+    record = AttemptRecord.from_dict(real_entry["record"])
+    row = next(r for r in real["comparison"] if r["runs"])
+    assert row["brier"] == report.summarise([record])["models"][record.solver]["brier_final_p"]
 
     attempt_id = real_entry["record"]["attempt_id"]
     status, body = _request(

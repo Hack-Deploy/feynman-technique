@@ -321,17 +321,19 @@ def _persona_replies(slot: int, hyp, cfg: C.Config) -> list[str]:
     verdicts = ("supported", "refuted", "supported", "inconclusive")
     values = p_values[slot]
     replies = []
-    for value in values[:-1]:
+    for i, value in enumerate(values[:-1]):
         replies.append(
             f"<assessment>Scripted experiment for {hyp.id}.</assessment>"
             f"<p_success>{value}</p_success>"
-            f"<run_experiment>{json.dumps([experiment])}</run_experiment>"
+            + ("<planned_cost>10</planned_cost>" if i == 0 else "")
+            + f"<run_experiment>{json.dumps([experiment])}</run_experiment>"
         )
     replies.append(
         f"<assessment>Scripted verdict for {hyp.id}.</assessment>"
         f"<p_success>{values[-1]}</p_success>"
         f"<verdict>{verdicts[slot]}</verdict>"
-        "<evidence>Scripted demonstration only.</evidence>"
+        + fake_llm.estimate_block(hyp)
+        + "<evidence>Scripted demonstration only.</evidence>"
     )
     return replies
 

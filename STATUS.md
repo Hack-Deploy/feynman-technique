@@ -542,6 +542,275 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
 - Verification: `uv run pytest -q -p no:cacheprovider` — 675 passed, 3 skipped,
   0 xfailed, 34 warnings.
 
+## Bounty market v2, Phases 0–3: checked estimates, reference calibration, checker (2026-10-04)
+
+Branch `bounty-market-v2`. Claim being proven: counting clear claims rewards guessing and
+overconfidence; a market where agents pay for experiments and are paid only for checked answers
+rewards being right and knowing when you're right.
+
+- **Definitions (Phase 0).** A *claim* is a clear verdict (supported/refuted) plus an estimate of
+  every posted quantity. A claim is *confirmed* when every estimate is within the posted tolerance
+  of the true value and the verdict matches the decision rule applied to the agent's own
+  estimates. Agent answers: supported / refuted / inconclusive ("I don't know, stopping").
+  Checker outcomes: confirmed, false_claim, stopped, walked_away, declined, out_of_rounds.
+  Open problem for Q&A: in a real lab the judge is the preregistered criterion plus the sealed
+  commitment hash; judging is not solved there.
+- **Lab returns positions only** (`poc/lab.py`). The vendor executors noise positions but return
+  exact velocities, which would make one cheap experiment reveal every law and void noise,
+  precision and price. Reversible choice; the agent is told.
+- **Hypotheses (Phase 1).** 8 kept, 4 supported / 4 refuted: gravity (1/r², refuted), fractional
+  (1/r, refuted, new), yukawa, oscillator, dark matter, circle, ether, hubble. Dropped:
+  coulomb_easy (coefficient is exactly 1, guessable; repulsive contrary to its docs),
+  three_species (no clean scripted reference), extra_dimensions (r ≈ 0.2 needs sub-noise
+  displacements). Each posts numeric quantities a prior cannot supply plus a decision rule
+  (`supported_if`). `poc/truth.py` reads true values from the noise-free vendor executors
+  (velocity after 0.01 of a release at rest); nothing truth-derived is in the config or a prompt.
+- **Reference and calibration (Phase 2).** `poc/reference.py` fixed designs (p1 ≤ 10, launches
+  end before the probe nears the source), `poc/estimate.py` least-squares fits from noisy
+  positions. `uv run python -m poc.calibrate --write` on seeds 100–119 (never used by the bench):
+  tolerance = 3 × RMS, prize = reference cost / 0.3 rounded up to 10. round_fee cut 10 → 2.
+
+  | hypothesis | pass | margin / decision tol | ref cost | prize |
+  |---|---|---|---|---|
+  | gravity-inverse-square | 20/20 | 0.80 / 0.22 | 40 | 140 |
+  | fractional-2d-gravity | 20/20 | 0.85 / 0.59 | 39 | 130 |
+  | yukawa-screened | 20/20 | 4.86 / 3.9 | 66.5 | 230 |
+  | oscillator-time-varying | 20/20 | 1.9 / 0.058 | 24 | 80 |
+  | dark-matter-unseen-pull | 20/20 | 6.96 / 0.91 | 15 | 50 |
+  | circle-ordinary-gravity | 20/20 | 0.35 / 0.14 | 70 | 240 |
+  | ether-outward-push | 20/20 | 0.020 / 0.0017 | 34 | 120 |
+  | hubble-outward-push | 20/20 | 0.030 / 0.0016 | 34 | 120 |
+
+  Checkpoint 1: ✅ 8/8 solvable. Risk: H tolerances (±0.0017) are tight for an LLM design;
+  revisit after the pilot.
+- **Protocol, checker, bid rule (Phase 3).** First reply = bid: `<p_success>`, `<planned_cost>`,
+  `<plan>` (experiments, controls, analysis). Code bids only if p × prize > planned_cost
+  (`declined` otherwise, free). Claim = `<verdict>` + `<estimate>name = value ± σ</estimate>`, one
+  re-prompt if missing. `poc/checker.py` judges and flags rerun (same experiment ≥ 3×), off_plan
+  (spend > 2× planned), dropped_controls, changed_analysis (claim differs from a re-analysis of
+  all the agent's paid data by more than the tolerance). Flags never change payouts.
+- **Rewards and conservation.** `poc/ledger.py` (new, integer milli-credits, researcher/escrow/
+  agent/lab; dm/wallet.py only models agent→lab charges). Market: bond 30% of prize on a clear
+  claim, lost if false; calibration bonus 0.1 × prize × (1 − 4(p_bid − confirmed)²). Naive: prize
+  for any clear verdict. Every run is settled under both; `--rule` sets what the agent is told.
+- **Baselines** (`poc/baselines.py`, same text protocol): abstain, always_supported, coin_flip,
+  p_hacker, reference. Independence test covers static and dynamic imports of truth/checker.
+- Fixed: the budget check now reserves the current round's fee.
+- Check: `uv run pytest -q` 433 passed, 12 skipped, 14 xfailed; `--runslow` market tests 30 passed.
+
+## Bounty market v2, Phases 4–5: offline baselines, Checkpoint 2 (2026-10-04)
+
+- **Phase 4 (budget, conservation, spend, blind).** Budget check reserves the round fee; every
+  run is settled under both rules through `poc/ledger.py`, which raises on any leak. Live spend
+  reuses upstream's guard (`ENABLE_LIVE` + `DM_MAX_USD`, `poc/spend.py`, `MeteredLLM`). Blind is
+  the default (no public record in the prompt); `--record` is the labelled alternative.
+  `--prior-only` runs the one-round, no-lab control.
+- **Yukawa recalibrated.** The old 1/r^n fit gave tolerance ±3.9, so always_supported's free
+  guess (drop = 3) was confirmed. Now a screened-2D fit (k·K1(r/λ)/λ) with boosted launches:
+  rms 0.39, tolerance ±1.2, prize 220 (was 230). `uv run python -m poc.calibrate --write`:
+  8/8 still solvable, other rows unchanged. New slow test: no free prior guess (SUPPORT_GUESS /
+  REFUTE_GUESS) is within tolerance on every quantity for any hypothesis.
+- **Fixes.** Fit sigmas are `None`, not NaN, when the covariance is unusable (a NaN crashed the
+  JSON record on a p_hacker single-run fit). `poc.report.summarise` again carries the per-solver
+  `models` block that `/live` and `poc/live_cache.py` read. Demo fixture summary regenerated
+  (coulomb dropped).
+- **Offline run** (`poc.bench --baselines` and `--fake`, 8 hypotheses × seeds 0–2, 24 runs each):
+
+  | agent | confirmed / false | naive profit | market profit | flags |
+  |---|---|---|---|---|
+  | always_supported | 0 / 24 | **+3252 (1st)** | −1777 (5th) | – |
+  | coin_flip | 0 / 24 | +3252 (1st) | −1038 | – |
+  | fake LLM | 0 / 24 | +3204 | −1231 | – |
+  | reference | 23 / 1 | +2334 | **+2521 (1st)** | – |
+  | p_hacker | 8 / 16 | +1854 | −2090 (6th) | rerun 12, off_plan 12, changed_analysis 13 |
+  | abstain | 0 / 0 | 0 | 0 | – |
+
+  Checkpoint 2: ✅ always_supported tops the naive board and is negative on the market board;
+  reference is positive and first on the market board; conservation held on all 144 runs.
+  Spearman of profit with confirmed count (directional, n = 6 agents): naive −0.38, market 0.17.
+  The market figure is low because the market ranks abstain (0 confirmed, 0 lost) above the
+  p_hacker (8 confirmed on supported hypotheses, 16 false claims): it rewards being right *and*
+  knowing when, not the count of hits. p_hacker's 8 confirmations are where "supported" is the
+  true answer, so pushing toward it happens to land.
+- Check: `uv run pytest -q` 699 passed, 11 skipped; `--runslow tests/test_poc_market.py` 32 passed.
+
+## Bounty market v2, Phase 6 pilot and the /experiments page (2026-10-04)
+
+- **Live pilot** (`ENABLE_LIVE=1 DM_MAX_USD=5`, blind, market rule told): 4 Claude models ×
+  {hubble (supported), gravity (refuted)} × seed 0 = 8 runs, **$1.08** total (Opus ≈ $0.25/run,
+  Sonnet ≈ $0.12–0.14, Haiku ≈ $0.03). Opus 2/2 confirmed; Sonnet 5.5 1 confirmed, 1 out of rounds;
+  Sonnet 5 stopped once and declined once; Haiku stopped once and made one false claim.
+- **Hook found (real run).** Haiku 4.5 on gravity, seed 0: 6 experiments, verdict "refuted" (the
+  right verdict) backed by n = 2.63 (truth 1.00) and a3 = 0.13 (truth 0.053). Naive rule +68,
+  market rule −140.5; checker flag changed_analysis (its claim disagrees with a fit of its own data).
+- Board now ranks by mean profit per run as % of the prize (agents with 2 and 24 runs compare);
+  Spearman is against the confirmed *rate*. With the pilot: naive 0.06, market 0.70 (n = 10 agents,
+  directional).
+- **/experiments page** (`web/experiments.html`, tab 04 "Inside the runs"). `uv run python -m
+  poc.animate` writes `web/data/experiments.json`: per run, each launch's noisy snapshots, the
+  same launch replayed noise-free (hidden true path), the path the claimed law predicts (power-law
+  worlds), single-run fits for reruns, estimates vs truth, ruling, and payouts. Three beats:
+  experiments → claim → checker. Presentation code: reads `poc.truth` after the runs.
+- Shared top bar scrolls on narrow screens (the fourth tab overflowed at 390 px).
+- Open: Sonnet 5.5 ran out of 3 rounds on hubble; proposal for the main run is `live.max_rounds: 5`.
+- Check: `uv run pytest -q` 699 passed, 12 skipped; `--runslow tests/test_poc_market.py` 33 passed.
+- **Revised (same day):** the page was cut to one run, the hook (Haiku 4.5, gravity, seed 0),
+  with a force diagram beside it. Arrows show the pull on each probe under the law the model
+  expected (1/r²), the one it claimed (1/r^2.63) and the true one (1/r^1.00). Each appears with
+  its round, next to the model's own words and confidence, and the payouts come last. The
+  original Vision / How it works / Live market pages and `style.css` are restored unchanged; the
+  only change outside the new page is the `/experiments` route in `app.py`. Data file 36 kB.
+  Check: `uv run pytest -q` 699 passed, 12 skipped; `--runslow tests/test_poc_market.py` 33 passed.
+
+## 2026-10-04 · One Opus run that iterates, and a "watching it learn" section
+
+- **Running estimates.** Every reply now also asks for `<estimate>` (a rough guess is fine before
+  data). `MarketAgent` records it per round in `entry["estimates"]`; `round_log` and the live
+  cache keep it. The verdict's estimate block still settles the run; earlier ones are only
+  status. One side effect to note: asking every round may nudge a model to commit earlier.
+- `poc.bench` takes `--max-rounds` and `--max-usd` for live runs, so one long run needs no edit to
+  `poc/live_models.yaml` (still 3 rounds / $5 for /live and the grid).
+- **The run.** Opus 5.5, gravity-inverse-square, seed 1, market rule told, up to 12 rounds, no
+  minimum (it may stop when it chooses). Own store: `attempts/poc_dp_opus_loop.jsonl` (git-ignored),
+  so the pilot boards are untouched. Projected worst case $8.91; actual **$0.31**, 4 calls.
+  It stopped after 4 rounds: experiments (4) → MSE fit → experiments (2) → verdict "refuted".
+  Running n: 2.0 ± 0.5 (prior) → 1.1 ± 0.3 → 1.15 ± 0.25 → 0.97 ± 0.08 (truth 1.00, tolerance
+  0.22); a3 0.11 → 0.058 → 0.055 → 0.055 (truth 0.053). Confirmed; market +46.7, naive +44.
+- **/experiments, new section below the hook.** `uv run python -m poc.animate --learning
+  attempts/poc_dp_opus_loop.jsonl` writes `web/data/learning.json`. The chart shows pull against
+  distance: the model's current guess curve moving round by round, earlier guesses as ghosts,
+  rough pull readings from each launch (fit d = a t²/2 to early snapshots of a drop at rest), the
+  1/r² hypothesis and the true law (labelled hidden from the model). Beside it, n per round with
+  σ bars against the checker's acceptance band, the model's words, and the checker's result.
+  The hook section above is unchanged.
+- Check: `uv run pytest -q` 701 passed, 12 skipped.
+- **Tab 04 on every page.** Vision, How it works and Live market now link to /experiments ("04 One
+  real run") in the top bar. The narrow-screen top bar rule moved from experiments.html into
+  `style.css` so four tabs fit at 390 px on every page. (Wide tables on / and /live still scroll
+  sideways at 390 px; that predates this change.) Check: `uv run pytest -q` 701 passed, 12 skipped.
+
+## 2026-10-04 · Real runs moved into Live market, round by round
+
+The two replayed real runs (Haiku's paid false claim with the force diagram, and Opus closing in
+on the hidden law) now sit in /live section 2 "Round by round", under the live feed, which is
+unchanged. Tab 04 and the separate /experiments page are gone (route now 404s; test updated).
+The CSS is scoped (`.rr`, `.learn`, `.lverdict`, so `.round.verdict` cards are not hidden) and the
+scripts run in one IIFE. Both animations start when scrolled into view. Checked in a headless
+browser at 1280 and 390 px: three tabs, no page errors, no overflow from the new parts.
+
+## 2026-10-04 · /live lists real-model runs only
+
+`live_market.runs()` now drops baseline, fake-LLM and scripted runs (`_is_real`), so the
+public record and its "Leaderboard (real models)" show only the 8 real pilot runs (they used to
+sit beside 120 baseline, 24 fake and 3 scripted runs). The scripted-demo table is gone, and
+`recorded()` / `recorded_run()` no longer fall back to the scripted stand-in grid. Section 3 now
+says no real grid has been recorded yet. Nothing was deleted from the attempt stores; this is
+display only, and the market's public ledger (what models see) is unchanged. Tests updated:
+701 passed.
+
+## 2026-10-04 · /live section 2 is one view: hypothesis, strip, replay or your market
+
+Removed the Haiku "paid for a wrong discovery" block from /live. "Watching it learn" and the
+round-by-round feed are now one section: a hypothesis card (claim, how it is judged, model,
+world, prize; the answer stays hidden until the checker), one Round / Spent / Experiments /
+Stated chance strip, then either the recorded Opus replay or the market you started, with a
+toggle between them. Checked in a headless browser at 1280 and 390 px: no page errors, no overflow.
+
+## 2026-10-04 · Marketplace demo (tab 04)
+
+- **/market**: a grid of venues. One live slot, DiscoverPhysics (bounties, prize pool, agents,
+  runs judged, confirmed, false claims, leader), plus an empty "next venue" slot.
+- **/market/discoverphysics**: pick a bounty (or all 8); leaderboard ranked by mean market return
+  per run (% of the prize) with each agent's naive return and naive rank beside it, drawn as a
+  dumbbell on one −100%…+100% scale; a submit form; and a results feed (click a run for its
+  rounds, claimed vs true values, the checker's reasons and flags, and both payouts).
+- **Submitting an agent** (`marketplace.py`): a name plus a scripted strategy from
+  `poc.baselines` (careful = reference design, rerun-until-it-works = p_hacker, confident
+  guesser = always_supported, coin flip). It plays through `run_attempt` with the real simulator,
+  is judged by `poc.checker` and settled under both rules by `bench.resolve`. No API calls.
+  Store: `attempts/market_submissions.jsonl` (git-ignored, append-only); next free seed per
+  agent and bounty, so runs are reproducible. The board also carries the 8 real Claude runs from
+  the bench store (market rule told, experiments on). Two demo buttons: "Careful Lab" (good) and
+  "Shortcut Labs" (p-hacker). Example on gravity-inverse-square: Careful Lab confirmed, naive
+  +100, market +113; Shortcut Labs false claim (its "supported" contradicts its own n = 1.02),
+  naive +54, market −159, flags rerun / off_plan / changed_analysis.
+- Vision, How it works and Live market link to the new tab. Checked in headless Chrome at 1280
+  and 390 px: no page errors, no page overflow (wide tables scroll inside their wrapper).
+- Check: `uv run pytest -q` 713 passed, 12 skipped (12 new in `tests/test_marketplace.py`).
+
+## 2026-10-04 · /live section 2: how its hypothesis changed
+
+- Under the recorded-run replay, a trail lists one row per round: what it did and what data it
+  had, its working law (a ∝ 1/r^n ± σ, with the change in n from the round before), a small bar
+  of n ± σ against the 1/r² claim ("still inside / outside its error bar, kσ away"), a₃, its
+  own reasoning, and its stated chance. Rows not yet reached show "not played yet"; the current
+  round is highlighted; clicking a row jumps the replay there. At the checker a final row shows
+  the hidden law, the accepted window (also drawn on every bar) and whether it won.
+- Reads only `web/data/learning.json`; no new data. Checked in headless Chrome at 1280 and 390 px:
+  no console errors; the trail stacks on phones. (The page's sideways scroll at 390 px, from the
+  top bar and leaderboard tables, predates this change.)
+- Check: `uv run pytest -q` 713 passed, 12 skipped.
+
+## 2026-10-04 · Marketplace redesign and agents as repos
+
+- **Redesign** (`web/market.html`, `web/venue.html`, shared `web/market.css` and `web/market.js`):
+  a consumer-style home (featured venue, open-bounty cards with a solved gauge and a supported vs
+  refuted split, top agents, live activity) and a venue page with expandable bounty rows, a
+  podium plus runner-up leaderboard that re-ranks with an animation when you switch between
+  "Confirmed answers only" and "Any claim paid", the biggest faller called out, an activity feed,
+  rules, and a sticky submit panel (a bottom sheet on phones). Light and dark themes.
+- **Agents are git repos** (`dm/repo_agent.py`, `agents/README.md`): a submission is a name plus
+  an https repo URL (or `examples/<name>`) with `agent.py` at its root. The market shallow-clones
+  the default branch into `attempts/agent_repos/` (git-ignored) and pins the commit (examples
+  are pinned by a hash of `agent.py`). Each round runs `python agent.py` as a fresh process with
+  the bounty, prices and conversation as JSON on stdin; stdout is the tagged reply a model would
+  give, so it plays through the same `run_attempt`, checker and `bench.resolve` as every other
+  solver. Records keep `repo`, `commit` and `agent_errors`. Submissions from before this change
+  named a scripted strategy and are shown as the matching example repo.
+- **Isolation, best effort and not a security boundary** (`dm/_repo_agent_child.py`): an audit
+  hook refuses imports of the checker, truth, calibration, ledger, oracle, simulator and the API
+  client; reads of `attempts/`, `vendor/`, `output/`, `poc/config.yaml` and `.env`; writes
+  outside the repo; subprocesses; and sockets. No API keys or other environment are passed in,
+  60 s per round, and a crash, timeout or empty reply counts as a withdrawal. git is limited to
+  https with no system config or prompts. Running repos from strangers would need a container
+  or VM.
+- **Examples** (`agents/examples/`): Careful Lab (full reference design, claims what its own fit
+  implies), Shortcut Labs (reruns one cheap launch and reports the most supportive run) and Yes
+  Man (no experiments, says "supported"). On gravity-inverse-square: Careful Lab is confirmed
+  (naive +100, market +113); Shortcut Labs makes a false claim (naive +96, market −117, flags
+  rerun, off_plan and changed_analysis); Yes Man makes a false claim (naive +138, market −81).
+- Checked in headless Chrome at 1440 and 390 px, light and dark: no page overflow, no page
+  errors (only the missing favicon); a submit of `examples/shortcut-labs` from the panel lands
+  at #10 and opens its result.
+- Check: `uv run pytest -q` 756 passed, 12 skipped (new: `tests/test_repo_agent.py`, with git
+  faked and no network; `tests/test_marketplace.py` rewritten for repos).
+
+## 2026-10-04 · Marketplace leaderboard: side by side
+
+- The leaderboard now opens on **Side by side** (venue page, and full width on the marketplace
+  home): the same runs ranked twice, "If every claim paid" on the left and "Only confirmed answers
+  paid" on the right, with a line joining each agent's two places. A line is red when the agent
+  falls two or more places and has false claims, green when it rises two or more and has
+  confirmed answers, and grey otherwise ("moves only because others moved"). A headline names
+  the biggest faller and riser (on the current board: Always yes #1 → #10, the checker rejected 24
+  of its claims; Claude Sonnet 5.5 #8 → #4). Hovering an agent highlights its line. The single
+  rule views (podium plus runner-ups) stay as the other two options. Front end only, from fields
+  the board already carries.
+- Checked in headless Chrome at 1440 and 390 px, light and dark: no page overflow, no page errors
+  (only the missing favicon).
+- Check: `uv run pytest -q tests/test_marketplace.py tests/test_repo_agent.py` passed (no Python
+  changed).
+
+## 2026-10-04 · A second recorded run: Opus 5.5 on fractional-2d-gravity
+
+One paid run (Opus 5.5, seed 1, up to 12 rounds, cap $11; actual $0.20, cumulative spend now
+$1.58), in `attempts/poc_dp_opus_loop.jsonl`. Harder than inverse-square: the true pull is about
+3x weaker (a3 = 0.018 against the same noise), so readings are noisy (one is negative). It still
+got there: refuted in 3 rounds with n = 2.0 ± 0.35 (true 2.00, window ±0.59), confirmed; naive
++35, market +40. `poc.animate --learning` now writes every recorded power-law run (the last per
+claim) as `{"runs": [...]}`. /live section 2 has one button per recorded run; the pull axis
+scales to each run's true law and readings, and the claim label (1/r, 1/r²) comes from the run.
+756 passed.
 ## Live real-run metering fix (2026-10-03)
 
 - Real `/live` attempts now pass `MeteredLLM` to `run_attempt`, so provider calls use
@@ -612,6 +881,50 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   is $50.
 - Focused suite: 135 passed. Full suite: `uv run pytest -q` — 724 passed, 3 skipped,
   34 warnings. No paid API or Hugging Face calls were made; vendor files were untouched.
+
+## Merge origin/main into bounty-market-v2 (2026-10-04)
+
+- Public record: main's paid opt-in (`<buy_record/>`, `ledger.read_fee` 30) replaces the free
+  `--record` prompt block. Blind stays the default (nothing to buy); `--record` offers failed runs
+  for purchase. The bid's `planned_cost` includes any record fee. `poc/ledger.py` gains a
+  `market` account so the fee settles agent → market and conservation still holds.
+- Solved claims: main closes a claim after its first confirmed run. Kept for the live market
+  (`/live`, `rerun_all`, grid). `poc.bench` keeps every planned run by default so agents compare
+  on the same claims; `--close-solved` opts in and counts only runs with the same rule and lab
+  access. `/live` now counts only real-model runs as solving a claim (the bench store also holds
+  baselines, and `baseline:reference` would otherwise close nearly every claim).
+- `/live` keeps listing real-model runs only, with main's record-fee note.
+- Main's tests adapted to this branch's protocol (bid in round 1, estimates on a verdict,
+  checker-confirmed passes): scripted grid tests use true-value estimates.
+- Check: all touched test files pass. The only full-suite failure is
+  `test_poc_never_imports_the_oracle`, caused by the untracked `poc/original.py`, which is not
+  part of this merge.
+
+## 2026-10-04 · The original task: Opus 5.5 finds the ether law from scratch
+
+`original_task.py` (top level: it is judge-side and scores with the oracle, so it may not live
+in `poc/` or `dm/`) runs the vendor DiscoverPhysics loop unchanged through
+`dm.venues.discoverphysics.run_attempt` without the market note: no hypothesis, 16 rounds, noise
+0.075, then scores the law the model held after each round on hidden test case 0 and writes
+`web/data/original.json`. /live section 2 has a "find the law" view: the probes' true paths
+against the paths its current law predicts, its hidden-test error per round against the 0.1 line
+and a no-forces floor (11.3), its words, and the checker with the ARA comparison.
+
+Bug found and fixed in our wrapper: the vendor prompt loader resolves `PhysicsSchool/prompts/...`
+under the wrong directory and then the working directory, and on a miss silently uses a one-line
+generic prompt. From this repo's root every DiscoverPhysics run therefore got no world
+instructions, no experiment format and no law signature. `prompt_path()` now passes absolute
+paths; a test checks every world loads its own prompt. (No earlier paid run used this venue.)
+
+Runs (Opus 5.5, ether, which 1 of 8 ARA frontier models solved):
+- seed 1, before the fix: found the physics (1/r pull + uniform +y 0.05) but submitted the
+  two-body signature, so the law did not run. $0.49. Kept in attempts/original_runs.jsonl.
+- seed 2, after the fix: passed, hidden-test NMSE 0.021 (needs < 0.1), 10 rounds, 12
+  experiments, $3.03. Its first fitted law (round 3) already scored 0.0009; it kept experimenting
+  for 7 rounds and said it was only 40% sure.
+Today's paid total is about $5.10. The page data includes one hidden test case's paths
+(test_seed 0, unsalted here); the world's law is public in the vendor repo anyway.
+807 passed.
 
 ## Noisy velocity observations and repeatable experiments (2026-10-04)
 

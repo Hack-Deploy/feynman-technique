@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import live_market
+import marketplace
 import real_data
 
 ROOT = Path(__file__).resolve().parent
@@ -47,6 +48,8 @@ PAGE_ROUTES = {
     "/": "pitch.html",
     "/simulation": "simulation.html",
     "/live": "live.html",
+    "/market": "market.html",
+    "/market/discoverphysics": "venue.html",
     "/pitch": "pitch.html",
 }
 STATIC_EXTENSIONS = {".css", ".js", ".svg", ".png", ".json"}
@@ -133,6 +136,27 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(real_data.build_real_data())
             except Exception as exc:
                 self._json({"error": f"could not read real-attempt outputs: {exc}"}, 503)
+        elif path == "/api/market/venues":
+            self._json(marketplace.venues())
+        elif path.startswith("/api/market/venue/"):
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            try:
+                result = marketplace.venue(path.removeprefix("/api/market/venue/"),
+                                           query.get("bounty", [""])[0] or None)
+            except ValueError as exc:
+                self._json({"error": str(exc)}, 400)
+                return
+            if result is None:
+                self._json({"error": "not found"}, 404)
+            else:
+                self._json(result)
+        elif path == "/api/market/job":
+            job_id = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("id", [""])[0]
+            result = marketplace.job(job_id)
+            if result is None:
+                self._json({"error": "not found"}, 404)
+            else:
+                self._json(result)
         elif path == "/api/live/info":
             self._json(live_market.info())
         elif path == "/api/live/runs":
@@ -216,6 +240,21 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"ok": False, "error": str(exc)}, 400)
             except PermissionError as exc:
                 self._json({"ok": False, "error": str(exc)}, 403)
+            except RuntimeError as exc:
+                self._json({"ok": False, "error": str(exc)}, 409)
+            else:
+                self._json(result)
+        elif path == "/api/market/submit":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length) or b"{}")
+                bounties = body["bounties"]
+                if not isinstance(bounties, list):
+                    raise ValueError("bounties must be a list")
+                result = marketplace.submit(str(body["name"]), str(body["repo"]),
+                                            [str(b) for b in bounties], body.get("seeds", 1))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._json({"ok": False, "error": str(exc) or "Could not read the request."}, 400)
             except RuntimeError as exc:
                 self._json({"ok": False, "error": str(exc)}, 409)
             else:

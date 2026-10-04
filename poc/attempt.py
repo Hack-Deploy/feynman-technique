@@ -14,6 +14,7 @@ from typing import Callable
 from dm.types import SubmittedAttempt
 from poc import config as C, protocol
 from poc.agent import Complete, MarketAgent
+from poc.lab import PositionsOnlyExecutor
 from poc.pricing import Account
 
 
@@ -33,7 +34,7 @@ def round_log(conversation_log: list[dict]) -> list[dict]:
         ran = e.get("experiment_input") if e.get("experiment_output") is not None else None
         out.append({
             "round": e["round"], "action": e["action"], "assessment": e.get("assessment"),
-            "p_success": e.get("p_success"),
+            "p_success": e.get("p_success"), "estimates": e.get("estimates") or {},
             "record_bought": e.get("record_bought", False),
             "experiments": len(ran) if isinstance(ran, list) else 0,
             "experiments_cost": e.get("experiments_cost", 0.0), "round_fee": e.get("round_fee", 0.0),
@@ -70,18 +71,19 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
                 cfg: C.Config | None = None, complete: Complete | None = None,
                 verbose: bool = False, world_spec: dict | None = None,
                 on_round: Callable[[dict], None] | None = None,
-                max_tokens: int = C.MAX_TOKENS) -> SubmittedAttempt:
+                max_tokens: int = C.MAX_TOKENS, rule: str = "market",
+                experiments: bool = True) -> SubmittedAttempt:
     cfg = cfg or C.load()
     hyp = cfg.hypothesis(hypothesis_id)
     if world_spec is None:
         from scienceagent.worlds import get_world
         world_spec = get_world(hyp.world, engine=C.ENGINE, noise_std=cfg.noise_std,
                                noise_seed=seed)
-    executor = world_spec["executor"]
+    executor = PositionsOnlyExecutor(world_spec["executor"])
 
     from scienceagent.trajectory_logger import TrajectoryLogger, make_run_id
 
-    tag = f"{_slug(model)}_seed{seed}"
+    tag = f"{_slug(model)}_{rule}{'' if experiments else '_prior'}_seed{seed}"
     csv_path = C.TRAJECTORIES_DIR / hyp.id / f"{tag}.csv"
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     csv_path.unlink(missing_ok=True)
@@ -91,7 +93,7 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
     account = Account(agent=model, hypothesis=hyp.id, budget=cfg.budget)
     agent = MarketAgent(
         cfg=cfg, hyp=hyp, account=account, ledger_entries=ledger_entries, complete=complete,
-        on_round=on_round,
+        on_round=on_round, rule=rule, experiments=experiments,
         model=model, executor=executor, mission=world_spec["mission"],
         max_tokens=max_tokens, verbose=verbose, noise_seed=seed,
         system_prompt_path=_abs_vendor(world_spec["system_prompt"]),
@@ -110,7 +112,9 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
     transcript.parent.mkdir(parents=True, exist_ok=True)
     transcript.write_text(json.dumps({
         "model": model, "hypothesis_id": hyp.id, "world": hyp.world, "seed": seed,
+        "rule": rule, "experiments_enabled": experiments,
         "system_prompt": agent._system, "outcome": agent.outcome, "verdict": agent.verdict,
+        "estimates": agent.estimates, "bid": agent.bid,
         "account_events": account.events, "rounds": agent.conversation_log,
     }, indent=2, default=str))
     try:
@@ -140,11 +144,18 @@ def run_attempt(model: str, hypothesis_id: str, seed: int, ledger_entries: list[
             "prize": hyp.prize,
             "outcome": agent.outcome,
             "agent_verdict": agent.verdict,
+            "estimates": agent.estimates,
+            "bid": agent.bid,
+            "rule": rule,
+            "experiments_enabled": experiments,
             "evidence": agent.evidence,
             "withdraw_reason": agent.withdraw_reason,
             "final_assessment": last.get("assessment"),
             "final_p": last.get("p_success"),
             "first_p": log[0]["p_success"] if log else None,
+            "planned_cost": (agent.bid or {}).get("planned_cost"),
+            "bid_p": (agent.bid or {}).get("p_success"),
+            "claim_bond": cfg.claim_bond * hyp.prize,
             "budget": cfg.budget,
             "round_fee": cfg.round_fee,
             "experiment_costs": cfg.experiment_costs,

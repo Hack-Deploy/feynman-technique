@@ -48,6 +48,65 @@
   .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
   tr.sel td { background: var(--soft); }
   .btn.sm { padding: 6px 12px; font-size: 13px; }
+  .learn .controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; }
+  .steps button { font: 600 13px var(--sans); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--body); }
+  .steps button.on { background: var(--soft); border-color: var(--navy); color: var(--navy); }
+
+  .quote { margin: 10px 0 6px; min-height: 96px; font: 500 16px/1.5 var(--sans); color: var(--ink); border-left: 3px solid var(--navy); padding: 2px 0 2px 12px; }
+  .quote small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .learn { margin-top: 0; }
+  [hidden] { display: none !important; }
+  #oLaw { margin-top: 10px; font-size: 13px; }
+  #oLaw pre { max-height: 260px; overflow: auto; white-space: pre; font-size: 12px; background: #fff; padding: 10px; border-radius: 6px; }
+  .kv.row { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
+  @media (max-width: 720px) { .kv.row { grid-template-columns: 1fr 1fr; } }
+  .learn-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; margin-top: 22px; align-items: start; }
+  @media (max-width: 960px) { .learn-grid { grid-template-columns: minmax(0, 1fr); } }
+  .lchart { background: var(--faint); border-radius: 10px; padding: 14px 14px 10px; margin: 0; }
+  .lchart svg, .lside svg { width: 100%; height: auto; display: block; }
+  .lchart svg text, .lside svg text { font-family: var(--sans); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 13px; color: var(--body); }
+  .legend i { display: inline-block; width: 18px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 6px; }
+  .legend i.dot { width: 9px; height: 9px; border: 0; border-radius: 50%; background: #1B3F8B; }
+  .lside { background: var(--faint); border-radius: 10px; padding: 18px; }
+  .lhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .lhead b { font: 700 13px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: var(--navy); }
+  .lhead span { font: 700 13px var(--narrow); letter-spacing: .08em; color: var(--muted); }
+  .lguess { margin: 10px 0 4px; font: 700 26px var(--narrow); color: #B7791F; }
+  .lguess small { display: block; font: 500 14px var(--sans); color: var(--muted); margin-top: 2px; }
+  .lside .quote { min-height: 120px; margin-top: 12px; }
+  .lverdict { display: none; margin-top: 12px; background: #fff; border-radius: 8px; padding: 12px 14px; border-left: 4px solid var(--green); font-size: 15px; line-height: 1.5; }
+  .lverdict.show { display: block; }
+  .lverdict .nums { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font: 700 15px var(--narrow); }
+  .trail { margin-top: 28px; }
+  .trail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+  .trail-head h3 { margin: 0; }
+  .trail-head .note { margin: 0; }
+  #lTrail { list-style: none; margin-top: 12px; display: grid; gap: 8px; }
+  .tr { display: grid; grid-template-columns: 150px minmax(0, 230px) minmax(0, 1fr) 70px; grid-template-areas: "rn hyp why conf"; gap: 6px 18px; align-items: start;
+    padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; transition: background .3s, border-color .3s, opacity .3s; }
+  .tr:hover { background: var(--faint); }
+  .tr.now { border-left-color: var(--amber); background: var(--amber-soft); }
+  .tr.future { opacity: .45; }
+  .tr.check.ok { border-left-color: var(--green); background: var(--green-soft); }
+  .tr.check.bad { border-left-color: var(--rust); background: var(--rust-soft); }
+  .tr .rn { grid-area: rn; min-width: 0; }
+  .tr .rn b { display: block; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tr .rn .act { font-size: 14px; font-weight: 600; margin-top: 2px; }
+  .tr .rn .saw { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tr .hyp { grid-area: hyp; min-width: 0; }
+  .tr .law { font: 700 19px var(--narrow); color: var(--amber); }
+  .tr.check .law { color: var(--green); }
+  .tr .law small { font: 500 13px var(--sans); color: var(--muted); margin-left: 4px; }
+  .tr .delta { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--faint); font: 700 12px var(--narrow); color: var(--body); vertical-align: 2px; }
+  .tr .hyp svg { width: 100%; height: auto; display: block; margin-top: 4px; }
+  .tr .stance { font-size: 13px; margin-top: 2px; }
+  .tr .why { grid-area: why; min-width: 0; font-size: 15px; line-height: 1.5; }
+  .tr .conf { grid-area: conf; text-align: right; font: 700 20px var(--narrow); color: var(--navy); }
+  .tr .conf span { display: block; font: 700 10px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  @media (max-width: 860px) { .tr { grid-template-columns: minmax(0, 1fr) 64px; grid-template-areas: "rn conf" "hyp hyp" "why why"; } }
   @keyframes p { from { opacity: .25 } to { opacity: 1 } }
 </style>
 </head>
@@ -95,44 +154,74 @@
 </section>
 
 <section id="start">
-  <p class="label">1 · Post a question</p>
+  <p class="label">1 · Choose a recorded run</p>
   <h2>Choose a claim and an AI scientist.</h2>
   <div id="status"></div>
   <div class="controls" style="margin-top:18px">
     <label>Claim <select id="hyp"></select></label>
     <label>Model <select id="model"></select></label>
-    <span class="mode" id="mode"><button data-m="demo" class="on">Scripted demo · free</button><button data-m="live">Real model · paid</button></span>
-    <button class="btn" id="go">Start the market</button>
+    <span class="mode" id="mode"><button data-m="recorded" class="on">Hugging Face replay · free</button><button data-m="live">New run · paid</button></span>
+    <button class="btn" id="go" disabled>Replay recorded run</button>
   </div>
   <div id="hypCard"></div>
   <div id="claimStatus"></div>
   <p class="note" id="costNote" style="margin-top:10px"></p>
-</section>
 
-<section id="watch">
-  <p class="label">2 · Watch it play out</p>
-  <h2 id="watchTitle">Round by round.</h2>
-  <div class="board">
-    <div id="feed"><p class="wait">Start a market above. Each round appears here as it happens.</p></div>
-    <div>
-      <div class="kv">
-        <div><span>Round</span><b id="kRound">–</b></div>
-        <div><span>Spent</span><b id="kSpent">–</b></div>
-        <div><span>Experiments</span><b id="kExp">–</b></div>
-        <div><span>Stated chance</span><b id="kP">–</b></div>
+<div id="watch">
+  <p class="note" id="watchLead" style="margin-top:6px"></p>
+  <div class="controls" id="replayTabs" style="margin-top:14px">
+    <span class="mode"><button data-example="success">Success replay</button><button data-example="failure">Failure replay</button></span>
+    <p class="note" id="replayAvailability"></p>
+  </div>
+  <div id="claim"></div>
+  <div class="kv row">
+    <div><span>Round</span><b id="kRound">–</b></div>
+    <div><span id="kSpentL">Spent</span><b id="kSpent">–</b></div>
+    <div><span id="kExpL">Experiments</span><b id="kExp">–</b></div>
+    <div><span>Stated chance</span><b id="kP">–</b></div>
+  </div>
+  <div class="controls" style="margin-top:16px">
+    <label>Plot <select id="replayPlot"><option value="motion">Motion over time</option><option value="paths">Particle paths</option><option value="law">Force versus distance</option></select></label>
+    <label>Track <select id="replayMetric"><option value="confidence">Stated chance</option></select></label>
+  </div>
+  <div class="learn" id="learn">
+  <div class="learn-grid">
+    <figure class="lchart">
+      <svg id="lc" viewBox="0 0 640 380" role="img" aria-label="The model's guess for how the pull falls with distance, round by round, against its readings and the true law"></svg>
+      <div class="legend">
+        <span><i class="dot"></i>Approximate pull derived from recorded positions</span>
+        <span><i style="border-color:#B7791F"></i>Its recorded fit (when available)</span>
+        <span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>Simulator reference (hidden from the model)</span>
+        <span><i style="border-color:#3D63B5;border-top-style:dotted"></i>The hypothesis, <span id="lClaimLaw">1/r²</span></span>
       </div>
-      <div class="fig" style="margin-top:14px"><svg viewBox="0 0 420 220" id="pChart" role="img" aria-label="Stated chance and spend by round"></svg>
-        <p class="cap">Navy: the model's stated chance of a correct verdict. Rust: credits spent.</p></div>
-      <div id="result"></div>
+    </figure>
+    <div class="lside">
+      <div class="lhead"><b id="lRound"></b><span id="lConf"></span></div>
+      <div class="lguess" id="lGuess"></div>
+      <svg id="ln" viewBox="0 0 420 220" role="img" aria-label="The model's recorded estimate of the exponent n each round, against the simulator reference"></svg>
+      <p class="quote" id="lQuote"></p>
+      <div id="replayDetails"></div>
+      <div class="lverdict" id="lVerdict"></div>
     </div>
   </div>
+  <div class="controls" style="margin-top:12px">
+    <button class="btn sm" id="lPlay">Play</button>
+    <div class="steps" id="lSteps"></div>
+  </div>
+  <div class="trail">
+    <div class="trail-head"><h3>How its hypothesis changed</h3><p class="note">What it believed after each round, and why. Click a round to jump there.</p></div>
+    <ol id="lTrail"></ol>
+  </div>
+  </div>
+</div>
 </section>
 
 <section id="recorded">
-  <p class="label">3 · Recorded runs</p>
+  <p class="label">2 · Recorded runs</p>
   <h2>Replay runs that were already played.</h2>
   <p class="sub">Every model got the same claims, the same prices and the same spending cap. Replays read saved results from this machine; nothing is sent to an AI model.</p>
   <div id="recBanner"><p class="wait">Loading…</p></div>
+  <div id="recBody">
   <h3 style="margin-top:22px">How the models compare</h3>
   <div class="cmp">
     <div id="recCompare"></div>
@@ -141,32 +230,14 @@
   </div>
   <h3 style="margin-top:26px">Pick a run to replay</h3>
   <div id="recRuns"></div>
-  <div id="replay" style="display:none">
-    <h3 id="repTitle" style="margin-top:26px"></h3>
-    <div class="controls" style="margin-top:10px"><button class="btn sm" id="repPlay">Replay round by round</button><button class="btn ghost sm" id="repAll">Show all rounds</button></div>
-    <div class="board">
-      <div id="repFeed"></div>
-      <div>
-        <div class="kv">
-          <div><span>Round</span><b id="rRound">–</b></div>
-          <div><span>Credits spent</span><b id="rSpent">–</b></div>
-          <div><span>Experiments</span><b id="rExp">–</b></div>
-          <div><span>Stated chance</span><b id="rP">–</b></div>
-          <div><span>API cost</span><b id="rUsd">–</b></div>
-          <div><span>Model</span><b id="rModel" style="font-size:15px">–</b></div>
-        </div>
-        <div class="fig" style="margin-top:14px"><svg viewBox="0 0 420 220" id="repChart" role="img" aria-label="Stated chance and spend by round"></svg>
-          <p class="cap">Navy: the model's stated chance of a correct verdict. Rust: credits spent.</p></div>
-        <div id="repResult"></div>
-      </div>
-    </div>
   </div>
+
 </section>
 
 <section id="record">
-  <p class="label rust">4 · The public record</p>
+  <p class="label rust">3 · The public record</p>
   <h2>Every run is kept, especially the failures.</h2>
-  <p class="sub" id="recordNote">Models can buy failed runs for their claim; solved claims leave the market.</p>
+  <p class="sub" id="recordNote">Models can buy failed runs for their claim; solved claims leave the market. Below: runs played by real models only.</p>
   <div id="leader"></div>
   <div id="runs"><p class="wait">Loading…</p></div>
 </section>
@@ -183,25 +254,93 @@ const n0 = v => v == null ? "–" : (Math.round(v * 10) / 10).toString();
 const ACTION = {experiment: "bought an experiment", mse_fit: "fitted a formula to its data", verdict: "gave its verdict",
   walk_away: "walked away", withdraw: "withdrew", no_tag: "reply had no action"};
 const OUTCOME = {verdict: "verdict", walked_away: "walked away", withdrawn: "withdrew", out_of_rounds: "ran out of rounds"};
-let INFO = null, MODE = "demo", POLL = null;
+let JOB = null;
+let INFO = null, MODE = "recorded", POLL = null, VIEW = "replay", CLAIM = {};
+
+let HF_RUNS = [], RECOMMENDATIONS = {};
+function chooseRecommendedModel() {
+  const choices = RECOMMENDATIONS[$("#hyp").value] || {};
+  const row = HF_RUNS.find(r => r.attempt_id === (choices.success || choices.failure));
+  if (row) $("#model").value = row.model;
+}
+function updateReplayTabs(active = null) {
+  const choices = RECOMMENDATIONS[$("#hyp").value] || {};
+  $("#replayTabs").hidden = MODE !== "recorded";
+  document.querySelectorAll("[data-example]").forEach(b => {
+    b.disabled = !choices[b.dataset.example];
+    b.classList.toggle("on", Boolean(active && choices[b.dataset.example] === active));
+  });
+  const missing = [!choices.success && "No successful run recorded for this claim.", !choices.failure && "No failed run recorded for this claim."].filter(Boolean);
+  $("#replayAvailability").textContent = missing.join(" ");
+}
+document.querySelectorAll("[data-example]").forEach(b => b.addEventListener("click", () => {
+  const id = (RECOMMENDATIONS[$("#hyp").value] || {})[b.dataset.example];
+  if (id) openReplay(id);
+}));
+const HF_URL = "https://huggingface.co/datasets/arushisinha98/discovery-market-live";
+const HF_DATA = fetch("/api/live/recorded", {cache: "no-store"}).then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)));
+const LEARNING_DATA = fetch("/web/data/learning.json").then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)));
+function selectedRecording() {
+  return HF_RUNS.find(r => r.hypothesis_id === $("#hyp").value && r.model === $("#model").value);
+}
+function fillModels() {
+  const previous = $("#model").value;
+  const labels = Object.fromEntries((INFO.model_table || []).map(m => [m.id, m.label]));
+  const models = MODE === "recorded"
+    ? [...new Map(HF_RUNS.filter(r => r.hypothesis_id === $("#hyp").value).map(r => [r.model, {id: r.model, label: `${r.model_label || r.model} · ${r.passed ? "success" : "failure"}`}])).values()]
+    : INFO.models.map(id => ({id, label: labels[id] || id}));
+  $("#model").innerHTML = models.map(m => `<option value="${esc(m.id)}">${esc(m.label)} · ${esc(m.id)}</option>`).join("");
+  if (models.some(m => m.id === previous)) $("#model").value = previous;
+}
+
+// section 1: one view at a time, the recorded run or the market you started
+function showView(v) {
+  VIEW = v;
+  $("#learn").hidden = false;
+  $("#kSpentL").textContent = "Spent";
+  $("#kExpL").textContent = "Experiments";
+}
+function renderClaim(c) {
+  const h = (INFO && INFO.hypotheses.find(x => x.id === c.id)) || {};
+  const crit = c.resolution_criteria || h.resolution_criteria;
+  $("#claim").innerHTML = c.hypothesis ? `<div class="q"><p class="label" style="margin:0 0 6px">The hypothesis</p><div class="h">“${esc(c.hypothesis)}”</div>
+    ${crit ? `<div class="crit"><b>How it will be judged:</b> ${esc(crit)}</div>` : ""}
+    <div class="meta"><span class="pill info">${esc(c.model)}</span>${(c.world || h.world) ? `<span class="pill info">world: ${esc(c.world || h.world)}</span>` : ""}<span class="pill pass">prize ${n0(c.prize ?? h.prize)} credits</span>
+    ${c.answer ? `<span class="pill ${c.answer === "supported" ? "pass" : "fail"}">answer: ${esc(c.answer)}</span>` : `<span class="pill">answer hidden</span>`}</div></div>` : "";
+}
 
 function renderStatus() {
   const l = INFO.live;
-  $("#status").innerHTML = l.enabled
+  $("#status").innerHTML = MODE === "recorded"
+    ? `<div class="status on"><span class="pill pass">recorded data</span><div>Replay ${HF_RUNS.length} real model runs across ${new Set(HF_RUNS.map(r => r.hypothesis_id)).size} claims and ${new Set(HF_RUNS.map(r => r.model)).size} models from the <a href="${HF_URL}" target="_blank" rel="noopener">Hugging Face dataset</a>. Choose a claim and model to watch its saved experiments and verdict. Replays are free and make no API calls.</div></div>`
+    : l.enabled
     ? `<div class="status on"><span class="pill pass">real models on</span><div>Spend cap $${usd(l.max_usd)}: $${usd(l.spent_usd)} spent so far (shared with the command-line grid), $${usd(l.remaining_usd)} left. A run is refused if its worst case would go over the cap.</div></div>`
     : `<div class="status off"><span class="pill warn">real models off</span><div>The scripted demo runs the full market for free with a pre-written AI scientist: it buys one experiment, then always answers “supported”, so it wins on true claims and loses on false ones. To use a real model on this machine:<ul>${(l.reasons || []).map(r => `<li>${esc(r)}</li>`).join("")}</ul></div></div>`;
   const liveBtn = document.querySelector('#mode [data-m="live"]');
   liveBtn.disabled = !l.enabled;
-  if (!l.enabled) setMode("demo");
 }
 function setMode(m) {
   MODE = m;
   document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
-  $("#model").disabled = m === "demo";
+  const previous = $("#hyp").value;
+  const hypotheses = m === "recorded"
+    ? [...new Map(HF_RUNS.map(r => [r.hypothesis_id, {id: r.hypothesis_id}])).values()]
+    : INFO.hypotheses;
+  $("#hyp").innerHTML = hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}</option>`).join("");
+  if (hypotheses.some(h => h.id === previous)) $("#hyp").value = previous;
+  fillModels();
+  $("#go").textContent = m === "recorded" ? "Replay recorded run" : "Start the market";
+  renderStatus();
   costNote();
   if (INFO) renderHyp();
+  updateReplayTabs();
 }
 function costNote() {
+  if (MODE === "recorded") {
+    const r = selectedRecording();
+    $("#costNote").textContent = r ? `Recorded run: up to ${r.max_rounds} rounds; ${n0(r.round_fee)} credits per round. Total spent: ${n0(r.spent)} credits. Original API cost: $${Number(r.usd).toFixed(4)}. Replaying costs nothing.${r.judge === "answer_key" ? " Results use the dataset’s answer-key scoring." : ""}` : "No recorded run is available for this selection. Pull the Hugging Face dataset to load its runs.";
+    return;
+  }
   const ec = INFO.experiment_costs || {};
   const parts = Object.entries(ec).map(([k, v]) => `${v} ${k.replace("per_", "per ").replace(/_/g, " ")}`).join(", ");
   $("#costNote").textContent = `Prices in credits: ${INFO.round_fee} per round; an experiment costs ${parts}; failed public-record data cost ${INFO.ledger_read_fee} to read. Measurements are noisy: positions ±${INFO.noise_std}, velocities ±${INFO.velocity_noise_std} (1σ). Repeating an experiment gives a fresh reading at full price.` +
@@ -210,19 +349,21 @@ function costNote() {
     (INFO.live.cap_note ? ` ${INFO.live.cap_note}` : "");
 }
 function renderHyp() {
-  const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
-  if (!h) return;
-  $("#hypCard").innerHTML = `<div class="q"><div class="h">“${esc(h.hypothesis)}”</div>
-    <div class="crit"><b>How it will be judged:</b> ${esc(h.resolution_criteria)}</div>
-    <div class="meta"><span class="pill info">world: ${esc(h.world)}</span><span class="pill pass">prize ${h.prize} credits</span><span class="pill">answer hidden</span></div></div>`;
+  const r = MODE === "recorded" ? selectedRecording() : null;
+  const h = MODE === "recorded" ? r : INFO.hypotheses.find(x => x.id === $("#hyp").value);
+  if (!h) { $("#hypCard").innerHTML = ""; $("#claimStatus").innerHTML = ""; $("#go").disabled = true; return; }
+  // For recorded runs the replay below shows the claim card; don't repeat it.
+  $("#hypCard").innerHTML = r ? "" : `<div class="q"><div class="h">“${esc(h.hypothesis)}”</div>
+    <div class="crit"><b>${r ? "Recorded judging criteria:" : "How it will be judged:"}</b> ${esc(h.resolution_criteria)}</div>
+    <div class="meta"><span class="pill info">world: ${esc(h.world)}</span><span class="pill pass">prize ${h.prize} credits</span>${r ? `<span class="pill info">seed ${r.seed}</span>` : ""}<span class="pill">answer hidden</span></div></div>`;
   const closed = MODE === "live" && h.solved_by;
   $("#claimStatus").innerHTML = closed
     ? `<p class="pill warn">Solved by ${esc(h.solved_by)}. This claim is closed.</p>`
-    : "";
+    : r && r.judge === "answer_key" ? `<p class="note">This run was scored against the dataset’s answer key.</p>` : "";
   $("#go").disabled = Boolean(closed);
 }
 
-function chart(rounds, el = "#pChart") {
+function chart(rounds, el = "#ln") {
   const W = 420, H = 220, x0 = 36, y0 = 190, w = W - x0 - 14, h = 160;
   const n = Math.max(rounds.length, 4);
   const sx = i => x0 + (n === 1 ? 0 : i / (n - 1) * w);
@@ -240,51 +381,87 @@ function roundCard(r) {
   const cost = (r.experiments_cost || 0) + (r.round_fee || 0);
   let what = "";
   if (r.assessment) what += `<p>${esc(r.assessment)}</p>`;
-  if (r.verdict) what += `<p><b>Verdict: ${esc(r.verdict)}</b>${r.evidence ? " · " + esc(r.evidence) : ""}</p>`;
+  if (r.verdict) what += `<p><b>Verdict: ${esc(r.verdict)}</b></p>`;
   if (r.withdraw_reason) what += `<p><b>Reason:</b> ${esc(r.withdraw_reason)}</p>`;
   if (r.experiment_error) what += `<p class="pill fail">${esc(r.experiment_error)}</p>`;
   if (r.cut_off) what += `<p class="pill fail">Reply cut off at the token limit (max_tokens in poc/live_models.yaml)</p>`;
   if (r.record_bought) what += `<p class="pill pass">bought the public record (${n0(INFO?.ledger_read_fee ?? 30)} credits)</p>`;
   const exp = r.experiment_input && r.experiment_input.length ? `<details><summary>Experiment it ordered (${r.n_experiments})</summary><pre>${esc(JSON.stringify(r.experiment_input, null, 1))}</pre></details>` : "";
   const fit = r.mse_fit ? `<details><summary>Formula it fitted</summary><pre>${esc(r.mse_fit)}</pre></details>` : "";
+  const readings = r.experiment_results?.length ? `<details><summary>Recorded experiment results</summary><pre>${esc(JSON.stringify(r.experiment_results, null, 1))}</pre></details>` : "";
+  const evidence = r.verdict && r.evidence ? `<details><summary>Its evidence</summary><p>${esc(r.evidence)}</p></details>` : "";
   const reply = r.reply ? `<details><summary>Full reply</summary><pre>${esc(r.reply)}</pre></details>` : "";
-  return `<div class="round ${esc(r.action)}"><div class="t">Round ${r.round} · ${esc(ACTION[r.action] || r.action || "")}<span class="pill info">${pct(r.p_success)} sure</span><span class="pill">−${n0(cost)} credits</span></div>${what}${exp}${fit}${reply}</div>`;
+  return `<div class="round ${esc(r.action)}"><div class="t">Round ${r.round} · ${esc(ACTION[r.action] || r.action || "")}<span class="pill info">${pct(r.p_success)} sure</span><span class="pill">−${n0(cost)} credits</span></div>${what}${evidence}${exp}${readings}${fit}${reply}</div>`;
+}
+function drawJob() {
+  if (!JOB) return;
+  showView("live");
+  window.renderMarketJob(JOB, CLAIM);
 }
 function renderJob(j) {
-  const rs = j.rounds || [];
-  $("#feed").innerHTML = (rs.length ? rs.map(roundCard).join("") : "") +
-    (j.state === "running" ? `<p class="wait"><span class="pulse"></span> ${j.scripted ? "Scripted AI scientist" : esc(j.model)} is thinking…</p>` : "");
-  const last = rs[rs.length - 1] || {};
-  $("#kRound").textContent = rs.length || "–";
-  $("#kSpent").textContent = n0(last.spent_so_far ?? 0);
-  $("#kExp").textContent = rs.reduce((a, r) => a + (r.n_experiments || 0), 0);
-  const lastP = [...rs].reverse().find(r => r.p_success != null);
-  $("#kP").textContent = pct(lastP?.p_success);
-  chart(rs);
-  if (j.state === "error") $("#result").innerHTML = `<div class="result lose"><b>The run stopped with an error.</b><p class="note">${esc(j.error)}</p></div>`;
-  if (j.state === "done" && j.run) {
-    const r = j.run, win = r.passed;
-    $("#result").innerHTML = `<div class="result ${win ? "win" : "lose"}"><p class="label" style="margin:0">${win ? "Prize paid" : "No prize"}</p>
-      <div class="big" style="color:${win ? "var(--green)" : "var(--rust)"}">${r.profit >= 0 ? "+" : ""}${n0(r.profit)} credits</div>
-      <p style="margin-top:8px">Outcome: <b>${esc(OUTCOME[r.outcome] || r.outcome)}</b>${r.agent_verdict ? `, it said <b>${esc(r.agent_verdict)}</b>` : ""}. The hidden answer was <b>${esc(r.answer)}</b>.</p>
-      <p class="note">Spent ${n0(r.spent)} on ${r.rounds} rounds and ${r.experiments} experiments; prize ${n0(r.prize_paid)} of ${n0(r.prize)}. ${win ? "" : "This run is now in the public record."}</p></div>`;
-    loadRuns();
-  }
+  JOB = j;
+  drawJob();
+  if (j.state === "done") loadRuns();
 }
 async function poll(id) {
   try {
     const j = await (await fetch("/api/live/job?id=" + encodeURIComponent(id))).json();
     renderJob(j);
     if (j.state === "running") { POLL = setTimeout(() => poll(id), 1200); return; }
-  } catch (e) { $("#result").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
+  } catch (e) { $("#claimStatus").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
   renderHyp();
   loadRecorded();
 }
-$("#go").addEventListener("click", async () => {
+let REPLAY_REQUEST = 0;
+async function replaySelectedRecording(autoplay = true, attemptId = null) {
+  const r = attemptId ? HF_RUNS.find(x => x.attempt_id === attemptId) : selectedRecording();
+  if (!r) return;
+  const request = ++REPLAY_REQUEST;
   clearTimeout(POLL);
-  $("#go").disabled = true; $("#result").innerHTML = ""; $("#feed").innerHTML = '<p class="wait"><span class="pulse"></span> Posting the question…</p>';
+  $("#go").disabled = true;
+  try {
+    const response = await fetch("/api/live/recorded/run?id=" + encodeURIComponent(r.attempt_id), {cache: "no-store"});
+    if (!response.ok) throw new Error("Could not load the recorded run.");
+    const d = await response.json();
+    if (request !== REPLAY_REQUEST) return;
+    JOB = {state: "done", model: r.model, scripted: false, rounds: d.rounds || [], run: d.run};
+    CLAIM = {id: r.hypothesis_id, hypothesis: r.hypothesis, resolution_criteria: r.resolution_criteria,
+      world: r.world, prize: r.prize, model: `${r.model_label || r.model} · seed ${r.seed}`};
+    // The matched gravity examples include recorded numeric estimates and a disclosed simulator reference.
+    const examples = await LEARNING_DATA.catch(() => ({runs: []}));
+    if (request !== REPLAY_REQUEST) return;
+    const law = (examples.runs || []).find(x => x.id === r.attempt_id);
+    if (law) {
+      d.replay.law = law;
+      d.replay.rounds.forEach(rd => {
+        const source = law.rounds.find(x => x.round === rd.round);
+        if (source) rd.estimates = {...rd.estimates, ...source.estimates};
+      });
+    }
+    showView("replay");
+    updateReplayTabs(r.attempt_id);
+    if (!window.showRecordedReplay) await new Promise(resolve => window.addEventListener("replay-ready", resolve, {once: true}));
+    if (request === REPLAY_REQUEST) window.showRecordedReplay(d.replay, autoplay);
+
+  } catch (e) {
+    $("#claimStatus").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`;
+  } finally { if (request === REPLAY_REQUEST) $("#go").disabled = false; }
+}
+$("#go").addEventListener("click", async () => {
+  if (MODE === "recorded") {
+    await replaySelectedRecording();
+    location.hash = "watch";
+    return;
+  }
+  clearTimeout(POLL);
+  JOB = null;
+  $("#go").disabled = true; $("#lQuote").textContent = "Posting the question…";
   const h = INFO.hypotheses.find(x => x.id === $("#hyp").value);
-  $("#watchTitle").textContent = `“${h.hypothesis}”`;
+  CLAIM = {id: h.id, hypothesis: h.hypothesis, resolution_criteria: h.resolution_criteria, world: h.world, prize: h.prize,
+    model: MODE === "demo" ? "Scripted AI scientist" : ($("#model").selectedOptions[0]?.textContent || $("#model").value)};
+  showView("live");
+  $("#watchLead").textContent = "Your market. Each round appears here as it happens.";
+  $("#kRound").textContent = $("#kSpent").textContent = $("#kExp").textContent = $("#kP").textContent = "–";
   try {
     const res = await fetch("/api/live/start", {method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({hypothesis_id: h.id, model: $("#model").value, scripted: MODE === "demo"})});
@@ -292,7 +469,7 @@ $("#go").addEventListener("click", async () => {
     if (!s.ok) throw new Error(s.error || "could not start");
     location.hash = "watch";
     poll(s.job_id);
-  } catch (e) { $("#feed").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; renderHyp(); }
+  } catch (e) { $("#claimStatus").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; renderHyp(); }
 });
 
 function runsTable(rows, title) {
@@ -309,15 +486,11 @@ async function loadRuns() {
   const names = Object.keys(m);
   $("#leader").innerHTML = names.length ? `<h3 style="margin-top:18px">Leaderboard (real models)</h3><table><tr><th>Model</th><th class="num">Runs</th><th class="num">Correct</th><th class="num">Calibration error (Brier, lower is better)</th><th class="num">Spent</th><th class="num">Profit</th></tr>` +
     names.map(k => `<tr><td>${esc(k)}</td><td class="num">${m[k].runs}</td><td class="num">${m[k].correct_verdicts}</td><td class="num">${m[k].brier_final_p ?? "–"}</td><td class="num">${n0(m[k].spent)}</td><td class="num">${n0(m[k].profit)}</td></tr>`).join("") + "</table>" : "";
-  $("#runs").innerHTML = runsTable(
-    (d.live || []).filter(r => !r.passed), "Failed real-model runs"
-  ) + runsTable(
-    (d.demo || []).filter(r => !r.passed), "Failed scripted demo runs"
-  );
+  $("#runs").innerHTML = runsTable(d.live || [], "Real-model runs");
 }
 
 const COLORS = ["#1B3F8B", "#2E7D4F", "#A23B1E", "#B7791F", "#6B6B67", "#3D63B5"];
-let REC = null, REPLAY = null;
+let REC = null;
 function calChart(cmp) {
   const W = 420, H = 300, x0 = 46, y0 = 250, w = W - x0 - 20, h = 210;
   const X = p => x0 + p * w, Y = q => y0 - q * h;
@@ -339,9 +512,11 @@ function calChart(cmp) {
 function renderRecorded(d) {
   REC = d;
   const real = d.source === "real";
-  $("#recBanner").innerHTML = d.source === "none" ? `<div class="banner scripted">No recorded runs yet.</div>` : real
-    ? `<div class="banner real"><span class="pill pass">real runs</span> ${d.real_count} runs played by real Claude models and saved on this machine. Model prices from Anthropic, checked ${esc(d.prices_checked)}.${d.scripted_count ? ` (${d.scripted_count} scripted demo runs are hidden.)` : ""}</div>`
-    : `<div class="banner scripted"><span class="pill warn">scripted demo · not real models</span> No real runs have been recorded yet, so this shows ${d.scripted_count} runs by pre-written stand-ins, one per model slot. They only show how the view works and say nothing about the real models. API cost is $0 because no model was called.</div>`;
+  $("#recBanner").innerHTML = real
+    ? `<div class="banner real"><span class="pill pass">real runs</span> ${d.real_count} runs played by real Claude models and saved on this machine. Model prices from Anthropic, checked ${esc(d.prices_checked)}.</div>`
+    : `<p class="wait">No full grid of real runs has been recorded yet. The real pilot runs are listed in the public record below.</p>`;
+  $("#recBody").hidden = !real;
+  if (!real) return;
   const cmp = d.comparison || [];
   $("#recCompare").innerHTML = `<table><tr><th>Model</th><th class="num">Runs</th><th class="num">Won</th><th class="num">Win rate</th><th class="num">Profit (credits)</th><th class="num">API cost</th><th class="num">Brier score</th></tr>` +
     cmp.map((m, i) => `<tr><td><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${esc(m.label)}</td><td class="num">${m.runs}</td><td class="num">${m.wins}</td><td class="num">${pct(m.win_rate)}</td>
@@ -357,60 +532,37 @@ function renderRecorded(d) {
       <td><button class="btn ghost sm" data-replay="${esc(r.attempt_id)}">Replay</button></td></tr>`).join("") + "</table>" : `<p class="wait">None yet.</p>`;
   document.querySelectorAll("[data-replay]").forEach(b => b.addEventListener("click", () => openReplay(b.dataset.replay)));
 }
-function showReplay(n) {
-  const R = REPLAY, rs = R.rounds.slice(0, n), last = rs[rs.length - 1] || {};
-  $("#repFeed").innerHTML = rs.map(roundCard).join("") + (n < R.rounds.length ? `<p class="wait"><span class="pulse"></span> next round…</p>` : "");
-  $("#rRound").textContent = rs.length ? `${rs.length} / ${R.rounds.length}` : "–";
-  $("#rSpent").textContent = n0(last.spent_so_far ?? 0);
-  $("#rExp").textContent = rs.reduce((a, r) => a + (r.n_experiments || 0), 0);
-  $("#rP").textContent = pct([...rs].reverse().find(r => r.p_success != null)?.p_success);
-  const u = [...rs].reverse().find(r => r.usd_so_far != null)?.usd_so_far;
-  $("#rUsd").textContent = R.source === "scripted" ? "$0 (scripted)" : "$" + usd(n >= R.rounds.length ? R.run.usd : u);
-  chart(rs, "#repChart");
-  const r = R.run, win = r.passed;
-  $("#repResult").innerHTML = n < R.rounds.length ? "" : `<div class="result ${win ? "win" : "lose"}"><p class="label" style="margin:0">${win ? "Prize paid" : "No prize"}</p>
-    <div class="big" style="color:${win ? "var(--green)" : "var(--rust)"}">${r.profit >= 0 ? "+" : ""}${n0(r.profit)} credits</div>
-    <p style="margin-top:8px">Outcome: <b>${esc(OUTCOME[r.outcome] || r.outcome)}</b>${r.agent_verdict ? `, it said <b>${esc(r.agent_verdict)}</b>` : ""}. The hidden answer was <b>${esc(r.answer)}</b>.</p>
-    <p class="note">Spent ${n0(r.spent)} credits on ${r.rounds} rounds and ${r.experiments} experiments; prize paid ${n0(r.prize_paid)} of ${n0(r.prize)}. API cost $${usd(r.usd)}.</p></div>`;
-}
-function playReplay() {
-  clearTimeout(REPLAY.timer);
-  const step = n => { showReplay(n); if (n < REPLAY.rounds.length) REPLAY.timer = setTimeout(() => step(n + 1), 1100); };
-  step(1);
-}
 async function openReplay(id) {
-  if (REPLAY) clearTimeout(REPLAY.timer);
-  const res = await fetch("/api/live/recorded/run?id=" + encodeURIComponent(id));
-  if (!res.ok) { $("#recRuns").insertAdjacentHTML("beforeend", `<p class="pill fail">Run ${esc(id)} not found.</p>`); return; }
-  const d = await res.json();
-  REPLAY = {...d, rounds: d.rounds || [], timer: null};
-  document.querySelectorAll("#recRuns tr[data-id]").forEach(tr => tr.classList.toggle("sel", tr.dataset.id === id));
-  $("#replay").style.display = "";
-  $("#rModel").textContent = d.run.model_label || d.run.model;
-  $("#repTitle").innerHTML = `${d.source === "scripted" ? '<span class="pill warn">scripted demo</span> ' : '<span class="pill pass">real run</span> '}${esc(d.run.model_label || d.run.model)} on <i>${esc(d.run.hypothesis_id)}</i>`;
-  playReplay();
-  $("#replay").scrollIntoView({behavior: "smooth", block: "start"});
+  const r = HF_RUNS.find(r => r.attempt_id === id);
+  if (!r) return;
+  setMode("recorded");
+  $("#hyp").value = r.hypothesis_id; fillModels(); $("#model").value = r.model;
+  renderHyp(); costNote(); updateReplayTabs();
+  await replaySelectedRecording(true, id);
+  location.hash = "watch";
 }
-$("#repPlay").addEventListener("click", () => REPLAY && playReplay());
-$("#repAll").addEventListener("click", () => { if (REPLAY) { clearTimeout(REPLAY.timer); showReplay(REPLAY.rounds.length); } });
 function loadRecorded() {
   return fetch("/api/live/recorded", {cache: "no-store"}).then(r => r.json()).then(renderRecorded)
     .catch(e => { $("#recBanner").innerHTML = `<p class="pill fail">Could not load recorded runs: ${esc(e.message)}</p>`; });
 }
 loadRecorded();
 
-fetch("/api/live/info").then(r => r.json()).then(info => {
+Promise.all([fetch("/api/live/info").then(r => r.json()), HF_DATA]).then(([info, data]) => {
   INFO = info;
+  HF_RUNS = data.runs || [];
+  RECOMMENDATIONS = data.recommendations || {};
   $("#hyp").innerHTML = info.hypotheses.map(h => `<option value="${esc(h.id)}">${esc(h.id)}${h.solved_by ? " · solved, off the market" : ""}</option>`).join("");
-  $("#recordNote").textContent = `Models can buy failed runs for their claim for ${info.ledger_read_fee} credits. Solved claims leave the market. Below: failed live and scripted runs. Recorded runs above still show every result.`;
+  $("#recordNote").textContent = `Models can buy failed runs for their claim for ${info.ledger_read_fee} credits. Solved claims leave the market. Below: runs played by real models only.`;
   const label = Object.fromEntries((info.model_table || []).map(m => [m.id, m.label]));
   $("#model").innerHTML = info.models.map(m => `<option value="${esc(m)}">${esc(label[m] ? label[m] + " · " + m : m)}</option>`).join("");
-  $("#model").addEventListener("change", costNote);
-  $("#hyp").addEventListener("change", renderHyp);
+  $("#model").addEventListener("change", () => { renderHyp(); costNote(); updateReplayTabs(); });
+  $("#hyp").addEventListener("change", () => { fillModels(); chooseRecommendedModel(); renderHyp(); costNote(); updateReplayTabs(); });
   document.querySelectorAll("#mode button").forEach(b => b.addEventListener("click", () => !b.disabled && setMode(b.dataset.m)));
-  renderStatus(); renderHyp(); costNote(); chart([]);
+  setMode("recorded"); chooseRecommendedModel(); renderHyp(); costNote(); updateReplayTabs();
+  replaySelectedRecording(false);
 }).catch(e => { $("#status").innerHTML = `<p class="pill fail">Could not load the market: ${esc(e.message)}</p>`; });
 loadRuns().catch(() => {});
 </script>
+<script src="/web/replay.js"></script>
 </body>
 </html>

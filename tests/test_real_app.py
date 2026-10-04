@@ -257,7 +257,7 @@ def test_three_pages_removed_routes_static_and_api_data(app_server, monkeypatch)
         assert "text/html" in headers.get("Content-Type", "").lower()
 
     for path in (
-        "/report", "/real", "/index.html", "/api/data", "/api/bounty",
+        "/report", "/real", "/index.html", "/experiments", "/api/data", "/api/bounty",
         "/api/bounty/info", "/api/run", "/api/test",
     ):
         assert _request(f"{app_server}{path}")[0] == 404
@@ -270,6 +270,8 @@ def test_three_pages_removed_routes_static_and_api_data(app_server, monkeypatch)
     assert _request(f"{app_server}/web/%2e%2e/app.py")[0] == 404
     assert _request(f"{app_server}/web/data/%2e%2e/style.css")[0] == 404
     assert _request(f"{app_server}/web/data/missing.json")[0] == 404
+    status, _, body = _request(f"{app_server}/web/data/experiments.json")
+    assert status == 200 and json.loads(body)["launches"]
 
     status, headers, body = _request(f"{app_server}/api/real")
     assert status == 200

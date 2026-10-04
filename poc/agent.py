@@ -25,6 +25,7 @@ from scienceagent.agent import (
 
 from poc import protocol
 from poc.config import Config, Hypothesis
+from poc.lab import LAB_NOTE
 from poc.pricing import Account, OverBudget, experiment_price
 
 Complete = Callable[..., str]
@@ -85,12 +86,14 @@ class MarketAgent(DiscoveryAgent):
     def __init__(self, *, cfg: Config, hyp: Hypothesis, account: Account,
                  ledger_entries: list[dict], complete: Optional[Complete] = None,
                  on_round: Callable[[dict], None] | None = None, noise_seed: int = 0,
-                 **kwargs):
+                 rule: str = "market", experiments: bool = True, **kwargs):
         # Set before super().__init__, which builds the system prompt.
         self.cfg = cfg
         self.hyp = hyp
         self.account = account
         self.ledger_entries = ledger_entries
+        self.rule = rule
+        self.experiments_enabled = experiments
         self.on_round = on_round
         self._complete = complete or llm_client.complete
         self.record_bought = False
@@ -99,23 +102,27 @@ class MarketAgent(DiscoveryAgent):
             kwargs.pop("executor"), cfg, hyp, account,
             cfg.velocity_noise_std, noise_seed,
         )
-        super().__init__(executor=executor, max_rounds=cfg.max_rounds, min_rounds=1,
-                         critic=None, random_experiments=False, no_mse=False, **kwargs)
-        self.outcome: str | None = None  # verdict | walked_away | withdrawn | out_of_rounds
+        super().__init__(executor=executor, max_rounds=cfg.max_rounds if experiments else 1,
+                         min_rounds=1, critic=None, random_experiments=False, no_mse=False,
+                         **kwargs)
+        # verdict | walked_away | declined | withdrawn | out_of_rounds
+        self.outcome: str | None = None
         self.verdict: str | None = None
         self.evidence: str | None = None
+        self.estimates: dict[str, dict] = {}
         self.withdraw_reason: str | None = None
+        self.bid: dict | None = None  # p_success, planned_cost, plan, accepted
 
     # ------------------------------------------------------------------ prompt
 
     def _build_system_prompt(self) -> str:
         # No silent fallback to a generic prompt: a missing prompt file is an error.
         base = _load_system_prompt(self._system_prompt_path, self._instructions_path)
-        return "\n\n".join([base.rstrip(), self._run_policy_note(),
-                            protocol.market_block(self.cfg, self.hyp),
-                            protocol.record_offer_block(
-                                len(self.ledger_entries), self.cfg.ledger_read_fee
-                            )])
+        return "\n\n".join([
+            base.rstrip(), self._run_policy_note(), LAB_NOTE.format(noise=self.cfg.noise_std),
+            protocol.market_block(self.cfg, self.hyp, self.rule, self.experiments_enabled),
+            protocol.record_offer_block(len(self.ledger_entries), self.cfg.ledger_read_fee),
+        ])
 
     def _run_policy_note(self) -> str:
         note = (
@@ -147,8 +154,42 @@ class MarketAgent(DiscoveryAgent):
             messages.extend([ask, {"role": "assistant", "content": follow}])
         entry.update(assessment=assessment, p_success=p)
 
+    def _read_bid(self, reply: str, messages: list[dict], entry: dict) -> str:
+        """First reply: p_success, planned_cost and plan; one re-prompt if p or cost is missing.
+        Returns the text to read the round's action from."""
+        p, cost = protocol.parse_p(reply), protocol.parse_planned_cost(reply)
+        plan = protocol.parse_plan(reply)
+        text = reply
+        if (p is None or cost is None) and protocol.parse_withdraw(reply) is None:
+            ask = {"role": "user", "content": protocol.BID_REPROMPT}
+            follow = self._ask(messages + [ask])
+            entry["bid_reprompt"] = follow
+            p = p if p is not None else protocol.parse_p(follow)
+            cost = cost if cost is not None else protocol.parse_planned_cost(follow)
+            plan = plan or protocol.parse_plan(follow)
+            entry["assessment"] = entry["assessment"] or protocol.parse_text(follow, "assessment")
+            messages.extend([ask, {"role": "assistant", "content": follow}])
+            text = reply + "\n" + follow
+        entry["p_success"] = p if p is not None else entry["p_success"]
+        self.bid = {"p_success": p, "planned_cost": cost, "plan": plan,
+                    "accepted": protocol.bids(p, cost, self.hyp.prize)}
+        entry["bid"] = self.bid
+        return text
+
+    def _read_estimates(self, reply: str, messages: list[dict], entry: dict) -> None:
+        names = [q.name for q in self.hyp.quantities]
+        est = protocol.parse_estimates(reply)
+        if any(n not in est for n in names):
+            ask = {"role": "user", "content": protocol.estimate_reprompt(names)}
+            follow = self._ask(messages + [ask])
+            entry["estimate_reprompt"] = follow
+            est = {**protocol.parse_estimates(follow), **est}
+            messages.extend([ask, {"role": "assistant", "content": follow}])
+        self.estimates = est
+        entry["estimates"] = est
+
     def _end_round(self, round_num: int, entry: dict) -> None:
-        fee = 0.0 if entry["action"] == "walk_away" else self.cfg.round_fee
+        fee = 0.0 if entry["action"] in ("walk_away", "declined") else self.cfg.round_fee
         self.account.charge("round_charged", fee, round_num)
         entry.update(experiments_cost=self.executor.round_cost, round_fee=fee,
                      spent_so_far=self.account.spent)
@@ -167,7 +208,8 @@ class MarketAgent(DiscoveryAgent):
     def run(self) -> Optional[str]:
         """Returns the verdict, or None if the agent walked away, withdrew or ran out of rounds."""
         self.conversation_log = []
-        self.outcome = self.verdict = self.evidence = self.withdraw_reason = None
+        self.outcome = self.verdict = self.evidence = self.withdraw_reason = self.bid = None
+        self.estimates = {}
         self.record_bought = False
         self.record_fee = 0.0
         messages: list[dict] = []
@@ -192,9 +234,9 @@ class MarketAgent(DiscoveryAgent):
                 )
                 messages.append({"role": "user", "content": warn})
                 entry["system_message"] = _join_sys(entry["system_message"], warn)
-            if round_num == self.max_rounds:
-                force = ("This is your final round. Give your <verdict> with <evidence> "
-                         "(plus <assessment> and <p_success>), or "
+            if round_num == self.max_rounds and self.experiments_enabled:
+                force = ("This is your final round. Give your <verdict> with your <estimate> "
+                         "block and <evidence> (plus <assessment> and <p_success>), or "
                          "<withdraw>reason</withdraw>. Do not run more experiments.")
                 messages.append({"role": "user", "content": force})
                 entry["system_message"] = _join_sys(entry["system_message"], force)
@@ -237,6 +279,14 @@ class MarketAgent(DiscoveryAgent):
                 messages.append({"role": "assistant", "content": follow})
                 reply = follow
             self._read_confidence(reply, messages, entry)
+            entry["estimates"] = protocol.parse_estimates(reply)  # running belief; a verdict overwrites
+            if round_num == 1:
+                reply = self._read_bid(reply, messages, entry)
+                if protocol.parse_withdraw(reply) is None and not self.bid["accepted"]:
+                    self.outcome = "declined"
+                    entry["action"] = "declined"
+                    self._end_round(round_num, entry)
+                    return None
 
             verdict = protocol.parse_verdict(reply)
             if verdict is not None:
@@ -246,6 +296,8 @@ class MarketAgent(DiscoveryAgent):
                         {"role": "user", "content": protocol.EVIDENCE_REPROMPT}])
                     entry["evidence_reprompt"] = follow
                     evidence = protocol.parse_text(follow, "evidence")
+                if verdict in ("supported", "refuted"):
+                    self._read_estimates(reply, messages, entry)
                 self.verdict, self.evidence, self.outcome = verdict, evidence, "verdict"
                 entry.update(action="verdict", verdict=verdict, evidence=evidence)
                 self._end_round(round_num, entry)
@@ -279,7 +331,7 @@ class MarketAgent(DiscoveryAgent):
                     "Test a candidate law against your data:\n<run_mse_fit>\n" + self._law_stub
                     + "</run_mse_fit>\n\n"
                     "Settle the hypothesis: <verdict>supported|refuted|inconclusive</verdict> "
-                    "<evidence>...</evidence>\n\n"
+                    "<estimate>name = value ± sigma</estimate> <evidence>...</evidence>\n\n"
                     "Or give up: <withdraw>reason</withdraw>"
                 )
                 entry["action"] = "no_tag"
@@ -289,7 +341,11 @@ class MarketAgent(DiscoveryAgent):
                 continue
 
             outputs = []
-            if experiment_block is not None and round_num == self.max_rounds:
+            if experiment_block is not None and not self.experiments_enabled:
+                outputs.append("<experiment_output>\nNot run: no lab in this mode."
+                               "\n</experiment_output>")
+                entry.update(action="experiment", experiment_error="no lab")
+            elif experiment_block is not None and round_num == self.max_rounds:
                 outputs.append("<experiment_output>\nNot run: no experiments in the final round."
                                "\n</experiment_output>")
                 entry.update(action="experiment", experiment_error="final round: not run")

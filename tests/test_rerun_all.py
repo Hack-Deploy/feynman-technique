@@ -8,7 +8,7 @@ import pytest
 
 from dm.store import AttemptStore
 from dm.types import AttemptRecord
-from poc import archive, bench, config as C, demo_grid, live_cache, rerun_all, spend
+from poc import archive, bench, config as C, demo_grid, fake_llm, live_cache, rerun_all, spend
 from poc.spend import SpendLedger
 
 
@@ -36,9 +36,21 @@ def _configuration():
     return cfg, settings
 
 
+def _truthful_estimate_block(hyp, value: float = 1.0) -> str:
+    """Scripted estimates at the true values: a scripted run is then confirmed exactly when its
+    verdict matches the answer, which is what these ordering tests need."""
+    from poc import truth
+
+    lines = "\n".join(f"{name} = {v}" for name, v in truth.true_values(hyp).items())
+    return f"<estimate>\n{lines}\n</estimate>"
+
+
 def _fake_configuration(monkeypatch):
+    # One refuted claim, then one supported, with estimates the checker can confirm.
     cfg = C.load()
-    cfg = replace(cfg, hypotheses=cfg.hypotheses[:2])
+    cfg = replace(cfg, hypotheses=(cfg.hypothesis("gravity-inverse-square"),
+                                   cfg.hypothesis("oscillator-time-varying")))
+    monkeypatch.setattr(fake_llm, "estimate_block", _truthful_estimate_block)
     settings = replace(
         spend.load_settings(),
         models=spend.load_settings().models[:2],

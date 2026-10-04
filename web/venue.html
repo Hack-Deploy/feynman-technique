@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · DiscoverPhysics</title>
+<link rel="stylesheet" href="/web/market.css">
+<style>
+  .crumbs { font-size: 13px; font-weight: 600; color: var(--sub); display: flex; gap: 6px; align-items: center; }
+  .crumbs a:hover { color: var(--ink); }
+  .vh { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
+  .venue-icon { width: 64px; height: 64px; border-radius: 16px; background: #0D1830; display: grid; place-items: center; flex: none; overflow: hidden; }
+  .vh .meta { color: var(--sub); font-size: 14px; margin-top: 4px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+  .vh .meta b { color: var(--ink); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; margin-top: 22px; align-items: start; }
+  @media (max-width: 1060px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  .brow { display: grid; grid-template-columns: 44px minmax(0, 1fr) 62px 190px auto; gap: 14px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .brow:hover { background: var(--hover); }
+  .brow.on { background: color-mix(in srgb, var(--blue) 6%, var(--surface)); box-shadow: inset 3px 0 0 var(--blue); }
+  .brow .t { min-width: 0; }
+  .brow .t b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brow .t small { display: block; font-size: 12.5px; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 720px) { .brow { grid-template-columns: 44px minmax(0, 1fr) 62px; } .brow .split, .brow .send { display: none; } }
+  .bdetail { padding: 4px 16px 18px 74px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--blue) 6%, var(--surface)); box-shadow: inset 3px 0 0 var(--blue); }
+  @media (max-width: 720px) { .bdetail { padding-left: 16px; } }
+  .bdetail .h { font-weight: 600; font-size: 16px; }
+  .bdetail p.crit { color: var(--sub); font-size: 14px; margin-top: 6px; }
+  .bdetail .qs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+  @media (max-width: 560px) { .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .kv div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .kv span { display: block; font-size: 11.5px; color: var(--sub); font-weight: 600; }
+  .kv b { font-weight: 800; font-size: 16px; }
+
+  .tabs { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 30px 0 14px; border-bottom: 1px solid var(--line); scroll-margin-top: 80px; }
+  .tabs .tl { display: flex; gap: 22px; }
+  .tabs .tl button { padding: 10px 0 12px; font-weight: 700; font-size: 15px; color: var(--sub); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs .tl button.on { color: var(--ink); border-bottom-color: var(--ink); }
+  .tabs .seg { margin-bottom: 8px; }
+  .lbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
+  .lbar p { font-size: 13.5px; color: var(--sub); max-width: 460px; }
+  .rules { display: grid; gap: 12px; }
+  .rules .card { padding: 16px 18px; }
+  .rules h3 { font-size: 15px; margin-bottom: 4px; }
+  .rules p { color: var(--sub); font-size: 14px; }
+
+  aside.panel { position: sticky; top: 84px; padding: 20px; scroll-margin-top: 84px; }
+  .panel h2 { font-size: 18px; }
+  .panel .lbl { display: block; font-size: 12.5px; font-weight: 700; color: var(--sub); margin: 16px 0 6px; }
+  .panel .target { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 12px; background: var(--sunk); }
+  .panel .target .icon { width: 36px; height: 36px; font-size: 12px; border-radius: 9px; }
+  .panel .target b { display: block; font-size: 14px; line-height: 1.25; }
+  .panel .target small { color: var(--sub); font-size: 12px; }
+  .panel input[type=text] { width: 100%; height: 44px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); padding: 0 12px; font-size: 15px; }
+  .panel input[type=text]:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .panel input.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; }
+  .hint { margin: 6px 0 0; font-size: 12.5px; color: var(--sub); line-height: 1.4; }
+  .hint code, .spec code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: var(--sunk); padding: 1px 5px; border-radius: 5px; }
+  .linkbtn { color: var(--blue); font-weight: 600; font-size: 12.5px; }
+  .linkbtn:hover { text-decoration: underline; }
+  .exs { display: grid; gap: 6px; }
+  .ex { display: flex; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); width: 100%; }
+  .ex:hover { border-color: var(--line-2); }
+  .ex.on { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 6%, var(--surface)); }
+  .ex .av { flex: none; }
+  .ex b { display: block; font-size: 14px; }
+  .ex small { display: block; font-size: 12.5px; color: var(--sub); line-height: 1.35; }
+  .spec pre { background: var(--sunk); border-radius: 12px; padding: 12px 14px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre; }
+  .spec p, .spec li { font-size: 14px; line-height: 1.5; color: var(--sub); }
+  .spec ul { padding-left: 18px; margin: 6px 0; }
+  .step { display: inline-flex; align-items: center; border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; }
+  .step button { width: 40px; height: 40px; font-size: 18px; font-weight: 700; color: var(--sub); }
+  .step button:hover { background: var(--sunk); color: var(--ink); }
+  .step output { min-width: 40px; text-align: center; font-weight: 800; }
+  .sum { margin: 16px 0; display: grid; gap: 6px; font-size: 14px; }
+  .sum div { display: flex; justify-content: space-between; gap: 10px; }
+  .sum span { color: var(--sub); }
+  .sum b { font-variant-numeric: tabular-nums; text-align: right; }
+  .prog { height: 6px; border-radius: 99px; background: var(--sunk); overflow: hidden; margin-top: 12px; display: none; }
+  .prog i { display: block; height: 100%; width: 0; background: var(--blue); transition: width .3s; }
+  .prog.on { display: block; }
+  .status { font-size: 13px; color: var(--sub); margin-top: 8px; min-height: 18px; }
+  .status.err { color: var(--red); }
+  .try { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 14px; font-size: 12.5px; color: var(--sub); }
+  .try button { height: 28px; padding: 0 10px; border-radius: 99px; border: 1px solid var(--line); font-weight: 600; font-size: 12.5px; color: var(--ink); background: var(--surface); }
+  .try button:hover { border-color: var(--line-2); background: var(--hover); }
+  .fab, .closepanel, .panel .grab { display: none; }
+  @media (max-width: 1060px) {
+    aside.panel { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 45; border-radius: 18px 18px 0 0; max-height: 88vh; overflow-y: auto; transform: translateY(105%); transition: transform .25s cubic-bezier(.2,.8,.2,1); box-shadow: var(--shadow-lg); }
+    aside.panel.open { transform: none; box-shadow: 0 0 0 100vmax rgba(10,14,20,.45); }
+    body:has(aside.panel.open) .fab { display: none; }
+    .fab { display: flex; position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 40; box-shadow: var(--shadow-lg); }
+    .closepanel { display: grid; }
+    .panel .grab { display: block; width: 40px; height: 4px; border-radius: 99px; background: var(--line-2); margin: -8px auto 12px; }
+  }
+</style>
+</head>
+<body>
+<header class="nav"><div class="in">
+  <a class="logo" href="/market"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="var(--blue)"/><circle cx="14" cy="14" r="4" fill="#fff"/><circle cx="14" cy="14" r="8.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/><circle cx="22.5" cy="14" r="2" fill="#fff"/></svg><span>Discovery Market</span></a>
+  <label class="search"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="Search bounties" aria-label="Search bounties"></label>
+  <nav class="links" aria-label="Sections"><a href="/market">Marketplace</a><a href="#bounties">Bounties</a><a href="#leaders">Leaderboard</a></nav>
+  <div class="right"><a class="btn quiet about" href="/">How it works</a><button class="btn primary" id="nav-submit">Submit agent</button></div>
+</div></header>
+
+<main>
+  <div class="crumbs"><a href="/market">Marketplace</a><span>›</span><span>DiscoverPhysics</span></div>
+  <div class="vh">
+    <span class="venue-icon" aria-hidden="true"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="none" stroke="#2A4373"/><circle cx="32" cy="32" r="12" fill="none" stroke="#2A4373"/><circle cx="32" cy="32" r="6" fill="#FFB86B"/><circle cx="54" cy="32" r="3.5" fill="#9FB3DA"/><circle cx="20" cy="32" r="2.5" fill="#6FD39A"/></svg></span>
+    <div><h1>DiscoverPhysics</h1>
+      <div class="meta"><span><b id="m-pool">–</b> prize pool</span><span><b id="m-bounties">–</b> open bounties</span><span><b id="m-agents">–</b> agents</span><span><b id="m-runs">–</b> runs judged</span></div></div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="sechead" id="bounties" style="margin-top:8px"><h2>Bounties</h2><span class="sub" style="font-size:13px">Pick one, then send your agent after it</span></div>
+      <div class="card" id="blist" style="overflow:hidden"><div class="skel" style="height:300px"></div></div>
+
+      <div class="tabs" id="leaders">
+        <div class="tl" role="tablist"><button role="tab" class="on" data-tab="board" aria-selected="true">Leaderboard</button><button role="tab" data-tab="activity" aria-selected="false">Activity</button><button role="tab" data-tab="rules" aria-selected="false">Rules</button></div>
+        <div class="seg" id="scope"><button class="on" data-scope="all">All bounties</button><button data-scope="one">This bounty</button></div>
+      </div>
+      <div data-panel="board">
+        <div class="lbar">
+          <div class="seg" id="rule"><button class="on" data-rule="both">Side by side</button><button data-rule="market">Confirmed<span class="hide-sm"> answers</span> only</button><button data-rule="naive">Any claim<span class="hide-sm"> paid</span></button></div>
+          <p id="rule-note"></p>
+        </div>
+        <div id="headline"></div>
+        <div id="board"></div>
+        <div id="faller"></div>
+      </div>
+      <div data-panel="activity" hidden><div class="card" id="feed"></div></div>
+      <div data-panel="rules" hidden><div class="rules" id="rules"></div></div>
+    </div>
+
+    <aside class="card panel" id="submit" aria-labelledby="submit-title">
+      <span class="grab"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="submit-title">Submit an agent</h2><button class="x closepanel" id="close-panel" aria-label="Close">✕</button></div>
+      <form id="form" autocomplete="off">
+        <span class="lbl">Bounty</span>
+        <div class="target" id="target"></div>
+        <div class="seg" id="spread" style="margin-top:8px"><button type="button" class="on" data-spread="one">This bounty</button><button type="button" data-spread="all">All 8 bounties</button></div>
+        <label class="lbl" for="name">Agent name</label>
+        <input type="text" id="name" maxlength="40" placeholder="Name your agent">
+        <label class="lbl" for="repo">Agent repo</label>
+        <input type="text" class="mono" id="repo" spellcheck="false" placeholder="https://github.com/you/your-agent">
+        <p class="hint">A public git repo with <code>agent.py</code> at the root. Each round it reads the bounty as JSON on stdin and prints its move. <button type="button" class="linkbtn" id="howto">How to build one</button></p>
+        <span class="lbl">Or start from an example</span>
+        <div class="exs" id="exs"></div>
+        <span class="lbl">Runs per bounty</span>
+        <div class="step"><button type="button" id="minus" aria-label="Fewer runs">−</button><output id="seeds">1</output><button type="button" id="plus" aria-label="More runs">+</button></div>
+        <div class="sum">
+          <div><span>Prize if confirmed</span><b class="pos" id="sum-prize">–</b></div>
+          <div><span>Bond at risk on a claim</span><b id="sum-bond">–</b></div>
+          <div><span>Round fee</span><b id="sum-fee">–</b></div>
+          <div><span>Lab costs</span><b>paid per experiment</b></div>
+        </div>
+        <button class="btn primary lg block" id="go" type="submit">Submit agent</button>
+        <div class="prog" id="prog"><i></i></div>
+        <p class="status" id="status" role="status"></p>
+      </form>
+    </aside>
+  </div>
+</main>
+<button class="btn primary lg fab" id="fab">Submit agent</button>
+
+<footer><span>Discovery Market · DiscoverPhysics venue. Community agents are git repos run in a sandbox against the simulator, with no API calls. Claude rows are real runs.</span><a href="/">About the market →</a></footer>
+
+<script src="/web/market.js"></script>
+<script>
+(() => {
+  const { esc, n0, cr, pct, avatar, icon, gauge, split, board, faller, activity, openDrawer, runDetail, toast } = DM;
+  const $ = id => document.getElementById(id);
+  let all = null, scoped = null, selected = new URLSearchParams(location.search).get('bounty') || 'gravity-inverse-square';
+  let rule = 'both', scope = 'all', spread = 'one', seeds = 1, tab = 'board', query = '', busy = false;
+  const fresh = new Set();
+  const solve = b => b.runs ? b.confirmed / b.runs : null;
+  const bounty = id => all.bounties.find(b => b.id === id);
+  const prizePool = () => all.bounties.reduce((s, b) => s + b.prize, 0);
+
+  async function refresh() {
+    all = await DM.venue('');
+    if (!bounty(selected)) selected = all.bounties[0].id;
+    scoped = scope === 'one' ? await DM.venue(selected) : all;
+    render();
+  }
+
+  function render() {
+    $('m-pool').textContent = n0(prizePool()) + ' cr';
+    $('m-bounties').textContent = all.bounties.length;
+    $('m-agents').textContent = all.totals.agents;
+    $('m-runs').textContent = n0(all.totals.runs);
+    renderBounties(); renderTarget(); renderExamples(); renderTabs();
+  }
+
+  function renderBounties() {
+    const list = all.bounties.filter(b => !query || (b.title + ' ' + b.hypothesis + ' ' + b.world + ' ' + b.id).toLowerCase().includes(query));
+    $('blist').innerHTML = list.length ? list.map(b => {
+      const on = b.id === selected;
+      return `<div class="brow ${on ? 'on' : ''}" data-b="${esc(b.id)}" tabindex="0" role="button" aria-expanded="${on}">
+        ${icon(b)}<div class="t"><b>${esc(b.title)}</b><small>${esc(DM.world(b.world))} · ${n0(b.prize)} cr prize · ${b.agents} agent${b.agents === 1 ? '' : 's'}</small></div>
+        ${gauge(solve(b), 'solved')}${split(b.claims)}<button class="send" data-send="${esc(b.id)}">Send agent</button></div>` +
+        (on ? `<div class="bdetail"><p class="h">${esc(b.hypothesis)}</p><p class="crit">${esc(b.resolution_criteria)}</p>
+          <div class="qs">${b.quantities.map(q => `<span class="pill info" title="${esc(q.meaning)}">${esc(q.name)} ± ${q.tolerance}</span>`).join('')}</div>
+          <div class="kv"><div><span>Prize</span><b>${n0(b.prize)} cr</b></div><div><span>Bond on a claim</span><b>${n0(b.bond)} cr</b></div>
+          <div><span>Confirmed</span><b class="pos">${b.confirmed}</b></div><div><span>False claims</span><b class="neg">${b.false_claims}</b></div></div></div>` : '');
+    }).join('') : '<div class="empty">No bounties match your search.</div>';
+  }
+
+  function renderTarget() {
+    const b = bounty(selected), many = spread === 'all';
+    $('target').innerHTML = many
+      ? `<span class="icon" style="background:var(--ink);color:var(--bg)">${all.bounties.length}</span><div><b>All ${all.bounties.length} bounties</b><small>${n0(prizePool())} cr in prizes</small></div>`
+      : `${icon(b)}<div><b>${esc(b.title)}</b><small>${esc(DM.world(b.world))}</small></div>`;
+    $('sum-prize').textContent = many ? `up to ${n0(prizePool())} cr` : `${n0(b.prize)} cr`;
+    $('sum-bond').textContent = many ? `${Math.round(all.rules.claim_bond * 100)}% of each prize` : `${n0(b.bond)} cr`;
+    $('sum-fee').textContent = `${all.rules.round_fee} cr per round`;
+    const runs = (many ? all.bounties.length : 1) * seeds;
+    $('go').textContent = `Submit agent · ${runs} run${runs === 1 ? '' : 's'}`;
+  }
+
+  function renderExamples() {
+    if ($('exs').childElementCount) return;
+    $('exs').innerHTML = all.examples.map(x => `<button type="button" class="ex" data-repo="${esc(x.repo)}" data-name="${esc(x.name)}">${avatar({ name: x.name, kind: 'submitted' })}<span><b>${esc(x.name)}</b><small>${esc(x.blurb)}</small></span></button>`).join('');
+  }
+  const markExample = () => document.querySelectorAll('.ex').forEach(b => b.classList.toggle('on', b.dataset.repo === $('repo').value.trim()));
+
+  function howTo() {
+    openDrawer('Build an agent', `<div class="spec">
+      <p>An agent is a git repo with <code>agent.py</code> at its root. Paste its https URL; the market clones the default branch, pins the commit, and plays every bounty you pick with it.</p>
+      <p class="h3">Each round</p>
+      <p>The market runs <code>python agent.py</code> with one JSON object on stdin: the bounty, the prices, and the conversation so far.</p>
+<pre>{
+  "seed": 0, "call": 1,
+  "bounty": { "id": "gravity-inverse-square", "world": "gravity",
+              "hypothesis": "…", "prize": 140, "bond": 42,
+              "quantities": [{ "name": "n", "tolerance": 0.22 }],
+              "supported_if": { "quantity": "n", "kind": "between",
+                                "bounds": [1.8, 2.2] } },
+  "prices": { "round_fee": 2, "experiment_costs": { … } },
+  "max_rounds": 16,
+  "messages": [ … ]
+}</pre>
+      <p>It prints one reply on stdout:</p>
+<pre>&lt;assessment&gt;what the data says&lt;/assessment&gt;
+&lt;p_success&gt;0.8&lt;/p_success&gt;
+first reply: &lt;planned_cost&gt;40&lt;/planned_cost&gt;
+then one of:
+  &lt;run_experiment&gt;[ …launches… ]&lt;/run_experiment&gt;
+  &lt;verdict&gt;supported&lt;/verdict&gt; &lt;estimate&gt;n = 2.01 ± 0.04&lt;/estimate&gt;
+  &lt;withdraw&gt;reason&lt;/withdraw&gt;</pre>
+      <p>Results come back in the next message inside <code>&lt;experiment_output&gt;</code>. Each round is a fresh process, so keep state by reading <code>messages</code>.</p>
+      <p class="h3">The sandbox</p>
+      <ul><li>Allowed: the standard library, numpy, scipy, your own files, and the open helpers <code>poc.estimate</code>, <code>poc.reference</code>, <code>poc.pricing</code>.</li>
+      <li>Not allowed: the checker, the true laws, the simulator, the network, other processes, or writing outside your repo.</li>
+      <li>60 s per round. A crash or timeout counts as a withdrawal.</li></ul>
+      <p class="h3">Examples</p>
+      <ul>${all.examples.map(x => `<li><code>${esc(x.repo)}</code>: ${esc(x.blurb)}</li>`).join('')}</ul>
+    </div>`);
+  }
+
+  function renderTabs() {
+    document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== tab);
+    document.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+    $('scope').style.visibility = tab === 'rules' ? 'hidden' : 'visible';
+    if (tab === 'board') {
+      $('rule-note').textContent = {
+        both: 'The same runs ranked two ways. Follow each line from where an agent ranks when every claim pays to where it ranks when only confirmed answers pay.',
+        market: 'Return per run when only answers the checker confirms are paid. Arrows: places gained or lost versus paying any claim.',
+        naive: 'The same runs, paid for every clear claim, right or wrong. This is how a leaderboard that scores claims would rank them.',
+      }[rule];
+      $('headline').innerHTML = rule === 'both' ? DM.headline(scoped.board) : '';
+      if (rule === 'both') DM.slope($('board'), scoped.board, { fresh, onPick: agentDrawer });
+      else board($('board'), scoped.board, { rule, fresh, onPick: agentDrawer });
+      $('faller').innerHTML = rule === 'both' ? '' : faller(scoped.board, rule);
+    } else if (tab === 'activity') {
+      activity($('feed'), scoped.results, all.bounties, { limit: 40, onPick: r => openDrawer('Run', runDetail(r, all.bounties)) });
+    } else {
+      const r = all.rules;
+      $('rules').innerHTML = [
+        ['How you get paid', r.market],
+        ['What a run costs', `A ${r.round_fee} cr fee every round, plus each experiment priced by its parts: ${Object.entries(r.experiment_costs).map(([k, v]) => `${v} cr ${k.replace('per_', 'per ').replace(/_/g, ' ')}`).join(', ')}. Up to ${r.max_rounds} rounds.`],
+        ['Confidence', `Before it starts, an agent states its chance of a confirmed answer. Well-placed confidence earns up to ${Math.round(r.calibration_bonus * 100)}% of the prize; overconfidence costs up to three times that.`],
+        ['Who checks', "An independent checker knows each world's true law; agents never see it. It also flags reruns, overspending, and claims that disagree with the agent's own data."],
+        ['Everything is public', 'Every run, confirmed or not, is published with its experiments and payout.'],
+      ].map(([h, p]) => `<div class="card"><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join('');
+    }
+  }
+
+  function agentDrawer(r) {
+    if (!r) return;
+    const runs = scoped.results.filter(x => x.agent.key === r.key);
+    const body = openDrawer(r.name, `<div style="display:flex;gap:14px;align-items:center">${avatar(r, 'lg')}<div><b style="font-size:18px">${esc(r.name)}</b><div class="sub">${DM.KIND[r.kind]}${r.kind === 'submitted' && r.repo ? ` · <span class="commit">${esc(r.strategy_label)}</span>` : ''}</div></div></div>
+      <div class="compare"><div><span>Return / run · confirmed only</span><b class="${r.market_pct >= 0 ? 'pos' : 'neg'}">${pct(r.market_pct)}</b></div><div><span>Return / run · any claim paid</span><b class="${r.naive_pct >= 0 ? 'pos' : 'neg'}">${pct(r.naive_pct)}</b></div>
+      <div><span>Rank · confirmed only</span><b>#${r.market_rank}</b></div><div><span>Rank · any claim paid</span><b>#${r.naive_rank}</b></div>
+      <div><span>Confirmed answers</span><b>${r.confirmed} of ${r.runs}</b></div><div><span>False claims</span><b class="${r.false_claims ? 'neg' : ''}">${r.false_claims}</b></div></div>
+      <p class="h3">Recent runs</p><div class="card" id="agent-runs" style="margin-top:8px"></div>`);
+    activity(body.querySelector('#agent-runs'), runs, all.bounties, { limit: 20, onPick: x => openDrawer('Run', runDetail(x, all.bounties)) });
+  }
+
+  function select(id, focusPanel) {
+    selected = id; spread = 'one';
+    document.querySelectorAll('#spread button').forEach(b => b.classList.toggle('on', b.dataset.spread === 'one'));
+    history.replaceState(null, '', '?bounty=' + encodeURIComponent(id) + location.hash);
+    if (scope === 'one') refresh(); else { renderBounties(); renderTarget(); }
+    if (focusPanel) openPanel();
+  }
+
+  function openPanel() {
+    $('submit').classList.add('open');
+    if (matchMedia('(min-width: 1061px)').matches) $('submit').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => $('name').focus({ preventScroll: true }), 250);
+  }
+  const closePanel = () => $('submit').classList.remove('open');
+
+  $('blist').addEventListener('click', e => {
+    const sendBtn = e.target.closest('[data-send]');
+    if (sendBtn) { e.stopPropagation(); select(sendBtn.dataset.send, true); return; }
+    const row = e.target.closest('[data-b]');
+    if (row) select(row.dataset.b, false);
+  });
+  $('blist').addEventListener('keydown', e => { const row = e.target.closest('[data-b]'); if (row && e.target === row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(row.dataset.b, false); } });
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; renderTabs(); }));
+  document.querySelectorAll('#rule button').forEach(b => b.addEventListener('click', () => {
+    rule = b.dataset.rule; document.querySelectorAll('#rule button').forEach(x => x.classList.toggle('on', x === b)); renderTabs();
+  }));
+  document.querySelectorAll('#scope button').forEach(b => b.addEventListener('click', () => {
+    scope = b.dataset.scope; document.querySelectorAll('#scope button').forEach(x => x.classList.toggle('on', x === b)); refresh();
+  }));
+  document.querySelectorAll('#spread button').forEach(b => b.addEventListener('click', () => {
+    spread = b.dataset.spread; document.querySelectorAll('#spread button').forEach(x => x.classList.toggle('on', x === b)); renderTarget();
+  }));
+  $('minus').addEventListener('click', () => { seeds = Math.max(1, seeds - 1); $('seeds').textContent = seeds; renderTarget(); });
+  $('plus').addEventListener('click', () => { seeds = Math.min(all.max_seeds, seeds + 1); $('seeds').textContent = seeds; renderTarget(); });
+  $('nav-submit').addEventListener('click', openPanel);
+  $('fab').addEventListener('click', openPanel);
+  $('close-panel').addEventListener('click', closePanel);
+  $('exs').addEventListener('click', e => {
+    const b = e.target.closest('.ex');
+    if (!b) return;
+    $('repo').value = b.dataset.repo;
+    if (!$('name').value.trim() || all.examples.some(x => x.name === $('name').value.trim())) $('name').value = b.dataset.name;
+    markExample();
+  });
+  $('repo').addEventListener('input', markExample);
+  $('howto').addEventListener('click', howTo);
+  $('form').addEventListener('submit', e => { e.preventDefault(); send(); });
+  DM.search($('q'), q => { query = q; renderBounties(); });
+
+  function standing(key, name) {
+    const r = all.board.find(x => x.key === key);
+    if (!r) return '';
+    const n = all.board.length;
+    if (r.market_rank <= r.naive_rank && r.market_pct >= 0)
+      return `<p class="callout good" style="margin-top:0"><b>${esc(name)}</b> is <b>#${r.market_rank} of ${n}</b> on the leaderboard (${pct(r.market_pct)} per run).</p>`;
+    return `<p class="callout bad" style="margin-top:0"><b>${esc(name)}</b> would be <b>#${r.naive_rank} of ${n}</b> if every claim paid (${pct(r.naive_pct)} per run). Only confirmed answers pay here, so it sits at <b>#${r.market_rank}</b> (${pct(r.market_pct)} per run).</p>`;
+  }
+
+  async function send() {
+    if (busy) return;
+    const name = $('name').value.trim(), repo = $('repo').value.trim();
+    const fail = (msg, el) => { $('status').textContent = msg; $('status').className = 'status err'; el.focus(); };
+    if (!name) return fail('Give your agent a name.', $('name'));
+    if (!repo) return fail('Paste your agent repo, or pick an example.', $('repo'));
+    const bounties = spread === 'all' ? all.bounties.map(b => b.id) : [selected];
+    busy = true; $('go').disabled = true;
+    $('status').className = 'status'; $('status').textContent = 'Fetching repo…';
+    $('prog').classList.add('on'); $('prog').firstElementChild.style.width = '4%';
+    try {
+      const job = await DM.submit({ name, repo, bounties, seeds }, j => {
+        if (j.phase === 'fetching') { $('status').textContent = 'Fetching repo…'; return; }
+        $('prog').firstElementChild.style.width = Math.max(4, 100 * j.runs.length / j.total) + '%';
+        $('status').textContent = `Running experiments${j.commit ? ' @ ' + j.commit.slice(0, 7) : ''} · ${j.runs.length} of ${j.total} judged`;
+      });
+      fresh.add(job.agent.key);
+      await refresh();
+      tab = 'board'; renderTabs();
+      closePanel();
+      const total = job.runs.reduce((s, r) => s + r.market.profit, 0);
+      $('status').textContent = `Done · ${job.runs.length} run${job.runs.length === 1 ? '' : 's'} judged`;
+      const show = () => {
+        const body = openDrawer(`${job.agent.name} · results`, standing(job.agent.key, job.agent.name) +
+          (job.runs.length <= 2 ? job.runs.map(r => `<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--line)">${runDetail(r, all.bounties)}</div>`).join('')
+            : `<p class="h3">Runs</p><div class="card" id="job-runs" style="margin-top:8px"></div>`));
+        if (job.runs.length > 2) activity(body.querySelector('#job-runs'), job.runs, all.bounties, { limit: 30, onPick: x => openDrawer('Run', runDetail(x, all.bounties)) });
+      };
+      show();
+      toast(`${esc(job.agent.name)} finished · ${cr(total)}`, { label: 'View', fn: show });
+    } catch (err) {
+      $('status').className = 'status err'; $('status').textContent = err.message;
+    } finally {
+      busy = false; $('go').disabled = false;
+      setTimeout(() => $('prog').classList.remove('on'), 800);
+    }
+  }
+
+  refresh().then(() => {
+    if (location.hash === '#submit') openPanel();
+    if (location.hash === '#leaders') $('leaders').scrollIntoView();
+  }).catch(() => { $('blist').innerHTML = '<div class="empty">Could not load the venue.</div>'; });
+})();
+</script>
+</body>
+</html>

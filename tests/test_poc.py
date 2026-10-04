@@ -27,7 +27,8 @@ EXP = {"p1": 2.0, "p2": 1.0, "pos2": [3.0, 0.0], "velocity2": [0.0, 0.0],
 
 
 def conf(p="0.6"):
-    return f"<assessment>looks like 1/r</assessment><p_success>{p}</p_success>"
+    return (f"<assessment>looks like 1/r</assessment><p_success>{p}</p_success>"
+            "<planned_cost>20</planned_cost>")
 
 
 def run_exp(exp=EXP):
@@ -35,7 +36,8 @@ def run_exp(exp=EXP):
     return conf() + "<run_experiment>" + json.dumps([exp]) + "</run_experiment>"
 
 
-VERDICT = conf("0.8") + "<verdict>refuted</verdict><evidence>n = 1.0 ± 0.05</evidence>"
+VERDICT = (conf("0.8") + "<verdict>refuted</verdict><estimate>n = 1.0 ± 0.05\na3 = 0.053</estimate>"
+           "<evidence>n = 1.0 ± 0.05</evidence>")
 
 
 class StubExecutor:
@@ -84,10 +86,14 @@ def make_agent(replies, cfg=CFG, ledger=(), on_round=None, buy_record_first=Fals
 
 # ------------------------------------------------------------------ config and pricing
 
-def test_config_every_hypothesis_has_criteria_answer_and_prize():
-    assert len(CFG.hypotheses) == 11
+def test_config_every_hypothesis_has_criteria_answer_prize_quantities_and_rule():
+    assert len(CFG.hypotheses) == 8
     for h in CFG.hypotheses:
         assert h.resolution_criteria and h.answer in C.ANSWERS and h.prize > 0
+        assert h.quantities and all(q.tolerance > 0 for q in h.quantities)
+        assert h.supported_if.quantity in {q.name for q in h.quantities}
+    answers = [h.answer for h in CFG.hypotheses]
+    assert answers.count("supported") == answers.count("refuted")
 
 
 def test_ledger_read_fee_defaults_and_rejects_negative(tmp_path):
@@ -160,7 +166,7 @@ def test_prompt_shows_hypothesis_criteria_prize_costs_not_answer():
     block = protocol.market_block(CFG, HYP)
     assert HYP.hypothesis in block and HYP.resolution_criteria in block
     assert f"{HYP.prize:g} credits" in block and "per measurement time" in block
-    assert "public-record fee also counts as cost" in block
+    assert "any public-record fee included" in block
     assert "<buy_record/>" in block
     assert "each observed position has independent Gaussian noise σ = 0.075" in block
     assert "each observed velocity has independent Gaussian noise σ = 0.05" in block
@@ -300,6 +306,15 @@ def test_experiment_then_verdict_charges_rounds_and_experiments():
     assert agent.executor.experiments == 1
 
 
+def test_running_estimates_are_recorded_every_round():
+    from poc.attempt import round_log
+    agent, _, _ = make_agent([run_exp() + "<estimate>n = 1.6 ± 0.5</estimate>", run_exp(), VERDICT])
+    agent.run()
+    log = round_log(agent.conversation_log)
+    assert [e["estimates"].get("n", {}).get("value") for e in log] == [1.6, None, 1.0]
+    assert log[2]["estimates"]["a3"]["value"] == pytest.approx(0.053)
+
+
 def test_round_callback_fires_once_after_each_round():
     rounds = []
     agent, _, _ = make_agent([run_exp(), VERDICT], on_round=lambda entry: rounds.append(entry["round"]))
@@ -319,11 +334,12 @@ def test_penultimate_round_warning_allows_experiments():
 
 
 def test_empty_no_tag_reply_gets_cutoff_feedback():
-    agent, _, _ = make_agent(["", VERDICT])
+    # Round 1 is the bid; the empty reply comes in round 2, then the confidence re-prompt.
+    agent, _, _ = make_agent([run_exp(), "", conf(), VERDICT])
 
     agent.run()
 
-    assert agent.conversation_log[0]["system_message"].startswith(
+    assert agent.conversation_log[1]["system_message"].startswith(
         "ERROR: your reply was empty"
     )
 
@@ -354,12 +370,12 @@ def test_later_withdrawal_pays_its_round():
 
 
 def test_missing_p_reprompts_once_then_records_none():
-    agent, _, llm = make_agent(["<run_mse_fit>x</run_mse_fit>", "still nothing", VERDICT])
+    agent, _, llm = make_agent([run_exp(), "<run_mse_fit>x</run_mse_fit>", "still nothing", VERDICT])
     agent.run()
-    first = agent.conversation_log[0]
-    assert "confidence_reprompt" in first and first["p_success"] is None
-    assert agent.conversation_log[1]["p_success"] == 0.8
-    assert len(llm.calls) == 3  # round 1, its re-prompt, round 2
+    second = agent.conversation_log[1]
+    assert "confidence_reprompt" in second and second["p_success"] is None
+    assert agent.conversation_log[2]["p_success"] == 0.8
+    assert len(llm.calls) == 4  # round 1, round 2, its re-prompt, round 3
 
 
 def test_over_budget_batch_is_refused_and_not_charged():
@@ -452,7 +468,8 @@ def test_buy_then_walk_away_only_pays_the_record_fee():
 def test_followup_buy_tag_is_ignored_and_does_not_charge_again():
     second_buy_and_verdict = (
         conf("0.9") + "<buy_record/>"
-        "<verdict>refuted</verdict><evidence>Offline evidence.</evidence>"
+        "<verdict>refuted</verdict><estimate>n = 1.0 ± 0.05\na3 = 0.053</estimate>"
+        "<evidence>Offline evidence.</evidence>"
     )
     agent, account, llm = make_agent(
         [second_buy_and_verdict], ledger=[_ledger_entry()], buy_record_first=True
@@ -528,6 +545,8 @@ def test_attempt_record_tracks_public_record_purchase(
             self.executor = SimpleNamespace(experiments=0)
             self.record_bought = bought
             self.record_fee = fee
+            self.estimates = {}
+            self.bid = None
             self.conversation_log = [{
                 "round": 1,
                 "action": "walk_away",
@@ -568,8 +587,14 @@ def test_attempt_record_tracks_public_record_purchase(
     assert submitted.extra["record_fee"] == fee
 
 
-def test_bench_fake_stops_after_claim_is_solved(monkeypatch, tmp_path):
+@pytest.mark.parametrize("close_solved", [True, False])
+def test_bench_close_solved_stops_after_claim_is_solved(monkeypatch, tmp_path, close_solved):
+    """--close-solved skips a confirmed claim; by default every planned run happens."""
+    from poc import truth
+
     calls = []
+    estimates = {name: {"value": value, "sigma": None}
+                 for name, value in truth.true_values(HYP).items()}
 
     def fake_attempt(model, hypothesis_id, seed, *_args, **_kwargs):
         calls.append((model, hypothesis_id, seed))
@@ -589,6 +614,7 @@ def test_bench_fake_stops_after_claim_is_solved(monkeypatch, tmp_path):
                 "hypothesis_id": hypothesis_id,
                 "outcome": "verdict",
                 "agent_verdict": hyp.answer,
+                "estimates": estimates,
             },
         )
 
@@ -598,11 +624,14 @@ def test_bench_fake_stops_after_claim_is_solved(monkeypatch, tmp_path):
         "--fake", "--hypotheses", HYP.id,
         "--models", "model-a", "model-b",
         "--seeds", "0", "1",
-        "--store", str(store),
+        "--store", str(store), *(["--close-solved"] if close_solved else []),
     ])
 
-    assert calls == [("model-a", HYP.id, 0)]
-    assert len(bench.AttemptStore(store).load()) == 1
+    if close_solved:
+        assert calls == [("model-a", HYP.id, 0)]
+    else:
+        assert calls == [(m, HYP.id, s) for m in ("model-a", "model-b") for s in (0, 1)]
+    assert len(bench.AttemptStore(store).load()) == len(calls)
 
 
 # ------------------------------------------------------------------ resolution and record
@@ -624,17 +653,29 @@ def test_ledger_entry_hides_conclusions_and_answer():
     assert '"pos2"' in e["data"]
 
 
-def test_resolve():
+def test_resolve_pays_only_checked_claims_but_naive_pays_any_clear_verdict():
     from dm.types import SubmittedAttempt
+    from poc import truth
     from poc.bench import resolve
 
-    def sub(outcome, verdict):
+    good = {k: {"value": v, "sigma": None} for k, v in truth.true_values(HYP).items()}
+    wrong = {k: {"value": v * 3, "sigma": None} for k, v in truth.true_values(HYP).items()}
+
+    def sub(outcome, verdict, est=None):
+        events = [{"type": "round_charged", "amount": 10, "round": 1}]
         return SubmittedAttempt(source="live", protocol=C.PROTOCOL, venue=C.VENUE, world=HYP.world,
                                 solver="m", seed=0, stated_p_success=0.5, rounds=1, experiments=0,
                                 lab_cost=10, extra={"hypothesis_id": HYP.id, "outcome": outcome,
-                                                    "agent_verdict": verdict})
-    assert resolve(HYP, sub("verdict", HYP.answer)).passed
-    assert resolve(HYP, sub("verdict", HYP.answer)).extra["prize_paid"] == HYP.prize
+                                                    "agent_verdict": verdict, "estimates": est or {},
+                                                    "account_events": events, "bid_p": 0.5})
+    ok = resolve(HYP, sub("verdict", HYP.answer, good))
+    assert ok.passed and ok.extra["prize_paid"] == HYP.prize
+    assert ok.extra["settlements"]["market"]["profit"] == pytest.approx(HYP.prize - 10)
+    bad = resolve(HYP, sub("verdict", HYP.answer, wrong))
+    assert not bad.passed and bad.verdict["outcome"] == "false_claim"
+    assert bad.extra["settlements"]["naive"]["profit"] == pytest.approx(HYP.prize - 10)
+    assert bad.extra["settlements"]["market"]["profit"] == pytest.approx(
+        -10 - CFG.claim_bond * HYP.prize)
     assert not resolve(HYP, sub("verdict", "inconclusive")).passed
     assert not resolve(HYP, sub("walked_away", None)).passed
 
@@ -659,3 +700,13 @@ def test_poc_never_imports_the_oracle():
             names = ([a.name for a in node.names] if isinstance(node, ast.Import)
                      else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
             assert not any(n.startswith(("dm.oracle", "dm.settle")) for n in names), path
+
+
+def test_learning_reading_recovers_pull_from_a_drop_at_rest():
+    from poc.animate import _reading
+    t = [0.5, 1.0, 1.5, 2.0]
+    run = {"input": {"p1": 2.0, "p2": 1.0, "pos2": [0.0, 4.0], "velocity2": [0.0, 0.0]},
+           "output": {"measurement_times": t, "pos2": [[0.0, 4.0 - 0.5 * 0.06 * s * s] for s in t]}}
+    assert _reading(run) == {"r": 4.0, "a": pytest.approx(0.03)}  # 0.06 pull at p1/p2 = 2
+    moving = {**run, "input": {**run["input"], "velocity2": [0.1, 0.0]}}
+    assert _reading(moving) is None

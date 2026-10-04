@@ -28,6 +28,7 @@ def compact_round(entry: dict, usd_so_far: float | None = None) -> dict:
         "action": entry.get("action"),
         "assessment": entry.get("assessment"),
         "p_success": entry.get("p_success"),
+        "estimates": entry.get("estimates") or {},
         "experiment_input": (
             [_cap_experiment(item) for item in experiments]
             if isinstance(experiments, list) else None

@@ -16,9 +16,38 @@ The local app has three pages:
   who solved what, the clearing prize per world, profit per model, and whether
   the models knew their chances. The data are from
   [ARA Labs (AgentNativeResearchLab)](https://huggingface.co/AgentNativeResearchLab), CC BY 4.0.
-- **Live market (`/live`)** has a free scripted mode, an explicitly enabled real
-  mode, and a recorded-runs comparison. The committed recorded examples are
-  scripted stand-ins; no real paid runs have been recorded.
+- **Live market (`/live`)** defaults to free Hugging Face replays: choose any
+  imported claim and a model that ran it, then replay its recorded run.
+  An explicitly enabled paid mode starts new runs; the recorded-runs comparison
+  shows the full local cache when available.
+
+The picker reads `attempts/fixtures/live/runs.jsonl`, so pulling the dataset
+updates its claims and models without rebuilding a selected sample. The snapshot
+imported on 4 October 2026 contains 21 runs across 11 claims and four models
+(revision `d240272bae837eb24afa2089f31bc6ef4de4388e`). Run
+`uv run python -m poc.hf_data pull` to refresh it.
+
+Each claim has **Success replay** and **Failure replay** tabs, where those outcomes
+exist. Examples favor useful measurements and richer probe trajectories. All
+recorded selections and live jobs share the same visualization, playback controls,
+estimates, reasoning trail, and result panel. Switch between motion over time and
+particle paths; the matched gravity examples also retain the force-law comparison.
+See [the selected examples and data limitations](docs/HF-REPLAYS.md).
+
+The round-by-round replay uses a matched pair from the public
+[discovery-market-live dataset](https://huggingface.co/datasets/arushisinha98/discovery-market-live):
+Sonnet 5.5's correct refutation and Sonnet 5's incorrect support of the same gravity
+hypothesis at seed 0. The source records are archived in
+`attempts/fixtures/demo/hf_representatives.jsonl`; regenerate the visualization with
+`uv run python -m poc.representatives`. These runs were scored against an answer key,
+not the current stricter checker. The successful run reported uncertainty above its
+requested precision target, which the replay discloses. Pull readings are derived
+from recorded positions; absent numeric estimates are left blank.
+
+Completed runs started from the form use the same round controls and hypothesis
+trail. Gravity claims replay the force law; other claims plot recorded inward
+motion against a noise-free replay of the same experiment and track the claim's
+reported quantity against its hidden reference. Scripted estimates are placeholders.
 
 ## Quick start
 

@@ -27,12 +27,14 @@ class ScriptedLLM:
 
     @classmethod
     def default(cls) -> "ScriptedLLM":
-        """Works on any world: one free MSE-fit round, then a verdict."""
+        """Works on any world: a bid with an MSE-fit round, then a verdict with a made-up
+        estimate (missing quantities are re-prompted for and stay missing)."""
         return cls([
             "<assessment>No data yet.</assessment><p_success>0.6</p_success>"
+            "<planned_cost>10</planned_cost>"
             "<run_mse_fit>def discovered_law(*args, **params):\n    return None\n</run_mse_fit>",
             "<assessment>Nothing contradicts it.</assessment><p_success>0.5</p_success>"
-            "<verdict>supported</verdict>"
+            "<verdict>supported</verdict><estimate>n = 2 ± 0.1</estimate>"
             "<evidence>Scripted reply, no experiments.</evidence>",
         ])
 
@@ -40,6 +42,12 @@ class ScriptedLLM:
 _TWO_PARTICLE_WORLDS = {
     "gravity", "yukawa", "coulomb_easy", "oscillator", "fractional", "extra_dimensions",
 }
+
+
+def estimate_block(hyp, value: float = 1.0) -> str:
+    """A placeholder <estimate> block naming every quantity of ``hyp``."""
+    lines = "\n".join(f"{q.name} = {value:g}" for q in hyp.quantities)
+    return f"<estimate>\n{lines}\n</estimate>"
 
 
 def scripted_experiment(hyp, cfg) -> dict:

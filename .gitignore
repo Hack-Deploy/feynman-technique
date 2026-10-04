@@ -37,3 +37,4 @@ vendor/**/results/
 .env
 .env.*
 !.env.example
+.gstack/

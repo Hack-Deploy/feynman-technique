@@ -16,5 +16,5 @@ projection:
   chars_per_token: 3.0
   data_chars_per_round: 8000
 demo_grid:
-  hypotheses: [coulomb-source-strength, gravity-inverse-square]
+  hypotheses: [hubble-outward-push, gravity-inverse-square]
   seeds: [0]
