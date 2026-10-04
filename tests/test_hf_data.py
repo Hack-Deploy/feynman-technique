@@ -144,6 +144,8 @@ def test_pull_archives_existing_files_then_copies_allowed_snapshot(tmp_path, mon
     local_runs.write_text("old runs")
     local_summary = live_cache.summary_path(local_runs)
     local_summary.write_text("old summary")
+    local_store = root / "attempts" / "poc_dp_bench.jsonl"
+    local_store.write_text("old store")
     calls = []
 
     def download(**kwargs):
@@ -177,9 +179,14 @@ def test_pull_archives_existing_files_then_copies_allowed_snapshot(tmp_path, mon
     }
     assert local_runs.read_text() == "new runs"
     assert local_summary.read_text() == "new summary"
+    assert not local_store.exists()
     archives = list((root / "attempts" / "archive").glob("*/attempts/fixtures/live/*"))
     assert {path.name for path in archives} == {"runs.jsonl", "runs.summary.json"}
     assert {path.read_text() for path in archives} == {"old runs", "old summary"}
+    archived_store = list(
+        (root / "attempts" / "archive").glob("*/attempts/poc_dp_bench.jsonl")
+    )
+    assert [path.read_text() for path in archived_store] == ["old store"]
     assert not (root / "attempts" / "live_spend.jsonl").exists()
 
 

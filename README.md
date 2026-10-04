@@ -49,7 +49,8 @@ uv run python app.py                   # open /live → Recorded runs
 
 No Anthropic key is needed to view the recorded data. The default dataset is public, so no
 token is needed; `HF_TOKEN` is only needed for a private fork or copy, set in `poc/.env`
-with read access. Pull archives replaced local files under `attempts/archive/` and fills
+with read access. `pull` replaces the local allow-listed live record with the dataset snapshot,
+archiving the old files and directories under `attempts/archive/`. It fills
 `attempts/fixtures/live/runs.jsonl`, which `/live` uses for Recorded runs. `poc.rerun_all`
 reads its cached run keys and `order_seed`, so completed runs are skipped and the plan resumes.
 

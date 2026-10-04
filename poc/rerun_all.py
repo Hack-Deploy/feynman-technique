@@ -56,9 +56,14 @@ def _resolve_order_seed(
     requested: int | None,
     reuse_cached: bool = True,
 ) -> int:
-    if requested is not None:
-        return requested
     cached = _cached_order_seed(entries) if reuse_cached else None
+    if requested is not None:
+        if cached is not None and requested != cached:
+            raise ValueError(
+                f"cache was run with order seed {cached}; use --purge to start a new order "
+                "or omit --order-seed"
+            )
+        return requested
     return cached if cached is not None else secrets.randbelow(2**31)
 
 
@@ -147,11 +152,14 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     cached_entries = live_cache.load(cache_path)
-    order_seed = _resolve_order_seed(
-        cached_entries,
-        args.order_seed,
-        reuse_cached=not args.purge,
-    )
+    try:
+        order_seed = _resolve_order_seed(
+            cached_entries,
+            args.order_seed,
+            reuse_cached=not args.purge,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     order, claim_order, extra_fields = _order(settings, cfg, order_seed)
     summary_fields = {"order_seed": order_seed, "claim_order": claim_order}
     _print_order(order_seed, claim_order)

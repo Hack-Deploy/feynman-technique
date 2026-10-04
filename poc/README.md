@@ -95,8 +95,9 @@ uv run python -m poc.hf_data push
 uv run python -m poc.hf_data pull
 ```
 
-Push is private unless `--public` is supplied. The dry run makes no network calls;
-pull archives local copies before replacing them.
+Push is private unless `--public` is supplied. The dry run makes no network calls.
+Pull replaces the local allow-listed live record with the dataset snapshot, archiving
+the old files and directories under `attempts/archive/`.
 
 ## Files
 

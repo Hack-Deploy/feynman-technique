@@ -136,6 +136,20 @@ def _print_run(model: str, hyp: str, record: AttemptRecord, usd: float, out) -> 
     )
 
 
+def _reconcile_store(entries: list[dict], store_path: Path, out) -> None:
+    store = AttemptStore(store_path)
+    stored_ids = {record.attempt_id for record in store.load()}
+    for entry in entries:
+        if entry.get("source") != "real":
+            continue
+        record = AttemptRecord.from_dict(entry["record"])
+        if record.attempt_id in stored_ids:
+            continue
+        store.append([record])
+        stored_ids.add(record.attempt_id)
+        out(f"Repaired attempt store with cached record {record.attempt_id}")
+
+
 def run_grid(
     settings: LiveSettings,
     cache_path: Path,
@@ -151,6 +165,8 @@ def run_grid(
 ) -> dict:
     cache_path = Path(cache_path)
     todo, entries, cfg = _plan(settings, cache_path, order=order)
+    if store_path is not None:
+        _reconcile_store(entries, Path(store_path), out)
     if show_preflight:
         _print_preflight(settings, todo, ledger, out)
     total_runs = len(settings.hypotheses) * len(settings.models) * len(settings.seeds)

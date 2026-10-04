@@ -364,6 +364,71 @@ def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
     assert [round_entry["cut_off"] for round_entry in rounds] == [True, False]
 
 
+def test_run_grid_repairs_cache_store_split_after_store_append_failure(
+    monkeypatch, tmp_path
+):
+    settings = spend.load_settings()
+    hyp = C.load().hypotheses[0]
+    settings = replace(
+        settings,
+        models=settings.models[:1],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=3,
+        max_tokens=32,
+    )
+    cache = tmp_path / "runs.jsonl"
+    store = tmp_path / "attempts.jsonl"
+    transport_calls = []
+    original_append = demo_grid.AttemptStore.append
+    append_failed = False
+
+    def fail_once(self, records):
+        nonlocal append_failed
+        if not append_failed:
+            append_failed = True
+            raise OSError("simulated store failure")
+        return original_append(self, records)
+
+    monkeypatch.setattr(demo_grid.AttemptStore, "append", fail_once)
+
+    def transport_factory(model_id):
+        transport = _verdict_transport()
+
+        def call(*args):
+            transport_calls.append(model_id)
+            return transport(*args)
+
+        return call
+
+    run_options = {
+        "settings": settings,
+        "cache_path": cache,
+        "ledger": SpendLedger(tmp_path / "spend.jsonl", cap=1),
+        "transport_factory": transport_factory,
+        "confirm": True,
+        "out": lambda *_: None,
+        "store_path": store,
+        "show_preflight": False,
+    }
+    first = demo_grid.run_grid(**run_options)
+
+    assert first["stopped_reason"] == "error"
+    cached_entries = live_cache.load(cache)
+    assert len(cached_entries) == 1
+    assert demo_grid.AttemptStore(store).load() == []
+
+    resumed = demo_grid.run_grid(**run_options)
+
+    stored_records = demo_grid.AttemptStore(store).load()
+    assert resumed["done"] == 0
+    assert resumed["skipped"] == 1
+    assert [record.attempt_id for record in stored_records] == [
+        cached_entries[0]["record"]["attempt_id"]
+    ]
+    assert transport_calls == [settings.models[0].id]
+
+
 def test_metered_llm_voids_provider_status_errors_and_keeps_unknown_reservations(
     monkeypatch, tmp_path
 ):
