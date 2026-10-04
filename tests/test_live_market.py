@@ -5,7 +5,9 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from types import SimpleNamespace
 
+import anthropic
 import pytest
 import scienceagent.llm_client
 
@@ -14,6 +16,7 @@ import live_market
 from dm.store import AttemptStore
 from dm.types import SubmittedAttempt
 from poc import bench, config as C, live_cache, spend
+from poc.llm import MeteredLLM, anthropic_transport
 
 
 @pytest.fixture(autouse=True)
@@ -88,6 +91,88 @@ def _wait_for_job(base_url, job_id, timeout=120):
             return result
         time.sleep(0.1)
     pytest.fail(f"scripted job {job_id} did not finish within {timeout} seconds")
+
+
+def test_anthropic_transport_ignores_thinking_blocks(monkeypatch):
+    response = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="thinking", thinking="reasoning"),
+            SimpleNamespace(type="text", text="ANSWER"),
+        ],
+        usage=SimpleNamespace(
+            input_tokens=12,
+            output_tokens=3,
+            cache_creation_input_tokens=2,
+            cache_read_input_tokens=1,
+        ),
+    )
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            return response
+
+    class FakeAnthropic:
+        def __init__(self, **kwargs):
+            self.messages = FakeMessages()
+
+    monkeypatch.setattr(anthropic, "Anthropic", FakeAnthropic)
+
+    text, usage = anthropic_transport("model", None, [], 64)
+
+    assert text == "ANSWER"
+    assert usage == {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "cache_creation_input_tokens": 2,
+        "cache_read_input_tokens": 1,
+    }
+
+
+def test_real_live_job_passes_metered_llm_to_run_attempt(monkeypatch, tmp_path):
+    cfg = C.load()
+    hyp = cfg.hypothesis("gravity-inverse-square")
+    settings = spend.load_settings()
+    model = "claude-sonnet-5-5"
+    model_price = spend.price(settings, model)
+    spend_ledger = spend.SpendLedger(tmp_path / "live_spend.jsonl", cap=settings.max_usd)
+    store_path = tmp_path / "live.jsonl"
+    job_id = "real-metering-test"
+    live_market._JOBS[job_id] = {
+        "state": "running",
+        "hypothesis_id": hyp.id,
+        "model": model,
+        "seed": 0,
+        "scripted": False,
+        "rounds": [],
+        "run": None,
+        "error": None,
+    }
+    live_market._ACTIVE_JOB = job_id
+    captured = []
+
+    def fake_run_attempt(*args, complete=None, **kwargs):
+        captured.append(complete)
+        raise RuntimeError("captured complete")
+
+    monkeypatch.setattr(live_market, "run_attempt", fake_run_attempt)
+
+    live_market._run_job(
+        job_id,
+        hyp,
+        model,
+        0,
+        False,
+        cfg,
+        [],
+        store_path,
+        spend_ledger,
+        model_price,
+        settings,
+    )
+
+    assert len(captured) == 1
+    assert isinstance(captured[0], MeteredLLM)
+    assert captured[0] is not scienceagent.llm_client.complete
 
 
 def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):

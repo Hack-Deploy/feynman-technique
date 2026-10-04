@@ -223,7 +223,7 @@ def _run_job(job_id: str, hyp: C.Hypothesis, model: str, seed: int, scripted: bo
             seed,
             ledger,
             cfg=cfg,
-            complete=scripted_llm(hyp) if scripted else None,
+            complete=scripted_llm(hyp) if scripted else metered,
             on_round=_job_round_callback(job_id, metered),
             max_tokens=live_settings.max_tokens if live_settings else C.MAX_TOKENS,
         )

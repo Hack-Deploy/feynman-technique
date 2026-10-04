@@ -540,3 +540,17 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   smoke-test server was stopped.
 - Verification: `uv run pytest -q -p no:cacheprovider` — 675 passed, 3 skipped,
   0 xfailed, 34 warnings.
+
+## Live real-run metering fix (2026-10-03)
+
+- Real `/live` attempts now pass `MeteredLLM` to `run_attempt`, so provider calls use
+  per-call reservations and settlement. Scripted runs are unchanged.
+- Verification: `uv run pytest -q tests/test_live_market.py tests/test_live_spend.py
+  tests/test_llm_guard.py tests/readiness/live_market_readiness_test.py` — 67 passed.
+
+## Stale ForceBench grid fallback (2026-10-04)
+
+- Generated ForceBench grids with results but no `top_model` key now fall back to the
+  committed snapshot when available; a present `top_model: null` remains output data.
+- Verification: `uv run pytest -q -p no:cacheprovider tests/test_real_snapshots.py
+  tests/test_real_app.py` — 16 passed, 1 skipped.
