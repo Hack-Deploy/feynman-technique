@@ -620,9 +620,9 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   measurement uncertainty.
 - The prompt, live info, UI, and docs disclose both noise levels and that identical
   experiments can be repeated for fresh independent readings, at full price each time.
-- Regenerated the scripted fallback offline: 8 verdicts / 3 passes / 50 credits profit
-  became 3 verdicts / 2 passes / 119 credits profit. Only its JSONL and summary changed;
-  no spend ledger or recorded-run cache was created or modified.
+- Left the committed scripted fallback (`attempts/fixtures/live/scripted_demo.jsonl`) as is:
+  regenerating it under the solved-claim rule shrinks it from 8 runs to 3 and drops the
+  four-model comparison. It is a labelled scripted stand-in, recorded before velocity noise.
 - Focused suite: `uv run pytest -q tests/test_poc.py tests/test_live_market.py
   tests/test_rerun_all.py tests/test_live_spend.py` — 92 passed. No paid calls or vendor
   edits.

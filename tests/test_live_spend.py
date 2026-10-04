@@ -858,22 +858,19 @@ def test_committed_scripted_grid_fixture_has_truthy_and_false_claims():
     entries = live_cache.load(
         Path(REPO_ROOT / "attempts/fixtures/live/scripted_demo.jsonl")
     )
-    assert len(entries) == 3
+    settings = spend.load_settings()
+    assert len(entries) == 8
     assert all(entry["source"] == "scripted" for entry in entries)
-    assert {
-        (entry["key"]["model"], entry["key"]["hypothesis_id"])
-        for entry in entries
-    } == {
-        ("claude-sonnet-5-5", "coulomb-source-strength"),
-        ("claude-sonnet-5-5", "gravity-inverse-square"),
-        ("claude-sonnet-5", "gravity-inverse-square"),
+    assert {entry["key"]["model"] for entry in entries} == {
+        model.id for model in settings.models
     }
-    assert {
-        (entry["key"]["model"], entry["key"]["hypothesis_id"]):
-        entry["record"]["verdict"]["passed"]
-        for entry in entries
-    } == {
-        ("claude-sonnet-5-5", "coulomb-source-strength"): True,
-        ("claude-sonnet-5-5", "gravity-inverse-square"): False,
-        ("claude-sonnet-5", "gravity-inverse-square"): True,
-    }
+    cfg = C.load()
+    for model in settings.models:
+        model_records = [
+            entry for entry in entries if entry["key"]["model"] == model.id
+        ]
+        assert len(model_records) == 2
+        assert {
+            cfg.hypothesis(entry["key"]["hypothesis_id"]).answer == "supported"
+            for entry in model_records
+        } == {True, False}
