@@ -260,4 +260,5 @@ def test_animation_scene_has_true_paths_and_no_nan():
     assert scene["outcome"] == "false_claim" and scene["launches"]
     first = scene["launches"][0]
     assert first["true"] and len(first["true"]) == animate.FRAMES + 1
-    assert first["claimed"] and first["single_estimate"]
+    assert first["claimed"] and len(first["claimed"]) == animate.FRAMES + 1
+    assert set(scene["laws"]) == {"expected", "claimed", "true"}

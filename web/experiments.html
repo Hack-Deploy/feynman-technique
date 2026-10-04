@@ -3,68 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Discovery Market · Inside the runs</title>
+<title>Discovery Market · One real run</title>
 <link rel="stylesheet" href="/web/style.css">
 <style>
-  .hero { padding-top: 56px; }
-  .picker { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 26px; }
-  @media (max-width: 860px) { .picker { grid-template-columns: 1fr; } }
-  .picker h3 { font: 700 12px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { display: flex; align-items: center; gap: 8px; font: 600 14px var(--sans); padding: 7px 12px 7px 10px; border-radius: 999px;
-    border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--ink); text-align: left; }
-  .chip:hover { border-color: var(--navy); }
-  .chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
-  .chip i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  .chip small { font: 600 12px var(--sans); opacity: .7; }
-  .ok { background: var(--green); } .bad { background: var(--rust); } .meh { background: var(--amber); }
-
-  .stage { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 28px; margin-top: 30px; align-items: start; }
+  .hero { padding-top: 48px; }
+  @media (max-width: 720px) {
+    .topbar .in { gap: 12px; padding: 0 16px; }
+    .brand { font-size: 15px; white-space: nowrap; }
+    .tabs { overflow-x: auto; scrollbar-width: none; }
+    .tabs a { white-space: nowrap; padding: 8px 10px; }
+    .tabs a span { display: none; }
+  }
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 26px; align-items: start; }
   @media (max-width: 960px) { .stage { grid-template-columns: minmax(0, 1fr); } }
   .lab { position: relative; background: #0D1830; border-radius: 10px; overflow: hidden; aspect-ratio: 1 / 1; }
   .lab canvas { display: block; width: 100%; height: 100%; }
   .hud { position: absolute; left: 14px; top: 12px; right: 14px; display: flex; justify-content: space-between; gap: 10px;
     font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: #9FB3DA; pointer-events: none; }
-  .caption { min-height: 48px; margin-top: 10px; font: 500 16px/1.45 var(--sans); color: var(--ink); }
-  .stamp { position: absolute; right: 18px; top: 44px; font: 800 22px var(--narrow); letter-spacing: .1em; text-transform: uppercase;
-    padding: 6px 14px; border: 3px solid; border-radius: 6px; transform: rotate(-6deg) scale(.6); opacity: 0;
-    transition: transform .35s cubic-bezier(.2,1.6,.4,1), opacity .25s; background: rgba(13,24,48,.6); }
+  .stamp { position: absolute; right: 18px; top: 40px; font: 800 22px var(--narrow); letter-spacing: .1em; text-transform: uppercase;
+    padding: 6px 14px; border: 3px solid #FF8A6B; color: #FF8A6B; border-radius: 6px; background: rgba(13,24,48,.6);
+    transform: rotate(-6deg) scale(.6); opacity: 0; transition: transform .35s cubic-bezier(.2,1.6,.4,1), opacity .25s; }
+  .stamp.ok { color: #6FD39A; border-color: #6FD39A; }
   .stamp.show { transform: rotate(-6deg) scale(1); opacity: 1; }
-  .stamp.ok { color: #6FD39A; border-color: #6FD39A; background: rgba(13,24,48,.6); }
-  .stamp.bad { color: #FF8A6B; border-color: #FF8A6B; background: rgba(13,24,48,.6); }
-  .stamp.meh { color: #F2C46D; border-color: #F2C46D; background: rgba(13,24,48,.6); }
-
-  .controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .caption { min-height: 46px; margin-top: 10px; font: 500 16px/1.45 var(--sans); }
+  .controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
   .controls input[type=range] { flex: 1; min-width: 140px; accent-color: var(--navy); }
-  .phases { display: flex; gap: 6px; flex-wrap: wrap; }
-  .phases button { font: 600 13px var(--sans); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--body); }
-  .phases button.on { background: var(--soft); border-color: var(--navy); color: var(--navy); }
-  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--body); margin-top: 10px; }
-  .legend b { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
-  .legend em { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; }
+  .steps button { font: 600 13px var(--sans); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--body); }
+  .steps button.on { background: var(--soft); border-color: var(--navy); color: var(--navy); }
 
-  .panel h3 { margin-bottom: 4px; }
-  .panel .hyp { font-size: 15px; color: var(--body); }
-  .block { border-top: 1px solid var(--line); padding: 14px 0 4px; margin-top: 14px; opacity: .28; transition: opacity .4s; }
-  .block.lit { opacity: 1; }
-  .block .k { font: 700 11px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .facts div { background: var(--faint); border-radius: 8px; padding: 8px 10px; }
-  .facts span { display: block; font: 700 10px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-  .facts b { font: 700 18px var(--narrow); }
-  .gauge { margin: 6px 0 10px; }
-  .gauge .name { font-size: 14px; display: flex; justify-content: space-between; gap: 8px; }
-  .gauge .name code { font: 600 14px var(--mono); }
-  .gauge svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .reasons { font-size: 14px; color: var(--body); margin-top: 6px; }
-  .flags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .pay { display: grid; grid-template-columns: 74px 1fr 70px; gap: 8px; align-items: center; font-size: 14px; margin: 6px 0; }
-  .pay .bar { position: relative; height: 18px; background: var(--faint); border-radius: 4px; }
-  .pay .bar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; transition: all .8s cubic-bezier(.2,.8,.2,1); }
+  .force { background: var(--faint); border-radius: 10px; padding: 18px 18px 14px; }
+  .force .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .force .head b { font: 700 13px var(--narrow); letter-spacing: .14em; text-transform: uppercase; color: var(--navy); }
+  .force .head span { font: 700 13px var(--narrow); letter-spacing: .08em; color: var(--muted); }
+  .quote { margin: 10px 0 6px; min-height: 96px; font: 500 16px/1.5 var(--sans); color: var(--ink); border-left: 3px solid var(--navy); padding: 2px 0 2px 12px; }
+  .quote small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .force svg { width: 100%; height: auto; display: block; }
+  .force svg text { font-family: var(--sans); }
+  .laws { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+  .laws div { background: #fff; border-radius: 8px; padding: 8px 10px; border-top: 3px solid; opacity: .25; transition: opacity .4s; }
+  .laws div.lit { opacity: 1; }
+  .laws span { display: block; font: 700 10px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .laws b { font: 700 17px var(--narrow); }
+  .pay { display: grid; grid-template-columns: 92px 1fr 56px; gap: 8px; align-items: center; font-size: 14px; margin: 6px 0; }
+  .pay .bar { position: relative; height: 18px; background: #fff; border-radius: 4px; }
+  .pay .bar i { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: 4px; transition: all .8s cubic-bezier(.2,.8,.2,1); }
   .pay .bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
   .pay b { font: 700 16px var(--narrow); text-align: right; }
-  .credit { font-size: 12px; color: var(--muted); margin-top: 28px; }
-  @media (prefers-reduced-motion: reduce) { .stamp, .block, .pay .bar i { transition: none; } }
+  .payout { opacity: .25; transition: opacity .4s; margin-top: 12px; }
+  .payout.lit { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .stamp, .laws div, .payout, .pay .bar i { transition: none; } }
 </style>
 </head>
 <body>
@@ -74,20 +62,15 @@
     <a href="/"><span>01</span>Vision</a>
     <a href="/simulation"><span>02</span>How it works</a>
     <a href="/live"><span>03</span>Live market</a>
-    <a class="on" href="/experiments"><span>04</span>Inside the runs</a>
+    <a class="on" href="/experiments"><span>04</span>One real run</a>
   </nav>
 </div></div>
 
 <main>
 <section class="hero">
-  <p class="label">Inside the runs</p>
-  <h2>Watch an AI scientist run its experiments, then watch the checker.</h2>
-  <p class="lead">Each run is replayed in three beats. <b>1&nbsp;Experiments:</b> particles move under a hidden law and the lab returns noisy snapshots, which is all the agent sees. <b>2&nbsp;Claim:</b> the agent states a verdict and its measured numbers. <b>3&nbsp;Checker:</b> the true paths are revealed, the numbers are checked against the truth, and each reward rule pays out.</p>
-
-  <div class="picker">
-    <div><h3>Real Claude runs</h3><div class="chips" id="realChips"></div></div>
-    <div><h3>Scripted agents</h3><div class="chips" id="baseChips"></div></div>
-  </div>
+  <p class="label rust">One real run</p>
+  <h2 id="title">An AI got paid for a discovery that was wrong.</h2>
+  <p class="lead" id="lead"></p>
 </section>
 
 <div class="stage">
@@ -101,268 +84,127 @@
     <div class="controls">
       <button class="btn sm" id="play">Pause</button>
       <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Timeline">
-      <div class="phases" id="phases">
-        <button data-p="0">1 Experiments</button><button data-p="1">2 Claim</button><button data-p="2">3 Checker</button>
-      </div>
     </div>
-    <div class="legend">
-      <span><em style="background:#FFB454"></em>source</span>
-      <span><em style="background:#7FB2FF"></em>probe</span>
-      <span><em style="background:#fff;box-shadow:0 0 0 2px #7FB2FF inset"></em>noisy snapshot the agent saw</span>
-      <span><b style="background:#6FD39A"></b>true path (revealed by the checker)</span>
-      <span><b style="background:repeating-linear-gradient(90deg,#F2C46D 0 5px,transparent 5px 8px)"></b>what the claimed law predicts</span>
+    <div class="steps" id="steps" style="margin-top:8px">
+      <button data-s="0">Round 1 · plan</button><button data-s="1">Round 2 · experiments</button>
+      <button data-s="2">Round 3 · claim</button><button data-s="3">Checker</button>
     </div>
   </div>
 
-  <div class="panel" id="panel">
-    <p class="label" id="pAgent"></p>
-    <h3 id="pTitle"></h3>
-    <p class="hyp" id="pHyp"></p>
-    <div class="block" id="bBet">
-      <p class="k">The bet</p>
-      <div class="facts" id="facts"></div>
+  <div class="force">
+    <div class="head"><b>How the model got there</b><span id="conf"></span></div>
+    <p class="quote" id="quote"></p>
+    <svg id="fd" viewBox="0 0 520 330" role="img" aria-label="Force on each probe: expected, claimed and true"></svg>
+    <div class="laws">
+      <div id="lawE" style="border-color:#3D63B5"><span>Expected</span><b id="lawEv"></b></div>
+      <div id="lawC" style="border-color:#B7791F"><span>Claimed</span><b id="lawCv"></b></div>
+      <div id="lawT" style="border-color:#2E7D4F"><span>True</span><b id="lawTv"></b></div>
     </div>
-    <div class="block" id="bClaim">
-      <p class="k">The claim</p>
-      <div id="claimLine"></div>
-      <div id="gauges"></div>
-    </div>
-    <div class="block" id="bRule">
-      <p class="k">The checker</p>
-      <div id="ruling"></div>
+    <div class="payout" id="payout">
       <div class="pay"><span>Naive rule</span><div class="bar"><i id="barN"></i></div><b id="valN"></b></div>
       <div class="pay"><span>Market rule</span><div class="bar"><i id="barM"></i></div><b id="valM"></b></div>
-      <p class="note">Credits for this run. Naive pays the prize for any clear verdict; the market pays only a checked one, takes a 30% bond on a false claim, and adds a small calibration bonus.</p>
+      <p class="note">Credits for this run. Naive pays the prize for any clear verdict. The market pays only a checked one and keeps a 30% bond on a false claim.</p>
     </div>
   </div>
 </div>
-
-<p class="credit">Worlds: DiscoverPhysics simulator (public worlds). True paths are replayed noise-free after each run; agents never saw them.</p>
 </main>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-const fmt = (v, d = 3) => v == null ? "–" : (Math.abs(v) >= 100 ? v.toFixed(0) : +v.toPrecision(d) + "");
-const OUTCOME = {confirmed: ["Confirmed", "ok"], false_claim: ["False claim", "bad"], stopped: ["Stopped", "meh"],
-  out_of_rounds: ["Out of rounds", "meh"], declined: ["Declined", "meh"], walked_away: ["Walked away", "meh"]};
-const SHORT = {"gravity-inverse-square": "gravity", "fractional-2d-gravity": "fractional gravity", "yukawa-screened": "screened force",
-  "oscillator-time-varying": "time-varying pull", "dark-matter-unseen-pull": "dark matter", "circle-ordinary-gravity": "ring collapse",
-  "ether-outward-push": "ether push", "hubble-outward-push": "hubble push"};
-const LAUNCH_COLORS = ["#7FB2FF", "#C59BFF", "#5FE0D0", "#FF9BD2", "#B8E86B", "#FFD36B", "#9BC0FF", "#FFB0A0"];
+const fmt = (v, d = 3) => v == null ? "–" : +(+v).toPrecision(d) + "";
+const COLORS = ["#7FB2FF", "#C59BFF", "#5FE0D0", "#FF9BD2", "#B8E86B", "#FFD36B", "#9BC0FF", "#FFB0A0"];
+const LAW = {expected: "#3D63B5", claimed: "#B7791F", true: "#2E7D4F"};
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-let DATA = null, S = null, T = 0, playing = true, last = null, timeline = null;
 const cv = $("#cv"), ctx = cv.getContext("2d");
+let D = null, T = 0, playing = !REDUCED, last = null, TL = null, G = null, SERIES = null;
 
-// ---------------------------------------------------------------- timeline
-function buildTimeline(s) {
-  const launches = s.launches.map((l, i) => ({i, dur: s.launches.length > 4 ? 1.6 : 2.6}));
-  let t = 0;
-  for (const l of launches) { l.start = t; t += l.dur; }
-  if (!launches.length) t = 1.4;
-  const claim = {start: t, dur: 2.2}; t += claim.dur;
-  const reveal = {start: t, dur: 3.2}; t += reveal.dur;
-  return {launches, claim, reveal, total: t + 0.6};
+// ---------------------------------------------------------------- timeline: plan, experiments, claim, checker
+function timeline(d) {
+  const per = d.launches.length > 4 ? 1.5 : 2.4;
+  const plan = {start: 0, dur: 4};
+  const launches = d.launches.map((l, i) => ({i, start: plan.dur + i * per, dur: per}));
+  const claim = {start: plan.dur + d.launches.length * per, dur: 4.5};
+  const check = {start: claim.start + claim.dur, dur: 4.5};
+  return {plan, launches, claim, check, total: check.start + check.dur + .5};
 }
-function phaseAt(t) {
-  if (t < timeline.claim.start) return 0;
-  return t < timeline.reveal.start ? 1 : 2;
-}
+const stepAt = t => t < TL.launches[0].start ? 0 : t < TL.claim.start ? 1 : t < TL.check.start ? 2 : 3;
 
-// ---------------------------------------------------------------- geometry
-function boundsOf(s) {
-  const xs = [], ys = [];
-  const add = p => { if (p && isFinite(p[0]) && isFinite(p[1])) { xs.push(p[0]); ys.push(p[1]); } };
-  for (const l of s.launches) {
-    for (const f of l.obs) for (const p of f) add(p);
-    if (l.true) for (const f of l.true) {
-      const from = s.kind === "field" ? f.length - l.n_probe : 0;
-      for (let j = from; j < f.length; j++) add(f[j]);
-    }
-  }
-  if (!xs.length) { xs.push(-5, 5); ys.push(-5, 5); }
-  if (s.kind !== "pair") { xs.push(0); ys.push(0); }
-  const q = (a, f) => { const b = [...a].sort((u, v) => u - v); return b[Math.min(b.length - 1, Math.max(0, Math.round(f * (b.length - 1))))]; };
-  let x0 = q(xs, .01), x1 = q(xs, .99), y0 = q(ys, .01), y1 = q(ys, .99);
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const half = Math.max(x1 - x0, (y1 - y0) * 1.25, 1) / 2 * 1.18;
-  return {cx, cy, half};
-}
-let G = null;
+// ---------------------------------------------------------------- left: the experiment
+const WORLD = 0.5;
 function resize() {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
   cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (S) G = {...boundsOf(S), w: r.width, h: r.height, wh: Math.round(r.height * WORLD_SHARE)};
+  if (!D) return;
+  let x0 = 0, x1 = 0;
+  for (const l of D.launches) for (const f of [...l.obs, ...(l.true || [])]) for (const p of f) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); }
+  G = {w: r.width, h: r.height, wh: Math.round(r.height * WORLD), cx: (x0 + x1) / 2, half: (x1 - x0) / 2 * 1.15 + .5};
   draw();
 }
-const WORLD_SHARE = 0.56;
-function worldScale() { return Math.min(G.w / (2 * G.half), (G.wh - 30) / (2 * G.half * 0.8)); }
-function P(p) {
-  const scale = worldScale();
-  return [G.w / 2 + (p[0] - G.cx) * scale, (G.wh + 14) / 2 - (p[1] - G.cy) * scale];
-}
-function lerpFrame(frames, times, t) {
-  if (!frames || !frames.length) return null;
-  const tEnd = times[times.length - 1] || 1;
-  const x = Math.max(0, Math.min(1, t / tEnd)) * (frames.length - 1);
+const P = p => { const s = G.w / (2 * G.half); return [G.w / 2 + (p[0] - G.cx) * s, G.wh / 2 + 14 - p[1] * s]; };
+function lerp(frames, times, t) {
+  const tEnd = times[times.length - 1] || 1, x = Math.max(0, Math.min(1, t / tEnd)) * (frames.length - 1);
   const i = Math.floor(x), f = x - i, a = frames[i], b = frames[Math.min(i + 1, frames.length - 1)];
   return a.map((p, j) => [p[0] + (b[j][0] - p[0]) * f, p[1] + (b[j][1] - p[1]) * f]);
 }
-
-// ---------------------------------------------------------------- drawing
-function dot(p, r, fill, glow) {
-  const [x, y] = P(p);
-  if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 14; }
-  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = fill; ctx.fill();
-  ctx.shadowBlur = 0;
+function disc(p, r, fill, glow) {
+  const [x, y] = P(p); if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 14; }
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = fill; ctx.fill(); ctx.shadowBlur = 0;
 }
-function ring(p, r, stroke, alpha = 1, w = 1.6) {
-  const [x, y] = P(p);
-  ctx.globalAlpha = alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
-  ctx.strokeStyle = stroke; ctx.lineWidth = w; ctx.stroke(); ctx.globalAlpha = 1;
+function snap(x, y, col, flash) {
+  if (flash > 0) { ctx.globalAlpha = flash; ctx.beginPath(); ctx.arc(x, y, 4 + 12 * (1 - flash), 0, 2 * Math.PI); ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.stroke(); ctx.globalAlpha = 1; }
+  ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 2 * Math.PI); ctx.fillStyle = "#fff"; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke();
 }
-function path(frames, j, upto, color, alpha, width) {
-  ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = "round";
-  ctx.beginPath();
-  const n = Math.max(1, Math.round(upto * (frames.length - 1)));
-  for (let k = 0; k <= n; k++) { const [x, y] = P(frames[k][j]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-  ctx.stroke(); ctx.globalAlpha = 1;
+function series(d) {  // distance each probe has moved toward the source since release
+  return d.launches.map(l => {
+    const r = f => Math.hypot(f[1][0] - f[0][0], f[1][1] - f[0][1]);
+    const r0 = Math.hypot(l.input.pos2[0], l.input.pos2[1]);
+    return {
+      obs: l.obs_t.map((t, k) => [t, r0 - r(l.obs[k])]),
+      true: l.true ? l.true_t.map((t, k) => [t, r0 - r(l.true[k])]) : null,
+      claimed: l.claimed ? l.true_t.map((t, k) => [t, r0 - Math.hypot(l.claimed[k][0], l.claimed[k][1])]) : null,
+    };
+  });
 }
-function grid() {
-  ctx.fillStyle = "#0D1830"; ctx.fillRect(0, 0, G.w, G.h);
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, G.w, G.wh); ctx.clip();
-  const scale = worldScale();
-  let step = Math.pow(10, Math.floor(Math.log10(G.half / 2)));
-  if (G.half / step > 8) step *= 2;
-  ctx.strokeStyle = "rgba(159,179,218,.08)"; ctx.lineWidth = 1;
-  const x0 = G.cx - G.w / 2 / scale, x1 = G.cx + G.w / 2 / scale, y0 = G.cy - G.h / 2 / scale, y1 = G.cy + G.h / 2 / scale;
-  ctx.beginPath();
-  for (let x = Math.ceil(x0 / step) * step; x < x1; x += step) { const [px] = P([x, 0]); ctx.moveTo(px, 0); ctx.lineTo(px, G.h); }
-  for (let y = Math.ceil(y0 / step) * step; y < y1; y += step) { const [, py] = P([0, y]); ctx.moveTo(0, py); ctx.lineTo(G.w, py); }
-  ctx.stroke();
-}
-
 function draw() {
-  if (!S || !G) return;
-  grid();
-  const ph = phaseAt(T), tl = timeline;
-  const reveal = ph === 2 ? Math.min(1, (T - tl.reveal.start) / 1.6) : 0;
-  let active = -1;
-  tl.launches.forEach(l => { if (T >= l.start && T < l.start + l.dur) active = l.i; });
-  if (T >= tl.claim.start) active = -2;
+  if (!D || !G) return;
+  const step = stepAt(T), reveal = step === 3 ? Math.min(1, (T - TL.check.start) / 1.6) : 0;
+  const claimFrac = step >= 2 ? Math.min(1, (T - TL.claim.start) / 1.6) : 0;
+  let active = -1; TL.launches.forEach(L => { if (T >= L.start && T < L.start + L.dur) active = L.i; });
+  ctx.fillStyle = "#0D1830"; ctx.fillRect(0, 0, G.w, G.h);
 
-  S.launches.forEach((l, i) => {
-    const L = tl.launches[i], col = LAUNCH_COLORS[i % LAUNCH_COLORS.length];
+  // world: source and probes on one line
+  disc([0, 0], 8, "#FFB454", "#FFB454");
+  D.launches.forEach((l, i) => {
+    const L = TL.launches[i], col = COLORS[i % COLORS.length];
+    if (step === 0) { disc(l.input.pos2, 4, "rgba(159,179,218,.5)"); return; }
     if (T < L.start) return;
-    const tEnd = l.obs_t[l.obs_t.length - 1] || 1;
-    const frac = Math.min(1, (T - L.start) / L.dur), tw = frac * tEnd, live = i === active;
-    const nb = l.true ? l.true[0].length : 0, probeFrom = nb - l.n_probe;
-
-    // revealed truth
-    if (reveal > 0 && l.true) {
-      for (let j = Math.max(0, S.kind === "pair" ? 1 : probeFrom); j < nb; j++) path(l.true, j, reveal, "#6FD39A", .9, 2.2);
-    }
-    // the moving world (only while this launch plays)
-    if (live && l.true) {
-      const now = lerpFrame(l.true, l.true_t, tw);
-      if (S.kind === "field") for (let j = 0; j < probeFrom; j++) dot(now[j], j === 0 ? 7 : 2.4, j === 0 ? "#FFB454" : "rgba(200,210,235,.55)", j === 0 ? "#FFB454" : null);
-      if (S.kind === "ring") dot(now[0], 7, "#FFB454", "#FFB454");
-      if (S.kind === "pair") dot(now[0], 8, "#FFB454", "#FFB454");
-      for (let j = (S.kind === "pair" ? 1 : probeFrom); j < nb; j++) dot(now[j], 4.5, col, col);
-    } else if (!live && S.kind !== "pair" && i === S.launches.length - 1 && l.true && T >= L.start + L.dur) {
-      dot(l.true[l.true.length - 1][0], 7, "#FFB454", "#FFB454");
-    } else if (!live && S.kind === "pair" && i === S.launches.length - 1 && l.true && T >= L.start + L.dur) {
-      dot(l.true[0][0], 8, "#FFB454", "#FFB454");
-    }
-    // snapshots
+    const tEnd = l.obs_t[l.obs_t.length - 1], tw = Math.min(1, (T - L.start) / L.dur) * tEnd;
+    if (i === active && l.true) disc(lerp(l.true, l.true_t, tw)[1], 4.5, col, col);
     l.obs_t.forEach((t, k) => {
       if (t > tw + 1e-9) return;
-      const age = (tw - t) / tEnd, flash = live ? Math.max(0, 1 - age * 8) : 0;
-      const fade = live ? 1 : (active === -2 ? .85 : .55);
-      for (const p of l.obs[k]) {
-        if (flash > 0) ring(p, 4 + 12 * (1 - flash), col, flash * .9, 1.4);
-        dot(p, 3, "#fff"); ring(p, 3.6, col, fade, 1.6);
-      }
+      const [x, y] = P(l.obs[k][1]);
+      snap(x, y, col, i === active ? Math.max(0, 1 - (tw - t) / tEnd * 8) : 0);
     });
   });
 
-  ctx.restore();
-  chart(ph, reveal, active);
-
-  // HUD and caption
-  const s = S, l = active >= 0 ? s.launches[active] : null;
-  let hl = "", cap = "";
-  if (ph === 0) {
-    if (!s.launches.length) { hl = "No experiments"; cap = "No experiments run. The claim comes from the hypothesis alone."; }
-    else if (l) {
-      const same = s.launches.slice(0, active).some(o => JSON.stringify(o.input) === JSON.stringify(l.input));
-      hl = `Experiment ${active + 1} of ${s.n_runs}`;
-      cap = same ? "The same experiment again: re-running until the data looks right." : describe(l.input);
-    } else hl = "Between experiments";
-  } else if (ph === 1) {
-    hl = "The claim";
-    cap = s.verdict ? `Claims <b>${esc(s.verdict)}</b>: ${s.quantities.filter(q => q.estimate != null).map(q => `${esc(q.name)} = ${fmt(q.estimate)}`).join(", ")}` : "No clear claim.";
-  } else {
-    hl = "The checker";
-    cap = reveal < 1 ? "Replaying every experiment without noise to reveal the true paths…" : verdictCaption(s);
-  }
-  $("#hudL").textContent = hl;
-  $("#hudR").textContent = `${SHORT[s.hypothesis_id] || s.hypothesis_id} · seed ${s.seed}`;
-  $("#caption").innerHTML = cap;
-  const st = $("#stamp"), [label, cls] = OUTCOME[s.outcome] || [s.outcome, "meh"];
-  st.textContent = label; st.className = `stamp ${cls}` + (ph === 2 && reveal >= 1 ? " show" : "");
-  panelPhase(ph, reveal >= 1);
-}
-// ---------------------------------------------------------------- distance-over-time chart
-// How far each probe has moved toward the source (origin) since release: what the law decides.
-function seriesOf(s) {
-  const radius = p => Math.hypot(p[0], p[1]);
-  const meanR = ps => ps.reduce((a, p) => a + radius(p), 0) / ps.length;
-  return s.launches.map(l => {
-    const nb = l.true ? l.true[0].length : 0;
-    const probes = (frames, from) => frames.map(f => f.slice(from));
-    const obsP = l.obs, trueP = l.true ? probes(l.true, nb - l.n_probe) : null;
-    const tracks = s.kind === "ring" ? 1 : l.n_probe;
-    const at = (ps, j) => s.kind === "ring" ? meanR(ps) : radius(ps[j]);
-    const r0 = j => trueP ? at(trueP[0], j) : at(obsP[0], j);
-    const out = [];
-    for (let j = 0; j < tracks; j++) {
-      const z = r0(j);
-      out.push({
-        obs: l.obs_t.map((t, k) => [t, z - at(obsP[k], j)]),
-        true: trueP ? l.true_t.map((t, k) => [t, z - at(trueP[k], j)]) : null,
-        claimed: l.claimed && j === 0 ? l.true_t.map((t, k) => [t, z - radius(l.claimed[k][0])]) : null,
-      });
-    }
-    return out;
-  });
-}
-function chart(ph, reveal, active) {
-  const s = S, X0 = 54, X1 = G.w - 18, Y0 = G.wh + 34, Y1 = G.h - 30;
+  // chart
+  const X0 = 54, X1 = G.w - 18, Y0 = G.wh + 34, Y1 = G.h - 30;
   ctx.strokeStyle = "rgba(159,179,218,.25)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, G.wh + .5); ctx.lineTo(G.w, G.wh + .5); ctx.stroke();
   ctx.fillStyle = "#9FB3DA"; ctx.font = "700 11px 'Archivo Narrow', sans-serif";
-  ctx.fillText("DISTANCE MOVED TOWARD THE SOURCE", 14, G.wh + 20);
+  ctx.fillText("DISTANCE FALLEN TOWARD THE SOURCE", 14, G.wh + 20);
   ctx.textAlign = "right"; ctx.fillText("TIME →", X1, Y1 + 20); ctx.textAlign = "left";
-  const series = s._series || (s._series = seriesOf(s));
-  if (!series.length) {
-    ctx.fillStyle = "#9FB3DA"; ctx.font = "500 14px 'Archivo', sans-serif"; ctx.textAlign = "center";
-    ctx.fillText("No experiments, so no data: the claim rests on the hypothesis alone.", G.w / 2, (Y0 + Y1) / 2);
-    ctx.textAlign = "left"; return;
-  }
   let tmax = 0, lo = 0, hi = 0;
-  for (const tracks of series) for (const tr of tracks) for (const [t, d] of [...tr.obs, ...(tr.true || [])]) {
-    tmax = Math.max(tmax, t); lo = Math.min(lo, d); hi = Math.max(hi, d);
-  }
+  for (const s of SERIES) for (const [t, v] of [...s.obs, ...(s.true || [])]) { tmax = Math.max(tmax, t); lo = Math.min(lo, v); hi = Math.max(hi, v); }
   const pad = (hi - lo || 1) * .12; lo -= pad; hi += pad;
-  const X = t => X0 + t / (tmax || 1) * (X1 - X0), Y = d => Y1 - (d - lo) / (hi - lo) * (Y1 - Y0);
+  const X = t => X0 + t / tmax * (X1 - X0), Y = v => Y1 - (v - lo) / (hi - lo) * (Y1 - Y0);
+  ctx.fillStyle = "#9FB3DA"; ctx.font = "600 11px 'Archivo', sans-serif"; ctx.textAlign = "right";
+  for (const v of [0, hi - pad]) ctx.fillText(fmt(v, 2), X0 - 8, Y(v) + 4);
+  ctx.textAlign = "left";
   ctx.strokeStyle = "rgba(159,179,218,.18)"; ctx.setLineDash([3, 4]);
   ctx.beginPath(); ctx.moveTo(X0, Y(0)); ctx.lineTo(X1, Y(0)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = "#9FB3DA"; ctx.font = "600 11px 'Archivo', sans-serif"; ctx.textAlign = "right";
-  for (const v of [lo + pad, 0, hi - pad]) if (Math.abs(Y(v) - Y(0)) > 12 || v === 0) ctx.fillText(fmt(v, 2), X0 - 8, Y(v) + 4);
-  ctx.textAlign = "left";
   ctx.save(); ctx.beginPath(); ctx.rect(X0, Y0 - 6, X1 - X0, Y1 - Y0 + 12); ctx.clip();
   const line = (pts, upto, color, width, dash) => {
     const n = Math.max(1, Math.round(upto * (pts.length - 1)));
@@ -370,159 +212,132 @@ function chart(ph, reveal, active) {
     for (let k = 0; k <= n; k++) { const x = X(pts[k][0]), y = Y(pts[k][1]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
     ctx.stroke(); ctx.setLineDash([]);
   };
-  const claimFrac = ph >= 1 ? Math.min(1, (T - timeline.claim.start) / 1.2) : 0;
-  series.forEach((tracks, i) => {
-    const L = timeline.launches[i], l = s.launches[i], col = LAUNCH_COLORS[i % LAUNCH_COLORS.length];
-    if (T < L.start) return;
-    const tEnd = l.obs_t[l.obs_t.length - 1] || 1;
-    const tw = Math.min(1, (T - L.start) / L.dur) * tEnd;
-    for (const tr of tracks) {
-      if (claimFrac > 0 && tr.claimed) line(tr.claimed, claimFrac, "#F2C46D", 2, [6, 4]);
-      if (reveal > 0 && tr.true) line(tr.true, reveal, "#6FD39A", 2.2);
-      for (const [t, d] of tr.obs) {
-        if (t > tw + 1e-9) continue;
-        ctx.beginPath(); ctx.arc(X(t), Y(d), 3.2, 0, 2 * Math.PI); ctx.fillStyle = "#fff"; ctx.fill();
-        ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke();
-      }
-    }
+  SERIES.forEach((s, i) => {
+    const L = TL.launches[i], l = D.launches[i], col = COLORS[i % COLORS.length];
+    if (step === 0 || T < L.start) return;
+    if (claimFrac > 0 && s.claimed) line(s.claimed, claimFrac, "#F2C46D", 2, [6, 4]);
+    if (reveal > 0 && s.true) line(s.true, reveal, "#6FD39A", 2.2);
+    const tEnd = l.obs_t[l.obs_t.length - 1], tw = Math.min(1, (T - L.start) / L.dur) * tEnd;
+    for (const [t, v] of s.obs) if (t <= tw + 1e-9) snap(X(t), Y(v), col, 0);
   });
   ctx.restore();
+
+  // words
+  const r = D.rounds, lc = D.laws.claimed, lt = D.laws.true;
+  const hud = ["Round 1 · plan", active >= 0 ? `Round 2 · experiment ${active + 1} of ${D.launches.length}` : "Round 2 · experiments",
+               "Round 3 · claim", "The checker"][step];
+  $("#hudL").textContent = hud;
+  $("#hudR").textContent = `seed ${D.seed}`;
+  $("#caption").innerHTML = [
+    "The model has not run anything yet. It expects the pull to fall as 1/r².",
+    "Each probe is released at rest and falls toward the source. The lab returns only noisy snapshots (white dots).",
+    `It fits the snapshots and claims a law: the dashed curves are what a ∝ 1/r<sup>${fmt(lc.n)}</sup> would do.`,
+    reveal < 1 ? "The checker replays every launch without noise…" :
+      `True paths in green. The verdict (<b>${esc(D.verdict)}</b>) is right, but the law is wrong: n = ${(+lc.n).toFixed(2)} against a true ${(+lt.n).toFixed(2)}.`,
+  ][step];
+  const st = $("#stamp");
+  st.textContent = D.outcome === "confirmed" ? "Confirmed" : "False claim";
+  st.className = "stamp" + (D.outcome === "confirmed" ? " ok" : "") + (step === 3 && reveal >= 1 ? " show" : "");
+  forcePanel(step, reveal >= 1);
+  document.querySelectorAll("#steps button").forEach(b => b.classList.toggle("on", +b.dataset.s === step));
 }
 
-function describe(inp) {
-  if (inp.probe_positions) return `Five probes released at rest around the source; snapshots are noisy.`;
-  if (inp.ring_radius != null) return `A ring of particles at radius ${fmt(inp.ring_radius)} released around a central mass.`;
-  const r = inp.pos2 ? Math.hypot(inp.pos2[0], inp.pos2[1]) : null;
-  return `Probe released ${r != null ? `at distance ${fmt(r, 2)} ` : ""}with masses p1 = ${fmt(inp.p1 ?? 1, 2)}, p2 = ${fmt(inp.p2 ?? 1, 2)}.`;
+// ---------------------------------------------------------------- right: the force diagram
+function accel(law, r) { return law.a3 * Math.pow(3 / r, law.n); }
+function buildForce() {
+  const rs = [...new Set(D.launches.map(l => Math.hypot(l.input.pos2[0], l.input.pos2[1])))].sort((a, b) => a - b);
+  const W = 520, H = 330, sx = 40, spread = 0.5, laws = ["expected", "claimed", "true"];
+  const angle = i => rs.length > 1 ? -spread + 2 * spread * i / (rs.length - 1) : 0;
+  const ys = rs.map((r, i) => r * Math.sin(angle(i))), xs = rs.map((r, i) => r * Math.cos(angle(i)));
+  const ylo = Math.min(0, ...ys), yhi = Math.max(0, ...ys);
+  const k = Math.min((W - sx - 50) / Math.max(...xs), (H - 70) / (yhi - ylo || 1));
+  const sy = (H - 24) / 2 - k * (ylo + yhi) / 2;
+  const amax = Math.max(...laws.map(n => accel(D.laws[n], rs[0])));
+  const L = a => 8 + a / amax * 150;
+  let g = `<defs>${laws.map(n => `<marker id="ah-${n}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${LAW[n]}"/></marker>`).join("")}</defs>`;
+  rs.forEach((r, i) => {
+    const th = angle(i);
+    const px = sx + r * k * Math.cos(th), py = sy + r * k * Math.sin(th);
+    const ux = -Math.cos(th), uy = -Math.sin(th), nx = -uy, ny = ux;
+    g += `<line x1="${sx}" y1="${sy}" x2="${px}" y2="${py}" stroke="#DADAD6" stroke-dasharray="2 4"/>`;
+    laws.forEach((n, j) => {
+      const off = (j - 1) * 7, len = Math.min(L(accel(D.laws[n], r)), r * k - 14);
+      const x0 = px + nx * off, y0 = py + ny * off;
+      g += `<line class="arrow" data-law="${n}" data-len="${len}" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0}" data-ux="${ux}" data-uy="${uy}"
+             stroke="${LAW[n]}" stroke-width="3.5" stroke-linecap="round" marker-end="url(#ah-${n})" opacity="0"/>`;
+    });
+    g += `<circle cx="${px}" cy="${py}" r="6" fill="#7FB2FF" stroke="#1B3F8B" stroke-width="1.5"/>`;
+    g += `<text x="${px + 10 * Math.cos(th)}" y="${py + 10 * Math.sin(th) + 18}" font-size="12" fill="#6B6B67" text-anchor="middle">r = ${fmt(r, 2)}</text>`;
+  });
+  g += `<circle cx="${sx}" cy="${sy}" r="11" fill="#FFB454"/><text x="${sx}" y="${sy + 30}" font-size="12" fill="#6B6B67" text-anchor="middle">source</text>`;
+  g += `<text x="${W - 4}" y="${H - 6}" font-size="12" fill="#6B6B67" text-anchor="end">arrow length = pull on the probe</text>`;
+  $("#fd").innerHTML = g;
+  for (const [el, n] of [["#lawEv", "expected"], ["#lawCv", "claimed"], ["#lawTv", "true"]])
+    $(el).innerHTML = `a ∝ 1/r<sup>${(+D.laws[n].n).toFixed(2)}</sup>`;
 }
-function verdictCaption(s) {
-  if (s.outcome === "confirmed") return "Every number is within tolerance of the truth. Paid.";
-  if (s.outcome === "false_claim") return esc(s.reasons[0] || "The claim does not survive the check.");
-  return "No clear claim to check. Only costs were paid.";
-}
-
-// ---------------------------------------------------------------- side panel
-function gaugeSVG(q, s, showTruth) {
-  const W = 360, H = 64, pad = 14;
-  const singles = s.launches.map(l => l.single_estimate && l.single_estimate[q.name]).filter(v => v != null && isFinite(v));
-  const vals = [q.truth, q.reanalysis, ...singles].filter(v => v != null && isFinite(v));
-  if (q.estimate != null) vals.push(q.estimate - q.tolerance, q.estimate + q.tolerance);
-  const isRule = s.rule.quantity === q.name;
-  if (isRule) vals.push(...s.rule.bounds);
-  let lo = Math.min(...vals), hi = Math.max(...vals);
-  if (hi - lo < 1e-9) { lo -= 1; hi += 1; }
-  const span = hi - lo; lo -= span * .12; hi += span * .12;
-  const X = v => pad + (v - lo) / (hi - lo) * (W - 2 * pad);
-  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(q.name)} estimate against truth">`;
-  if (isRule) {  // where the hypothesis counts as supported
-    const [a, b] = s.rule.bounds, y = 30, h = 10, fill = "rgba(27,63,139,.12)";
-    const seg = (x0, x1) => `<rect x="${X(x0)}" y="${y - h / 2}" width="${Math.max(0, X(x1) - X(x0))}" height="${h}" fill="${fill}"/>`;
-    if (s.rule.kind === "between") g += seg(a, b);
-    else if (s.rule.kind === "above") g += seg(a, hi);
-    else if (s.rule.kind === "outside") g += seg(lo, a) + seg(b, hi);
-    for (const v of s.rule.bounds) g += `<line x1="${X(v)}" x2="${X(v)}" y1="22" y2="38" stroke="#1B3F8B" stroke-dasharray="2 2"/>`;
-    g += `<text x="${W - pad}" y="14" text-anchor="end" font-size="10" fill="#1B3F8B">shaded: supported</text>`;
+let shown = "";
+function forcePanel(step, revealed) {
+  const key = `${step}:${revealed}`;
+  if (key === shown) return;
+  shown = key;
+  const visible = {expected: true, claimed: step >= 2, true: step === 3 && revealed};
+  document.querySelectorAll("#fd .arrow").forEach(a => {
+    const on = visible[a.dataset.law], len = on ? +a.dataset.len : 0;
+    const x1 = +a.getAttribute("x1"), y1 = +a.getAttribute("y1");
+    a.setAttribute("x2", x1 + +a.dataset.ux * len); a.setAttribute("y2", y1 + +a.dataset.uy * len);
+    a.setAttribute("opacity", on ? (step === 3 && a.dataset.law === "expected" ? .3 : 1) : 0);
+    a.style.transition = REDUCED ? "none" : "all .9s cubic-bezier(.2,.8,.2,1)";
+  });
+  $("#lawE").classList.toggle("lit", true); $("#lawC").classList.toggle("lit", step >= 2);
+  $("#lawT").classList.toggle("lit", visible.true);
+  const r = D.rounds, p = i => r[i] && r[i].p_success != null ? `says ${Math.round(r[i].p_success * 100)}% sure` : "";
+  const q = [
+    [r[0] && r[0].assessment, "Round 1, before any data", p(0)],
+    [r[1] && r[1].assessment, `Round 2, buys ${D.launches.length} experiments`, p(1)],
+    [D.evidence || (r[2] && r[2].assessment), `Round 3, claims ${D.verdict}`, p(2)],
+    [`${D.reasons.join("; ")}.`, "The checker", `prize ${D.prize}`],
+  ][step];
+  $("#quote").innerHTML = `${step < 3 ? "“" : ""}${esc(q[0])}${step < 3 ? "”" : ""}<small>${esc(q[1])}</small>`;
+  $("#conf").textContent = q[2];
+  $("#payout").classList.toggle("lit", step === 3 && revealed);
+  const max = Math.max(Math.abs(D.naive), Math.abs(D.market), 1), on = step === 3 && revealed;
+  for (const [bar, val, v] of [["#barN", "#valN", D.naive], ["#barM", "#valM", D.market]]) {
+    const w = on ? Math.abs(v) / max * 50 : 0;
+    $(bar).style.left = v >= 0 ? "50%" : `${50 - w}%`; $(bar).style.width = `${w}%`;
+    $(bar).style.background = v >= 0 ? "var(--green)" : "var(--rust)";
+    $(val).textContent = on ? (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(0) : "";
+    $(val).style.color = v >= 0 ? "var(--green)" : "var(--rust)";
   }
-  g += `<line x1="${pad}" x2="${W - pad}" y1="30" y2="30" stroke="#B9B9B4"/>`;
-  for (const v of singles) g += `<line x1="${X(v)}" x2="${X(v)}" y1="24" y2="36" stroke="#8A8A86" stroke-width="2" opacity=".7"/>`;
-  if (q.estimate != null) {
-    const ok = Math.abs(q.estimate - q.truth) <= q.tolerance, c = showTruth ? (ok ? "#2E7D4F" : "#A23B1E") : "#1B3F8B";
-    g += `<rect x="${X(q.estimate - q.tolerance)}" y="25" width="${X(q.estimate + q.tolerance) - X(q.estimate - q.tolerance)}" height="10" rx="3" fill="${c}" opacity=".18" style="transition:fill .4s"/>`;
-    g += `<circle cx="${X(q.estimate)}" cy="30" r="6" fill="${c}"/>`;
-    g += `<text x="${X(q.estimate)}" y="56" text-anchor="middle" font-size="11" font-weight="700" fill="${c}">claimed ${fmt(q.estimate)} ± ${fmt(q.tolerance, 2)}</text>`;
-  }
-  if (showTruth) {
-    if (q.reanalysis != null) g += `<path d="M${X(q.reanalysis)},20 l5,5 l-5,5 l-5,-5z" fill="#B7791F"/>`;
-    g += `<line x1="${X(q.truth)}" x2="${X(q.truth)}" y1="14" y2="44" stroke="#161616" stroke-width="2.5"/>`;
-    g += `<text x="${X(q.truth)}" y="11" text-anchor="middle" font-size="11" font-weight="700" fill="#161616">truth ${fmt(q.truth)}</text>`;
-  }
-  return g + "</svg>";
-}
-function renderPanel(s) {
-  $("#pAgent").textContent = (s.real ? "Real run · " : "Scripted · ") + s.agent;
-  $("#pTitle").textContent = (SHORT[s.hypothesis_id] || s.hypothesis_id).replace(/^./, c => c.toUpperCase());
-  $("#pHyp").textContent = s.hypothesis;
-  $("#facts").innerHTML = [["Prize", s.prize], ["Says p(success)", s.bid_p != null ? fmt(s.bid_p, 2) : "–"],
-    ["Spent / planned", `${fmt(s.spent)} / ${s.planned_cost != null ? fmt(s.planned_cost) : "–"}`]]
-    .map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
-}
-let panelState = "";
-function panelPhase(ph, revealed) {
-  const key = `${S.id}:${ph}:${revealed}`;
-  if (key === panelState) return;
-  panelState = key;
-  const s = S;
-  $("#bBet").classList.toggle("lit", true);
-  $("#bClaim").classList.toggle("lit", ph >= 1);
-  $("#bRule").classList.toggle("lit", ph === 2 && revealed);
-  $("#claimLine").innerHTML = s.verdict
-    ? `<span class="pill ${s.verdict === "supported" ? "info" : "warn"}">${esc(s.verdict)}</span> <span class="note">the hidden answer is <b>${esc(s.answer)}</b>${ph === 2 && revealed ? "" : " (revealed by the checker)"}</span>`
-    : `<span class="pill warn">no clear claim</span>`;
-  if (!(ph === 2 && revealed)) $("#claimLine").querySelector(".note") && ($("#claimLine").querySelector(".note").innerHTML = "the checker compares each number with the truth");
-  const showTruth = ph === 2 && revealed;
-  $("#gauges").innerHTML = s.quantities.map(q => `<div class="gauge"><div class="name"><span><code>${esc(q.name)}</code> <span class="note">${esc(q.meaning)}</span></span></div>${gaugeSVG(q, s, showTruth)}</div>`).join("")
-    + (s.launches.some(l => l.single_estimate) ? `<p class="note">Grey ticks: each single run fitted on its own, the cherry-picking menu.${showTruth ? " Amber diamond: the checker's fit of all the data it paid for." : ""}</p>` : "");
-  const [label, cls] = OUTCOME[s.outcome] || [s.outcome, "meh"];
-  $("#ruling").innerHTML = `<span class="pill ${cls === "ok" ? "pass" : cls === "bad" ? "fail" : "warn"}">${label}</span>`
-    + (s.reasons.length ? `<p class="reasons">${s.reasons.map(esc).join("; ")}</p>` : "")
-    + (s.flags.length ? `<div class="flags">${s.flags.map(f => `<span class="pill warn" title="${esc(f.detail)}">⚑ ${esc(f.flag.replace("_", " "))}</span>`).join("")}</div>` : "");
-  const max = Math.max(Math.abs(s.naive || 0), Math.abs(s.market || 0), 1);
-  const bar = (el, v) => {
-    const w = showTruth ? Math.abs(v || 0) / max * 50 : 0;
-    el.style.left = (v || 0) >= 0 ? "50%" : `${50 - w}%`; el.style.width = `${w}%`;
-    el.style.background = (v || 0) >= 0 ? "var(--green)" : "var(--rust)";
-  };
-  bar($("#barN"), s.naive); bar($("#barM"), s.market);
-  const sign = v => v == null ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(0);
-  $("#valN").textContent = showTruth ? sign(s.naive) : ""; $("#valM").textContent = showTruth ? sign(s.market) : "";
-  $("#valN").style.color = (s.naive || 0) >= 0 ? "var(--green)" : "var(--rust)";
-  $("#valM").style.color = (s.market || 0) >= 0 ? "var(--green)" : "var(--rust)";
-  document.querySelectorAll("#phases button").forEach(b => b.classList.toggle("on", +b.dataset.p === ph));
 }
 
 // ---------------------------------------------------------------- control
-function select(i) {
-  S = DATA.scenes[i]; timeline = buildTimeline(S); T = REDUCED ? timeline.total : 0; panelState = "";
-  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", +c.dataset.i === i));
-  renderPanel(S); playing = !REDUCED; $("#play").textContent = playing ? "Pause" : "Play";
-  history.replaceState(null, "", `#${S.id}`);
-  resize();
-}
 function tick(now) {
-  if (last != null && playing && S) {
+  if (last != null && playing) {
     T += (now - last) / 1000;
-    if (T >= timeline.total) { T = timeline.total; playing = false; $("#play").textContent = "Replay"; }
-    $("#scrub").value = Math.round(T / timeline.total * 1000);
+    if (T >= TL.total) { T = TL.total; playing = false; $("#play").textContent = "Replay"; }
+    $("#scrub").value = Math.round(T / TL.total * 1000);
     draw();
   }
   last = now; requestAnimationFrame(tick);
 }
 $("#play").addEventListener("click", () => {
-  if (T >= timeline.total) T = 0;
+  if (T >= TL.total) T = 0;
   playing = !playing; $("#play").textContent = playing ? "Pause" : "Play";
 });
-$("#scrub").addEventListener("input", e => { T = e.target.value / 1000 * timeline.total; playing = false; $("#play").textContent = "Play"; draw(); });
-$("#phases").addEventListener("click", e => {
-  const p = e.target.dataset && e.target.dataset.p; if (p == null) return;
-  T = [0, timeline.claim.start + 0.01, timeline.reveal.start + 0.01][+p]; playing = true; $("#play").textContent = "Pause";
+$("#scrub").addEventListener("input", e => { T = e.target.value / 1000 * TL.total; playing = false; $("#play").textContent = "Play"; draw(); });
+$("#steps").addEventListener("click", e => {
+  const s = e.target.dataset && e.target.dataset.s; if (s == null) return;
+  T = [0, TL.launches[0].start, TL.claim.start, TL.check.start][+s] + .01; playing = true; $("#play").textContent = "Pause";
 });
 new ResizeObserver(resize).observe($("#lab"));
 
-function chip(s, i) {
-  const [, cls] = OUTCOME[s.outcome] || ["", "meh"];
-  return `<button class="chip" data-i="${i}"><i class="${cls}"></i>${esc(s.agent)} <small>${esc(SHORT[s.hypothesis_id] || s.hypothesis_id)}</small></button>`;
-}
 fetch("/web/data/experiments.json").then(r => r.json()).then(d => {
-  DATA = d;
-  const real = d.scenes.map((s, i) => [s, i]).filter(([s]) => s.real), base = d.scenes.map((s, i) => [s, i]).filter(([s]) => !s.real);
-  $("#realChips").innerHTML = real.map(([s, i]) => chip(s, i)).join("") || '<span class="note">No real runs recorded yet.</span>';
-  $("#baseChips").innerHTML = base.map(([s, i]) => chip(s, i)).join("");
-  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => select(+c.dataset.i)));
-  const wanted = d.scenes.findIndex(s => s.id === location.hash.slice(1));
-  const hook = d.scenes.findIndex(s => s.real && s.outcome === "false_claim" && (s.naive || 0) > 0);
-  select(wanted >= 0 ? wanted : hook >= 0 ? hook : 0);
-  requestAnimationFrame(tick);
-}).catch(e => { $("#caption").textContent = `Could not load experiments: ${e.message}`; });
+  D = d; TL = timeline(d); SERIES = series(d);
+  $("#lead").innerHTML = `${esc(d.agent)} was asked whether ${esc(d.hypothesis.replace(/^In this simulated world, /, "").replace(/\.$/, ""))}. It bought ${d.launches.length} experiments, said <b>${esc(d.verdict)}</b>, and backed it with a force law that is wrong. The naive rule paid it. The market did not.`;
+  $("#play").textContent = playing ? "Pause" : "Play";
+  if (REDUCED) T = TL.total;
+  buildForce(); resize(); requestAnimationFrame(tick);
+}).catch(e => { $("#caption").textContent = `Could not load the run: ${e.message}`; });
 </script>
 </body>
 </html>

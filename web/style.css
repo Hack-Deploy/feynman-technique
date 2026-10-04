@@ -85,12 +85,3 @@ pre { font: 12.5px/1.45 var(--mono); background: var(--faint); padding: 14px; ov
 .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
 .cta a { text-decoration: none; }
 footer { max-width: 1180px; margin: 0 auto; padding: 28px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
-
-/* Narrow screens: top bar */
-@media (max-width: 720px) {
-  .topbar .in { gap: 12px; padding: 0 16px; }
-  .brand { font-size: 15px; white-space: nowrap; }
-  .tabs { overflow-x: auto; scrollbar-width: none; }
-  .tabs a { white-space: nowrap; padding: 8px 10px; }
-  .tabs a span { display: none; }
-}

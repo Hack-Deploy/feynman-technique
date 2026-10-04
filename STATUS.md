@@ -653,3 +653,10 @@ rewards being right and knowing when you're right.
 - Shared top bar scrolls on narrow screens (the fourth tab overflowed at 390 px).
 - Open: Sonnet 5.5 ran out of 3 rounds on hubble; proposal for the main run is `live.max_rounds: 5`.
 - Check: `uv run pytest -q` 699 passed, 12 skipped; `--runslow tests/test_poc_market.py` 33 passed.
+- **Revised (same day):** the page was cut to one run, the hook (Haiku 4.5, gravity, seed 0),
+  with a force diagram beside it. Arrows show the pull on each probe under the law the model
+  expected (1/r²), the one it claimed (1/r^2.63) and the true one (1/r^1.00). Each appears with
+  its round, next to the model's own words and confidence, and the payouts come last. The
+  original Vision / How it works / Live market pages and `style.css` are restored unchanged; the
+  only change outside the new page is the `/experiments` route in `app.py`. Data file 36 kB.
+  Check: `uv run pytest -q` 699 passed, 12 skipped; `--runslow tests/test_poc_market.py` 33 passed.

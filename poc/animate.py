@@ -1,11 +1,12 @@
-"""Animation data for the /experiments page: what each run looked like from the inside.
+"""Animation data for the /experiments page: one real run, replayed from the inside.
 
-For every chosen run: each launch's noisy observations (what the agent saw), the hidden true
-path (the same launch replayed noise-free at dense times), the agent's estimates against the
-truth and tolerance, the checker's ruling, and the payout under each rule.
+The run shown is the hook: a real model's false claim that the naive rule paid, in a power-law
+world (so its claimed force law can be drawn). For it: each launch's noisy snapshots (what the
+model saw), the same launch replayed noise-free (the hidden true path), the path its claimed law
+predicts, its own words and confidence each round, the expected / claimed / true force laws, and
+the payout under each rule.
 
-This is presentation code on the judge's side: it reads ``poc.truth`` after the runs are over.
-Agents never see its output.
+This is presentation code on the judge's side: it reads ``poc.truth`` after the run is over.
 
     uv run python -m poc.animate      # writes web/data/experiments.json
 """
@@ -22,27 +23,12 @@ import numpy as np
 from dm.store import AttemptStore
 from poc import config as C
 from poc import estimate, truth
+from poc.baselines import SUPPORT_GUESS
 
 OUT = C.ROOT / "web" / "data" / "experiments.json"
 FRAMES = 120
-MAX_LAUNCHES = 8
-SHOWCASE = (  # (solver, hypothesis, seed) for the scripted contrast scenes
-    ("baseline:reference", "gravity-inverse-square", 0),
-    ("baseline:p_hacker", "gravity-inverse-square", 0),
-    ("baseline:always_supported", "gravity-inverse-square", 0),
-    ("baseline:reference", "hubble-outward-push", 0),
-    ("baseline:p_hacker", "ether-outward-push", 0),
-    ("baseline:reference", "circle-ordinary-gravity", 0),
-    ("baseline:reference", "dark-matter-unseen-pull", 0),
-    ("baseline:reference", "oscillator-time-varying", 0),
-    ("baseline:reference", "yukawa-screened", 0),
-)
+POWER_LAW = ("gravity", "fractional")
 LABELS = {
-    "baseline:reference": "Reference agent",
-    "baseline:p_hacker": "P-hacker",
-    "baseline:always_supported": "Always says yes",
-    "baseline:coin_flip": "Coin flip",
-    "baseline:abstain": "Abstains",
     "claude-opus-5-5": "Claude Opus 5.5",
     "claude-sonnet-5-5": "Claude Sonnet 5.5",
     "claude-sonnet-5": "Claude Sonnet 5",
@@ -50,49 +36,32 @@ LABELS = {
 }
 
 
-def _r(x, nd: int = 3):
-    """Round nested arrays for a compact JSON file."""
+def _r(x, nd: int = 4):
     return np.round(np.asarray(x, dtype=float), nd).tolist()
 
 
-def _kind(world: str) -> str:
-    if world in estimate.TWO_P:
-        return "pair"
-    return "ring" if world == "circle" else "field"
-
-
-def _bodies(kind: str, out: dict) -> np.ndarray | None:
-    """(T, N, 2) positions from a lab output; the moving probe(s) are last."""
-    if kind == "pair":
-        if "pos1" not in out or "pos2" not in out:
-            return None
-        return np.stack([np.asarray(out["pos1"], float), np.asarray(out["pos2"], float)], axis=1)
-    if "positions" not in out:
+def _pair(out) -> np.ndarray | None:
+    if not isinstance(out, dict) or "pos1" not in out or "pos2" not in out:
         return None
-    pos = np.asarray(out["positions"], float)
-    return pos if pos.ndim == 3 else None
+    return np.stack([np.asarray(out["pos1"], float), np.asarray(out["pos2"], float)], axis=1)
 
 
-def _true_path(world: str, seed: int, inp: dict, t_end: float) -> tuple[list, np.ndarray] | None:
+def _true_path(world: str, seed: int, inp: dict, t_end: float):
     from scienceagent.worlds import get_world
 
     ex = get_world(world, engine=C.ENGINE, noise_std=0.0, noise_seed=seed)["executor"]
     times = np.linspace(0.0, t_end, FRAMES + 1).round(4).tolist()
     try:
-        out = ex.run([{**inp, "measurement_times": times}])[0]
-    except Exception:  # an agent's malformed experiment: show its observations only
+        bodies = _pair(ex.run([{**inp, "measurement_times": times}])[0])
+    except Exception:  # a malformed experiment: show its snapshots only
         return None
-    bodies = _bodies(_kind(world), out) if isinstance(out, dict) else None
     return None if bodies is None else (times, bodies)
 
 
-def _claimed_path(world: str, est: dict, inp: dict, times: list) -> np.ndarray | None:
-    """The probe path the agent's claimed power law predicts, from the same launch (the fit
-    model of poc.estimate). Only for the power-law worlds, where n and a3 fix the law."""
-    if world not in ("gravity", "fractional") or "pos2" not in inp:
-        return None
+def _law_path(law: dict, inp: dict, times: list) -> np.ndarray | None:
+    """The probe path a power law a = a3 · (3 / r)^n predicts for this launch."""
     try:
-        n, a3 = float(est["n"]["value"]), float(est["a3"]["value"])
+        n, a3 = float(law["n"]), float(law["a3"])
         k = a3 * math.hypot(3.0, estimate.SOFT) ** n
         role = float(inp.get("p1", 1.0)) / float(inp.get("p2", 1.0))
         accel = estimate._central(lambda r, t: k / r ** n, role)
@@ -100,104 +69,65 @@ def _claimed_path(world: str, est: dict, inp: dict, times: list) -> np.ndarray |
                                    np.asarray([inp.get("velocity2", [0, 0])], float), times)
     except (KeyError, TypeError, ValueError, OverflowError):
         return None
-    return path if np.all(np.isfinite(path)) else None
+    return path[:, 0, :] if np.all(np.isfinite(path)) else None
 
 
-def _launch(world: str, seed: int, run: dict, single_estimate: dict | None,
-            claimed: dict | None = None) -> dict | None:
-    kind = _kind(world)
-    inp, out = run.get("input") or {}, run.get("output")
-    if not isinstance(out, dict):
+def _launch(world: str, seed: int, run: dict, claimed: dict) -> dict | None:
+    inp, obs = run.get("input") or {}, _pair(run.get("output"))
+    if obs is None or "pos2" not in inp:
         return None
-    obs = _bodies(kind, out)
-    if obs is None:
-        return None
-    obs_t = out.get("measurement_times") or sorted(inp.get("measurement_times") or [])
+    obs_t = run["output"].get("measurement_times") or sorted(inp.get("measurement_times") or [])
     if len(obs_t) != len(obs):
         return None
-    t_end = float(max(obs_t))
-    true = _true_path(world, seed, inp, t_end)
-    n_probe = {"pair": 1, "ring": obs.shape[1] - 1, "field": 5}[kind]
-    predicted = _claimed_path(world, claimed or {}, inp, true[0]) if true else None
-    return {
-        "input": {k: v for k, v in inp.items() if k != "measurement_times"},
-        "obs_t": _r(obs_t), "obs": _r(obs[:, -n_probe:, :]),
-        "true_t": _r(true[0]) if true else None,
-        "true": _r(true[1]) if true else None,
-        "n_probe": n_probe,
-        "claimed": _r(predicted) if predicted is not None else None,
-        "single_estimate": single_estimate,
-    }
+    true = _true_path(world, seed, inp, float(max(obs_t)))
+    predicted = _law_path(claimed, inp, true[0]) if true else None
+    return {"input": {k: v for k, v in inp.items() if k != "measurement_times"},
+            "obs_t": _r(obs_t), "obs": _r(obs),
+            "true_t": _r(true[0]) if true else None, "true": _r(true[1]) if true else None,
+            "claimed": _r(predicted) if predicted is not None else None}
 
 
-def _single(world: str, run: dict) -> dict | None:
-    try:
-        return {k: round(v, 5) for k, v in estimate.estimate(world, [run]).values.items()}
-    except (ValueError, KeyError):
-        return None
+def hook_record(records: list, cfg: C.Config):
+    """The real-model false claim the naive rule paid most for, in a power-law world."""
+    cands = [r for r in records if not r.solver.startswith("baseline:") and r.solver != "fake"
+             and r.verdict.get("outcome") == "false_claim"
+             and cfg.hypothesis(r.extra["hypothesis_id"]).world in POWER_LAW
+             and ((r.extra.get("settlements") or {}).get("naive") or {}).get("profit", 0) > 0]
+    return max(cands, key=lambda r: r.extra["settlements"]["naive"]["profit"], default=None)
 
 
 def scene(record, cfg: C.Config) -> dict:
     x = record.extra
     hyp = cfg.hypothesis(x["hypothesis_id"])
     ruling = record.verdict.get("ruling") or {}
-    flags = [f["flag"] for f in ruling.get("flags", [])]
-    runs = (x.get("runs") or [])[:MAX_LAUNCHES]
-    singles = "rerun" in flags
-    launches = [l for l in (_launch(hyp.world, record.seed, run,
-                                    _single(hyp.world, run) if singles else None,
-                                    x.get("estimates"))
-                            for run in runs) if l]
-    true_values = truth.true_values(hyp)
     est = x.get("estimates") or {}
-    rule = hyp.supported_if
-    re_values = (ruling.get("reanalysis") or {}).get("values") or {}
+    claimed = {k: (est.get(k) or {}).get("value") for k in ("n", "a3")}
+    true_values = truth.true_values(hyp)
     st = x.get("settlements") or {}
     return {
         "id": record.attempt_id,
         "agent": LABELS.get(record.solver, record.solver),
-        "solver": record.solver,
-        "real": not record.solver.startswith("baseline:") and record.solver != "fake",
-        "seed": record.seed,
-        "hypothesis_id": hyp.id, "hypothesis": hyp.hypothesis, "world": hyp.world,
-        "kind": _kind(hyp.world), "answer": hyp.answer, "prize": hyp.prize,
-        "rule": {"quantity": rule.quantity, "kind": rule.kind, "bounds": list(rule.bounds)},
-        "quantities": [{
-            "name": q.name, "meaning": q.meaning, "tolerance": q.tolerance,
-            "truth": round(true_values[q.name], 5),
-            "estimate": (est.get(q.name) or {}).get("value"),
-            "sigma": (est.get(q.name) or {}).get("sigma"),
-            "reanalysis": round(re_values[q.name], 5) if q.name in re_values
-            and math.isfinite(re_values[q.name]) else None,
-        } for q in hyp.quantities],
-        "verdict": x.get("agent_verdict"),
+        "hypothesis_id": hyp.id, "hypothesis": hyp.hypothesis, "seed": record.seed,
+        "answer": hyp.answer, "verdict": x.get("agent_verdict"), "prize": hyp.prize,
         "outcome": record.verdict.get("outcome"),
         "reasons": ruling.get("reasons") or [],
         "flags": ruling.get("flags") or [],
-        "bid_p": x.get("bid_p"), "final_p": x.get("final_p"),
-        "planned_cost": x.get("planned_cost"), "spent": record.lab_cost,
-        "rounds": record.rounds,
+        "laws": {
+            "expected": {k: SUPPORT_GUESS[hyp.id][k] for k in ("n", "a3")},
+            "claimed": claimed,
+            "true": {k: round(true_values[k], 5) for k in ("n", "a3")},
+        },
+        "tolerance": {q.name: q.tolerance for q in hyp.quantities},
+        "rounds": [{"round": e.get("round"), "action": e.get("action"),
+                    "assessment": e.get("assessment"), "p_success": e.get("p_success"),
+                    "experiments": e.get("experiments")} for e in x.get("round_log") or []],
+        "evidence": x.get("evidence"),
+        "spent": record.lab_cost,
         "naive": (st.get("naive") or {}).get("profit"),
         "market": (st.get("market") or {}).get("profit"),
-        "bond_lost": (st.get("market") or {}).get("bond_lost"),
-        "launches": launches,
-        "n_runs": len(x.get("runs") or []),
+        "launches": [l for l in (_launch(hyp.world, record.seed, run, claimed)
+                                 for run in x.get("runs") or []) if l],
     }
-
-
-def pick(records: list) -> list:
-    """Real-model runs that ran an experiment, then the scripted showcase."""
-    real = [r for r in records if not r.solver.startswith("baseline:") and r.solver != "fake"
-            and r.extra.get("runs")]
-    key = {(r.solver, r.extra.get("hypothesis_id"), r.seed): r for r in records}
-    show = [key[k] for k in SHOWCASE if k in key]
-    return real + show
-
-
-def build(records: list, cfg: C.Config) -> dict:
-    scenes = [scene(r, cfg) for r in pick(records)]
-    return {"scenes": scenes,
-            "note": "True paths are replayed noise-free after the run; agents never saw them."}
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -206,12 +136,14 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--out", default=str(OUT))
     args = ap.parse_args(argv)
     cfg = C.load()
-    records = AttemptStore(args.store).load(lambda r: r.protocol == C.PROTOCOL)
-    data = build(records, cfg)
+    record = hook_record(AttemptStore(args.store).load(lambda r: r.protocol == C.PROTOCOL), cfg)
+    if record is None:
+        raise SystemExit("no real-model false claim in a power-law world yet")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(data, separators=(",", ":"), allow_nan=False))
-    print(f"{len(data['scenes'])} scenes, {out.stat().st_size / 1e3:.0f} kB -> {out}")
+    out.write_text(json.dumps(scene(record, cfg), separators=(",", ":"), allow_nan=False))
+    print(f"{record.solver} on {record.extra['hypothesis_id']}, "
+          f"{out.stat().st_size / 1e3:.0f} kB -> {out}")
 
 
 if __name__ == "__main__":
