@@ -12,8 +12,8 @@ from poc import estimate
 CALIBRATION_SEEDS = tuple(range(100, 120))
 
 
-def _launch(r: float, p1: float, times: list[float], **extra) -> dict:
-    return {"p1": p1, "p2": 1.0, "pos2": [r, 0.0], "velocity2": [0.0, 0.0],
+def _launch(r: float, p1: float, times: list[float], p2: float = 1.0, **extra) -> dict:
+    return {"p1": p1, "p2": p2, "pos2": [r, 0.0], "velocity2": [0.0, 0.0],
             "measurement_times": times, **extra}
 
 
@@ -32,8 +32,9 @@ DESIGNS: dict[str, list[dict]] = {
     "gravity": [_launch(r, 4.0, _steps(3.0, 0.5)) for r in (2.0, 4.0, 6.0)],
     "fractional": [_launch(r, p1, _steps(3.0, 0.5))
                    for r, p1 in ((1.5, 1.0), (3.0, 5.0), (6.0, 10.0))],
-    "yukawa": [_launch(1.0, 1.0, _steps(2.0, 0.25)), _launch(2.0, 3.0, _steps(2.5, 0.5)),
-               _launch(4.0, 10.0, _steps(3.0, 0.5)), _launch(6.0, 10.0, _steps(5.0, 0.25))],
+    "yukawa": [_launch(1.0, 1.0, _steps(1.5, 0.1), p2=0.3), _launch(2.0, 3.0, _steps(2.5, 0.5)),
+               _launch(4.0, 10.0, _steps(3.0, 0.5), p2=0.5),
+               _launch(6.0, 10.0, _steps(3.0, 0.25), p2=0.2)],
     "oscillator": [_launch(3.0, 1.0, _steps(6.0, 0.5))],
     "hubble": [_probes([[12, 0], [0, 12], [-12, 0], [0, -12], [18, 0]], _steps(3.0, 0.5)),
                _probes([[-18, 0], [0, 18], [0, -18], [12, 12], [-12, -12]], _steps(3.0, 0.5))],

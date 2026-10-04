@@ -13,6 +13,7 @@ from typing import Callable
 
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.special import k1
 
 SOFT = 0.05   # vendor softening: force magnitude uses sqrt(r² + SOFT²)
 DT = 0.01
@@ -23,7 +24,7 @@ FIELD = ("hubble", "ether", "dark_matter")
 @dataclass(frozen=True)
 class Estimate:
     values: dict[str, float]
-    sigmas: dict[str, float]
+    sigmas: dict[str, float | None]  # None when the fit's covariance is unusable
     n_points: int
 
 
@@ -79,8 +80,13 @@ def _fit(residuals: Callable, starts: list[np.ndarray], derived: Callable,
     if best is None:
         raise ValueError("no fit converged")
     p = best.x
-    values = derived(p)
-    sigmas = {k: float("nan") for k in values}
+    try:
+        values = derived(p)
+    except (ArithmeticError, ValueError) as exc:
+        raise ValueError(f"fit gave no usable estimate: {exc}") from exc
+    if not all(np.isfinite(v) for v in values.values()):
+        raise ValueError("fit gave a non-finite estimate")
+    sigmas: dict[str, float | None] = {k: None for k in values}
     dof = max(len(best.fun) - len(p), 1)
     try:
         cov = np.linalg.inv(best.jac.T @ best.jac) * (2 * best.cost / dof)
@@ -90,8 +96,12 @@ def _fit(residuals: Callable, starts: list[np.ndarray], derived: Callable,
                 h = 1e-6 * max(abs(p[i]), 1.0)
                 q = p.copy()
                 q[i] += h
-                grad[i] = (derived(q)[k] - values[k]) / h
-            sigmas[k] = float(math.sqrt(max(grad @ cov @ grad, 0.0)))
+                try:
+                    grad[i] = (derived(q)[k] - values[k]) / h
+                except (ArithmeticError, ValueError):
+                    grad[i] = np.nan
+            var = float(grad @ cov @ grad)
+            sigmas[k] = math.sqrt(max(var, 0.0)) if math.isfinite(var) else None
     except np.linalg.LinAlgError:
         pass
     return Estimate({k: float(v) for k, v in values.items()}, sigmas, n_points)
@@ -138,18 +148,19 @@ def _power_law(runs) -> Estimate:
 
 
 def _yukawa_drop(runs) -> Estimate:
-    # log a = c0 + c1 L + c2 L², L = ln r: flexible enough for any smooth fall-off on 1..6.
+    # Screened 2D force: a = k K1(r/λ) / λ (the 2D Green's function of a screened field).
     def force(p, r, t):
-        L = np.log(r)
-        return np.exp(p[0] + p[1] * L + p[2] * L * L)
+        lam = math.exp(p[1])
+        return math.exp(p[0]) * k1(r / lam) / lam
 
     def derived(p):
+        lam = math.exp(p[1])
+
         def a(r):
-            L = math.log(math.hypot(r, SOFT))
-            return math.exp(p[0] + p[1] * L + p[2] * L * L)
+            return math.exp(p[0]) * float(k1(math.hypot(r, SOFT) / lam)) / lam
         return {"drop": a(1.0) * 1.0 / (a(6.0) * 6.0)}
 
-    starts = [np.array([c0, c1, 0.0]) for c0 in (-2.0, -4.0) for c1 in (-1.0, -2.0)]
+    starts = [np.array([math.log(k), math.log(lam)]) for k in (0.1, 1.0) for lam in (1.0, 5.0)]
     return _fit_two_particle(runs, force, starts, derived)
 
 
@@ -275,7 +286,11 @@ ESTIMATORS: dict[str, Callable[[list[dict]], Estimate]] = {
 
 
 def estimate(world: str, runs: list[dict]) -> Estimate:
-    """Fit this world's quantities to every run with usable data. Raises ValueError if none."""
+    """Fit this world's quantities to every run with usable data. Raises ValueError if the
+    data do not support a fit."""
     if world not in ESTIMATORS:
         raise KeyError(f"no estimator for world {world!r}")
-    return ESTIMATORS[world](runs)
+    try:
+        return ESTIMATORS[world](runs)
+    except (ArithmeticError, np.linalg.LinAlgError, KeyError, TypeError, IndexError) as exc:
+        raise ValueError(f"no fit: {type(exc).__name__}: {exc}") from exc

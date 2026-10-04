@@ -54,6 +54,17 @@ def test_prompt_lists_quantities_tolerances_bond_and_hides_truth():
     assert "not checked" in naive and "bond" not in naive.split("**Costs**")[0]
 
 
+def test_unusable_fit_covariance_gives_no_sigma_not_nan():
+    import json
+    import numpy as np
+    from poc.estimate import _fit
+    # rank-deficient: only p0 + p1 is determined, so the covariance cannot be computed
+    est = _fit(lambda p: np.array([p[0] + p[1] - 1.0, 0.0, 0.0]), [np.zeros(2)],
+               lambda p: {"s": p[0] + p[1]}, 3)
+    assert est.values["s"] == pytest.approx(1.0) and est.sigmas == {"s": None}
+    json.dumps(est.sigmas, allow_nan=False)
+
+
 # ------------------------------------------------------------------ agent loop: bid and claim
 
 def _agent(replies, cfg=CFG, hyp=HYP, **kw):
@@ -184,6 +195,19 @@ def test_every_true_value_implies_the_hidden_answer_with_margin():
         assert h.supported_if.verdict(values) == h.answer, h.id
         q = h.quantity(h.supported_if.quantity)
         assert h.supported_if.margin(values[q.name]) > q.tolerance, h.id
+
+
+@pytest.mark.slow
+def test_free_prior_guesses_are_never_within_tolerance():
+    """A guess made without experiments must miss on at least one quantity, or the market
+    would pay for guessing."""
+    from poc import truth
+    from poc.baselines import REFUTE_GUESS, SUPPORT_GUESS
+    for h in CFG.hypotheses:
+        values = truth.true_values(h)
+        for guess in (SUPPORT_GUESS[h.id], REFUTE_GUESS[h.id]):
+            assert any(abs(guess[q.name] - values[q.name]) > q.tolerance for q in h.quantities), \
+                (h.id, guess, values)
 
 
 @pytest.mark.slow

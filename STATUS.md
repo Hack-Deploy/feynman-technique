@@ -596,3 +596,39 @@ rewards being right and knowing when you're right.
   p_hacker, reference. Independence test covers static and dynamic imports of truth/checker.
 - Fixed: the budget check now reserves the current round's fee.
 - Check: `uv run pytest -q` 433 passed, 12 skipped, 14 xfailed; `--runslow` market tests 30 passed.
+
+## Bounty market v2, Phases 4–5: offline baselines, Checkpoint 2 (2026-10-04)
+
+- **Phase 4 (budget, conservation, spend, blind).** Budget check reserves the round fee; every
+  run is settled under both rules through `poc/ledger.py`, which raises on any leak. Live spend
+  reuses upstream's guard (`ENABLE_LIVE` + `DM_MAX_USD`, `poc/spend.py`, `MeteredLLM`). Blind is
+  the default (no public record in the prompt); `--record` is the labelled alternative.
+  `--prior-only` runs the one-round, no-lab control.
+- **Yukawa recalibrated.** The old 1/r^n fit gave tolerance ±3.9, so always_supported's free
+  guess (drop = 3) was confirmed. Now a screened-2D fit (k·K1(r/λ)/λ) with boosted launches:
+  rms 0.39, tolerance ±1.2, prize 220 (was 230). `uv run python -m poc.calibrate --write`:
+  8/8 still solvable, other rows unchanged. New slow test: no free prior guess (SUPPORT_GUESS /
+  REFUTE_GUESS) is within tolerance on every quantity for any hypothesis.
+- **Fixes.** Fit sigmas are `None`, not NaN, when the covariance is unusable (a NaN crashed the
+  JSON record on a p_hacker single-run fit). `poc.report.summarise` again carries the per-solver
+  `models` block that `/live` and `poc/live_cache.py` read. Demo fixture summary regenerated
+  (coulomb dropped).
+- **Offline run** (`poc.bench --baselines` and `--fake`, 8 hypotheses × seeds 0–2, 24 runs each):
+
+  | agent | confirmed / false | naive profit | market profit | flags |
+  |---|---|---|---|---|
+  | always_supported | 0 / 24 | **+3252 (1st)** | −1777 (5th) | – |
+  | coin_flip | 0 / 24 | +3252 (1st) | −1038 | – |
+  | fake LLM | 0 / 24 | +3204 | −1231 | – |
+  | reference | 23 / 1 | +2334 | **+2521 (1st)** | – |
+  | p_hacker | 8 / 16 | +1854 | −2090 (6th) | rerun 12, off_plan 12, changed_analysis 13 |
+  | abstain | 0 / 0 | 0 | 0 | – |
+
+  Checkpoint 2: ✅ always_supported tops the naive board and is negative on the market board;
+  reference is positive and first on the market board; conservation held on all 144 runs.
+  Spearman of profit with confirmed count (directional, n = 6 agents): naive −0.38, market 0.17.
+  The market figure is low because the market ranks abstain (0 confirmed, 0 lost) above the
+  p_hacker (8 confirmed on supported hypotheses, 16 false claims): it rewards being right *and*
+  knowing when, not the count of hits. p_hacker's 8 confirmations are where "supported" is the
+  true answer, so pushing toward it happens to land.
+- Check: `uv run pytest -q` 699 passed, 11 skipped; `--runslow tests/test_poc_market.py` 32 passed.

@@ -92,10 +92,10 @@ hypotheses:
       how much a·r falls between r = 1 and r = 6 (exactly 1 for a 1/r law). Supported if drop
       is above 2; refuted otherwise.
     quantities:
-      - {name: drop, meaning: "(a(1) × 1) / (a(6) × 6)", tolerance: 3.9}
+      - {name: drop, meaning: "(a(1) × 1) / (a(6) × 6)", tolerance: 1.2}
     supported_if: {quantity: drop, above: 2.0}
     answer: supported
-    prize: 230
+    prize: 220
   - id: oscillator-time-varying
     world: oscillator
     hypothesis: In this simulated world, the strength of the pull between particles changes over time.
