@@ -21,6 +21,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import animations
 import live_market
 import real_data
 
@@ -47,6 +48,7 @@ PAGE_ROUTES = {
     "/": "vision.html",
     "/simulation": "simulation.html",
     "/live": "live.html",
+    "/experiments": "experiments.html",
 }
 STATIC_EXTENSIONS = {".css", ".js", ".svg", ".png", ".json"}
 
@@ -132,6 +134,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(real_data.build_real_data())
             except Exception as exc:
                 self._json({"error": f"could not read real-attempt outputs: {exc}"}, 503)
+        elif path == "/api/anim/claims":
+            self._json({"claims": animations.claims()})
+        elif path == "/api/anim":
+            claim = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("claim", [""])[0]
+            if claim not in {c["id"] for c in animations.claims()}:
+                self._json({"error": "unknown claim"}, 404)
+            else:
+                self._json(animations.build(claim))
         elif path == "/api/live/info":
             self._json(live_market.info())
         elif path == "/api/live/runs":

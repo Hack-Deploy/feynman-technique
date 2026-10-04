@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovery Market · Experiments</title>
+<link rel="stylesheet" href="/web/style.css">
+<style>
+  .hero { padding-top: 56px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 18px 26px; align-items: flex-end; margin-top: 28px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .ctl label { display: block; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  select { font: 600 15px var(--sans); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; max-width: 340px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+  .seg button { font: 600 14px var(--sans); padding: 8px 12px; border: 0; background: #fff; cursor: pointer; color: var(--ink); }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--navy); color: #fff; }
+  .seg button:focus-visible, .btn:focus-visible, select:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+  .stage { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; margin-top: 28px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+  .canvas-wrap { position: relative; background: #0E1116; border-radius: 10px; overflow: hidden; aspect-ratio: 1 / 1; }
+  canvas { width: 100%; height: 100%; display: block; }
+  .hud { position: absolute; left: 14px; right: 14px; top: 12px; display: flex; justify-content: space-between; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: #9AA3B2; pointer-events: none; }
+  .hud b { color: #fff; font-weight: 700; }
+  .playbar { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .btn.ghost { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+  .btn.ghost:hover { background: var(--soft); }
+  .btn.sm { padding: 7px 14px; font-size: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--body); margin-top: 12px; }
+  .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .claim { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .claim .h { font: 600 19px/1.35 var(--sans); }
+  .claim .crit { font-size: 14px; color: var(--body); margin-top: 8px; }
+  .rounds { margin-top: 18px; }
+  .rd { border-left: 4px solid var(--line); padding: 8px 0 8px 14px; margin-bottom: 8px; cursor: pointer; }
+  .rd.on { border-left-color: var(--rust); background: var(--faint); }
+  .rd.verdict { border-left-color: var(--green); }
+  .rd .t { display: flex; gap: 10px; flex-wrap: wrap; font: 700 12px var(--narrow); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .rd p { font-size: 14.5px; color: var(--body); margin-top: 3px; }
+  .rd .more { display: none; }
+  .rd.on .more { display: block; }
+  .result { margin-top: 16px; padding: 16px 18px; border-radius: 10px; }
+  .result.win { background: var(--green-soft); }
+  .result.lose { background: var(--rust-soft); }
+  .result.none { background: var(--faint); }
+  .result b { font: 700 22px var(--narrow); display: block; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+  .empty { color: #9AA3B2; font-size: 15px; position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 30px; }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <a class="brand" href="/">Discovery Market</a>
+  <nav class="tabs">
+    <a href="/"><span>01</span>Vision</a>
+    <a href="/simulation"><span>02</span>How it works</a>
+    <a href="/live"><span>03</span>Live market</a>
+    <a class="on" href="/experiments"><span>04</span>Experiments</a>
+  </nav>
+</div></div>
+
+<main>
+<section class="hero">
+  <span class="label">Experiment replays</span>
+  <h1>Watch the AI scientist at work.</h1>
+  <p class="lead">Each dot is a particle in a simulated universe with a hidden law of motion. The AI chose where to put its probes and when to measure, and it paid for every measurement. Here, its exact experiments run again through the world's true physics.</p>
+
+  <div class="controls">
+    <div class="ctl"><label for="selClaim">Claim</label><select id="selClaim"></select></div>
+    <div class="ctl"><label>AI scientist</label><div class="seg" id="segModel"></div></div>
+    <div class="ctl"><label>Speed</label><div class="seg" id="segSpeed"></div></div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cv" aria-label="Animated replay of the AI's experiment"></canvas>
+        <div class="hud"><span id="hudL"></span><span id="hudR"></span></div>
+        <div class="empty" id="empty" hidden></div>
+      </div>
+      <div class="playbar">
+        <button class="btn sm" id="btnPlay">Pause</button>
+        <button class="btn sm ghost" id="btnPrev">← Previous experiment</button>
+        <button class="btn sm ghost" id="btnNext">Next experiment →</button>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:#E2643E"></span>AI's probe, with its path</span>
+        <span><span class="dot" style="background:#6E8FD8"></span>source particle</span>
+        <span><span class="dot" style="background:#5B6270"></span>the world's own particles</span>
+        <span><span class="dot" style="background:none;border:2px solid #FFD27A"></span>a measurement the AI paid for</span>
+      </div>
+    </div>
+    <div>
+      <div class="claim">
+        <span class="label" id="worldLabel"></span>
+        <div class="h" id="claimText"></div>
+        <div class="crit" id="claimCrit"></div>
+      </div>
+      <div class="rounds" id="rounds"></div>
+      <div id="result"></div>
+      <p class="note">Paths are the true, noise-free motion for the AI's chosen starting conditions. The yellow rings mark the noisy readings the AI actually received.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const SPEEDS = [["0.5×", 0.5], ["1×", 1], ["2×", 2]];
+const MODEL_NAMES = { "claude-opus-5-5": "Opus 5.5", "claude-sonnet-5-5": "Sonnet 5.5", "claude-sonnet-5": "Sonnet 5", "claude-haiku-4-5-20251001": "Haiku 4.5" };
+const st = { claims: [], data: null, model: null, speed: 1, playing: true, queue: [], qi: 0, f: 0, hold: 0 };
+const cv = $("cv"), ctx = cv.getContext("2d");
+
+function shortModel(stem) { const m = stem.replace(/_seed\d+$/, ""); return MODEL_NAMES[m] || m; }
+function firstSentence(t) { if (!t) return ""; const s = t.replace(/\s+/g, " ").trim(); const m = s.match(/^.{20,220}?[.!?](\s|$)/); return m ? m[0].trim() : s.slice(0, 220) + (s.length > 220 ? "…" : ""); }
+
+function seg(el, items, cur, onPick) {
+  el.innerHTML = items.map(([label, v]) => `<button data-v="${esc(v)}" class="${String(v) === String(cur) ? "on" : ""}">${esc(label)}</button>`).join("");
+  el.onclick = e => { const b = e.target.closest("button"); if (b) onPick(b.dataset.v); };
+}
+
+function buildQueue() {
+  const run = st.data.runs[st.model];
+  st.queue = [];
+  run.rounds.forEach((r, ri) => r.experiments.forEach((e, ei) => { if (!e.error) st.queue.push({ ri, ei, e, n: r.experiments.length }); }));
+  st.qi = 0; st.f = 0; st.hold = 0;
+}
+
+function bounds(e) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  const probeStart = e.frames[0].length - e.probes;
+  const add = (x, y) => { if (!isFinite(x) || !isFinite(y)) return; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  e.frames.forEach(fr => fr.forEach(([x, y], i) => { if (i >= probeStart || e.probes === fr.length || fr.length <= 2) add(x, y); }));
+  e.frames[0].forEach(([x, y]) => add(x, y));
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, half = Math.max(x1 - x0, y1 - y0, 1) / 2 * 1.18;
+  return { cx, cy, half };
+}
+
+function resize() {
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+}
+
+function draw() {
+  const W = cv.width, H = cv.height, d = window.devicePixelRatio || 1;
+  ctx.fillStyle = "#0E1116"; ctx.fillRect(0, 0, W, H);
+  const q = st.queue[st.qi];
+  if (!q) return;
+  const e = q.e, b = q.b || (q.b = bounds(e));
+  const S = Math.min(W, H) / (2 * b.half);
+  const X = x => W / 2 + (x - b.cx) * S, Y = y => H / 2 - (y - b.cy) * S;
+  const fi = Math.min(Math.floor(st.f), e.frames.length - 1), fr = e.frames[fi];
+  const n = fr.length, probeStart = n - e.probes, tNow = e.times[fi];
+
+  // faint grid for scale
+  ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1 * d;
+  const step = Math.pow(10, Math.floor(Math.log10(b.half))) || 1;
+  for (let g = Math.ceil((b.cx - b.half) / step) * step; g <= b.cx + b.half; g += step) { ctx.beginPath(); ctx.moveTo(X(g), 0); ctx.lineTo(X(g), H); ctx.stroke(); }
+  for (let g = Math.ceil((b.cy - b.half) / step) * step; g <= b.cy + b.half; g += step) { ctx.beginPath(); ctx.moveTo(0, Y(g)); ctx.lineTo(W, Y(g)); ctx.stroke(); }
+
+  // probe trails
+  for (let i = probeStart; i < n; i++) {
+    ctx.beginPath();
+    for (let k = 0; k <= fi; k++) { const p = e.frames[k][i]; k ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }
+    ctx.strokeStyle = "rgba(226,100,62,0.55)"; ctx.lineWidth = 2 * d; ctx.stroke();
+  }
+  // particles
+  fr.forEach(([x, y], i) => {
+    const probe = i >= probeStart, source = !probe && n <= 2;
+    ctx.beginPath(); ctx.arc(X(x), Y(y), (probe ? 5.5 : source ? 7 : 3.2) * d, 0, Math.PI * 2);
+    ctx.fillStyle = probe ? "#E2643E" : source ? "#6E8FD8" : "#5B6270"; ctx.fill();
+  });
+  // measurements the AI paid for, shown once the replay reaches their time
+  e.measured.forEach(m => {
+    if (m.t > tNow + 1e-9) return;
+    m.points.forEach((p, i) => {
+      if (i < probeStart || !p || !isFinite(p[0])) return;
+      ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 7 * d, 0, Math.PI * 2);
+      ctx.strokeStyle = "#FFD27A"; ctx.lineWidth = 2 * d; ctx.stroke();
+    });
+  });
+  const run = st.data.runs[st.model];
+  $("hudL").innerHTML = `Round <b>${run.rounds[q.ri].round}</b> · experiment <b>${q.ei + 1}</b> of ${q.n}`;
+  $("hudR").innerHTML = `t = <b>${tNow.toFixed(2)}</b>`;
+}
+
+function tick() {
+  const q = st.queue[st.qi];
+  if (q && st.playing) {
+    if (st.f < q.e.frames.length - 1) st.f += 0.45 * st.speed;
+    else if ((st.hold += st.speed) > 60) { advance(1, true); }
+  }
+  draw();
+  requestAnimationFrame(tick);
+}
+
+function advance(dir, auto) {
+  if (!st.queue.length) return;
+  const next = st.qi + dir;
+  if (next >= st.queue.length) { if (auto) { st.playing = false; $("btnPlay").textContent = "Replay"; showResult(true); } return; }
+  st.qi = Math.max(0, next); st.f = 0; st.hold = 0;
+  renderRounds();
+}
+
+function renderRounds() {
+  const run = st.data.runs[st.model], cur = st.queue[st.qi];
+  $("rounds").innerHTML = run.rounds.map((r, ri) => {
+    const on = cur && cur.ri === ri, isV = r.action === "verdict";
+    const what = r.action === "experiment" ? `${r.experiments.length} experiment${r.experiments.length === 1 ? "" : "s"} · cost ${r.cost ?? 0}` : esc(r.action || "");
+    const p = r.p_success != null ? ` · stated chance ${Math.round(r.p_success * 100)}%` : "";
+    return `<div class="rd ${on ? "on" : ""} ${isV ? "verdict" : ""}" data-ri="${ri}">
+      <div class="t"><span>Round ${r.round}</span><span>${what}${p}</span></div>
+      <p>${esc(firstSentence(r.assessment || r.evidence))}</p>
+      ${isV && r.evidence ? `<p class="more"><b>Evidence:</b> ${esc(firstSentence(r.evidence))}</p>` : ""}
+    </div>`;
+  }).join("");
+  $("rounds").querySelectorAll(".rd").forEach(el => el.onclick = () => {
+    const ri = Number(el.dataset.ri), qi = st.queue.findIndex(q => q.ri === ri);
+    if (qi >= 0) { st.qi = qi; st.f = 0; st.hold = 0; st.playing = true; $("btnPlay").textContent = "Pause"; renderRounds(); }
+  });
+}
+
+function showResult(final) {
+  const run = st.data.runs[st.model], ans = st.data.answer;
+  if (!final && st.queue.length) { $("result").innerHTML = ""; return; }
+  let cls = "none", head, body;
+  if (run.verdict && run.correct !== null) {
+    cls = run.correct ? "win" : "lose";
+    head = run.correct ? `Correct: wins the ${st.data.prize}-credit prize` : "Wrong: no prize, and the attempt goes on the public record";
+    body = `The AI's verdict was “${esc(run.verdict)}”. The hidden true answer was “${esc(ans)}”.`;
+  } else {
+    head = run.outcome === "walk_away" || run.outcome === "withdraw" ? "Walked away before a verdict" : "No clear verdict";
+    body = `The hidden true answer was “${esc(ans)}”. No prize changes hands.`;
+  }
+  $("result").innerHTML = `<div class="result ${cls}"><b>${head}</b>${body}</div>`;
+}
+
+function loadRun() {
+  buildQueue(); renderRounds();
+  const none = !st.queue.length;
+  $("empty").hidden = !none;
+  $("empty").textContent = none ? "This AI scientist gave its verdict without buying a single experiment." : "";
+  st.playing = !none; $("btnPlay").textContent = none ? "Replay" : "Pause";
+  $("result").innerHTML = ""; if (none) showResult(true);
+}
+
+async function loadClaim(id) {
+  $("empty").hidden = false; $("empty").textContent = "Replaying the experiments through the simulator…";
+  st.data = await (await fetch(`/api/anim?claim=${encodeURIComponent(id)}`)).json();
+  $("worldLabel").textContent = `World: ${st.data.world.replace(/_/g, " ")}`;
+  $("claimText").textContent = `“${st.data.hypothesis}”`;
+  $("claimCrit").textContent = `How it will be judged: ${st.data.criteria}`;
+  const stems = Object.keys(st.data.runs);
+  const pref = stems.find(s => s.startsWith("claude-opus-5-5")) || stems[0];
+  st.model = stems.includes(st.model) ? st.model : pref;
+  const pick = v => { st.model = v; seg($("segModel"), stems.map(s => [shortModel(s), s]), st.model, pick); loadRun(); };
+  seg($("segModel"), stems.map(s => [shortModel(s), s]), st.model, pick);
+  loadRun();
+}
+
+(async function init() {
+  resize(); window.addEventListener("resize", resize);
+  const pickSpeed = v => { st.speed = Number(v); seg($("segSpeed"), SPEEDS, st.speed, pickSpeed); };
+  seg($("segSpeed"), SPEEDS, st.speed, pickSpeed);
+  $("btnPlay").onclick = () => {
+    if (!st.playing && st.qi >= st.queue.length - 1 && st.f >= (st.queue[st.qi]?.e.frames.length || 1) - 1) { st.qi = 0; st.f = 0; st.hold = 0; renderRounds(); $("result").innerHTML = ""; }
+    st.playing = !st.playing; $("btnPlay").textContent = st.playing ? "Pause" : "Play";
+  };
+  $("btnPrev").onclick = () => advance(-1, false);
+  $("btnNext").onclick = () => advance(1, false);
+  const { claims } = await (await fetch("/api/anim/claims")).json();
+  st.claims = claims.filter(c => c.runs.length);
+  const params = new URLSearchParams(location.search);
+  const start = params.get("claim") || "three-species-repulsion";
+  $("selClaim").innerHTML = st.claims.map(c => `<option value="${esc(c.id)}" ${c.id === start ? "selected" : ""}>${esc(c.hypothesis.replace(/^In this simulated world,\s*/i, ""))}</option>`).join("");
+  $("selClaim").onchange = e => loadClaim(e.target.value);
+  await loadClaim($("selClaim").value);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
