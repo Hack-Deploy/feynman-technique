@@ -140,10 +140,10 @@ def test_projection_and_usage_pricing_are_exact():
     sonnet = ModelPrice("Sonnet", "sonnet", 2, 10)
     projection = spend.project_run_usd(sonnet, 100, 1, 10, 2, 20)
     assert projection == {
-        "calls": 3,
-        "input_tokens": 210,
-        "output_tokens": 30,
-        "usd": 0.00072,
+        "calls": 4,
+        "input_tokens": 320,
+        "output_tokens": 40,
+        "usd": 0.00104,
     }
     assert spend.usd_for_usage(sonnet, {
         "input_tokens": 100,
@@ -162,6 +162,26 @@ def test_projection_and_usage_pricing_are_exact():
     base = spend.project_run_usd(sonnet, 100, 1, 10, 2, 20)["usd"]
     assert spend.project_run_usd(sonnet, 100, 2, 10, 2, 20)["usd"] > base
     assert spend.project_run_usd(sonnet, 100, 1, 20, 2, 20)["usd"] > base
+
+
+def test_prompt_projection_includes_the_public_record():
+    from poc.attempt import prompt_chars
+
+    cfg = C.load()
+    hyp = cfg.hypotheses[0]
+    entry = {
+        "id": "failed-run",
+        "model": "previous-model",
+        "outcome": "withdrawn",
+        "rounds": 2,
+        "experiments": 1,
+        "spent": 15,
+        "p_success": 0.4,
+        "withdraw_reason": "not enough evidence",
+        "data": "x" * 500,
+    }
+
+    assert prompt_chars(hyp.id, cfg, [entry]) > prompt_chars(hyp.id, cfg, [])
 
 
 def test_live_models_table_and_validation(tmp_path):
@@ -362,6 +382,50 @@ def test_demo_grid_marks_only_the_round_that_hit_the_token_limit(tmp_path):
     assert result["done"] == 1, (result, messages)
     rounds = live_cache.load(cache)[0]["rounds"]
     assert [round_entry["cut_off"] for round_entry in rounds] == [True, False]
+
+
+def test_real_grid_closes_a_claim_after_a_successful_run(tmp_path):
+    settings = spend.load_settings()
+    hyp = next(
+        hypothesis for hypothesis in C.load().hypotheses
+        if hypothesis.answer == "supported"
+    )
+    settings = replace(
+        settings,
+        models=settings.models[:2],
+        hypotheses=(hyp.id,),
+        seeds=(0,),
+        max_rounds=1,
+        max_tokens=32,
+    )
+    reply = (
+        "<assessment>Evidence is enough.</assessment><p_success>0.9</p_success>"
+        "<verdict>supported</verdict><evidence>Offline test.</evidence>"
+    )
+    calls = []
+
+    def transport_factory(model_id):
+        def transport(*_args):
+            calls.append(model_id)
+            return reply, {"input_tokens": 10, "output_tokens": 5}
+        return transport
+
+    first, second = (model.id for model in settings.models)
+    cache = tmp_path / "solved-grid.jsonl"
+    result = demo_grid.run_grid(
+        settings,
+        cache,
+        SpendLedger(tmp_path / "solved-grid-spend.jsonl", cap=1),
+        transport_factory=transport_factory,
+        confirm=True,
+        order=[(hyp.id, first, 0), (hyp.id, second, 0)],
+        show_preflight=False,
+    )
+
+    assert result["done"] == 1
+    assert result["closed"] == 1
+    assert calls == [first]
+    assert [entry["key"]["model"] for entry in live_cache.load(cache)] == [first]
 
 
 def test_run_grid_repairs_cache_store_split_after_store_append_failure(
@@ -622,9 +686,9 @@ def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):
         confirm=True,
         out=lambda *_: None,
     )
-    assert result["done"] == 8
+    assert result["done"] == 5
     entries = live_cache.load(cache)
-    assert len(entries) == 8
+    assert len(entries) == 5
     assert all(entry["record"]["llm_usage"]["input_tokens"] > 0 for entry in entries)
     assert live_cache.comparison(entries, settings.models)[0]["usd_spent"] > 0
 
@@ -638,11 +702,11 @@ def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):
         out=lambda *_: None,
     )
     assert resumed["done"] == 0
-    assert resumed["skipped"] == 8
+    assert resumed["skipped"] == 5
     assert calls == []
 
     interrupted_cache = tmp_path / "interrupted.jsonl"
-    interrupted_ledger = SpendLedger(tmp_path / "interrupted-spend.jsonl", cap=5)
+    interrupted_ledger = SpendLedger(tmp_path / "interrupted-spend.jsonl", cap=100)
     calls_seen = 0
 
     def interrupt_on_fourth_call(_model):
@@ -673,8 +737,8 @@ def test_demo_grid_resume_confirmation_usage_interruption_and_cap(tmp_path):
         confirm=True,
         out=lambda *_: None,
     )
-    assert resumed["done"] == 5
-    assert len(live_cache.load(interrupted_cache)) == 8
+    assert resumed["done"] == 2
+    assert len(live_cache.load(interrupted_cache)) == 5
 
     capped_ledger = SpendLedger(tmp_path / "capped-spend.jsonl", cap=0.00001)
     capped = _run_grid(

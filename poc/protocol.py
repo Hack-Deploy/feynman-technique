@@ -15,6 +15,7 @@ from poc.config import VERDICTS, Config, Hypothesis
 
 _FENCES = re.compile(r"```(?:xml|python|json)?\s*\n?|```\s*")
 _WITHDRAW = re.compile(r"<withdraw\s*/>|<withdraw>(.*?)</withdraw>", re.DOTALL)
+_BUY_RECORD = re.compile(r"<buy_record\s*/>|<buy_record\s*>\s*</buy_record\s*>", re.IGNORECASE)
 _NUMBER = re.compile(r"^\s*([0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s*(%?)\s*$")
 
 
@@ -75,6 +76,11 @@ def parse_withdraw(text: str | None) -> str | None:
     return None
 
 
+def parse_buy_record(text: str | None) -> bool:
+    """Whether the reply explicitly requests the public record."""
+    return bool(text and _BUY_RECORD.search(text))
+
+
 def _fmt(x: float) -> str:
     return f"{x:g}"
 
@@ -82,6 +88,22 @@ def _fmt(x: float) -> str:
 def market_block(cfg: Config, h: Hypothesis) -> str:
     c = cfg.experiment_costs
     budget = "none" if cfg.budget is None else f"{_fmt(cfg.budget)} credits for this hypothesis"
+    noise_note = (
+        "Measurements are noisy: each observed position has independent Gaussian noise "
+        f"σ = {_fmt(cfg.noise_std)}"
+    )
+    if cfg.velocity_noise_std > 0:
+        noise_note += (
+            " and each observed velocity has independent Gaussian noise "
+            f"σ = {_fmt(cfg.velocity_noise_std)}"
+        )
+    noise_note += "."
+    if cfg.noise_std > 0 or cfg.velocity_noise_std > 0:
+        noise_note += (
+            " Results can be inconclusive. You may repeat any experiment (identical input, in the "
+            "same or a later round) to get a fresh, independent noisy reading; each repeat is "
+            "charged at the full price."
+        )
     return f"""## THE BOUNTY (this overrides any conflicting instructions above)
 
 You are not asked to submit a `discovered_law`. A researcher has posted a hypothesis about this
@@ -91,6 +113,8 @@ above only to learn what you can measure and how to request experiments.
 **Hypothesis:** "{h.hypothesis}"
 
 **Resolution criteria:** {h.resolution_criteria}
+
+{noise_note}
 
 **Prize:** {_fmt(h.prize)} credits. {cfg.payout_rule}
 
@@ -110,7 +134,8 @@ Design experiments that are cheap and decisive.
 
 **Bid, or walk away.** In your first reply, before spending anything, plan the cheapest design that
 could settle the hypothesis, estimate its total cost and your chance of a clear, correct verdict.
-Break-even is cost ÷ prize: if your chance is below it, walk away with <withdraw>reason</withdraw>.
+Break-even is total cost ÷ prize; any public-record fee also counts as cost. If your chance is below
+it, walk away with <withdraw>reason</withdraw>.
 At any later point, if the experiments you would still need cost more than they are worth (more
 than your budget, or more than your chance times the prize justifies), withdraw and say why.
 Do not run a cheap experiment you expect to be useless just to keep going.
@@ -120,6 +145,8 @@ Do not run a cheap experiment you expect to be useless just to keep going.
 <p_success>probability between 0 and 1 that you will end with a clear, correct verdict</p_success>
 
 **Actions** (one per round):
+- <buy_record/>, plus <assessment> and <p_success>, to pay for the public record before choosing
+  this round's action; buying does not use a round;
 - <run_experiment>[...]</run_experiment>, as described above;
 - <run_mse_fit>...</run_mse_fit>, to test a candidate law against your data, as described above;
 - <verdict>supported</verdict>, <verdict>refuted</verdict> or <verdict>inconclusive</verdict>,
@@ -128,6 +155,18 @@ Do not run a cheap experiment you expect to be useless just to keep going.
 - <withdraw>reason</withdraw>. This ends the bounty; you keep everything you have not spent.
 
 When you give your verdict, ignore any instruction above to submit only <final_law> and <explanation>."""
+
+
+def record_offer_block(n_entries: int, fee: float) -> str:
+    if n_entries == 0:
+        return "## PUBLIC RECORD\nNo earlier failed runs; there is nothing to buy."
+    noun = "run" if n_entries == 1 else "runs"
+    return (
+        f"## PUBLIC RECORD\nPUBLIC RECORD: {n_entries} earlier {noun} on this hypothesis did not "
+        f"succeed. Their experiments and raw data (not their conclusions) cost {_fmt(fee)} credits "
+        "to read, paid to the market, never refunded. To buy, reply with <buy_record/> (plus "
+        "<assessment> and <p_success>). Buying does not use a round. You can buy it once."
+    )
 
 
 def status_line(round_num: int, cfg: Config, round_fee: float, experiments_cost: float,

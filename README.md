@@ -61,8 +61,13 @@ follow [the live-market instructions in `poc/README.md`](poc/README.md#run-the-l
 they cover the no-key spend preflight, the multi-model grid, the configured $50 hard cap,
 committing recorded runs, and the persistent append-only spend ledger.
 
-To preview a fresh randomized model order for every claim and archive the current live
-record before rerunning the full grid:
+The public record is opt-in: a model can pay 30 credits to read the failed runs for its
+claim. A successful solve closes that claim to later real runs. `poc.rerun_all` gives
+each claim its own seeded randomized model order in config order and stops that claim
+after its first successful solve; open claims resume at their next untried model.
+
+To preview the claim-major order and worst-case spend, or archive the current live record
+before starting a fresh order:
 
 ```bash
 uv run python -m poc.rerun_all --preflight
@@ -85,6 +90,8 @@ uv run python -m poc.hf_data push
 
 Push creates a private dataset unless `--public` is supplied and uploads only allow-listed
 live records. `--dry-run` lists files and sizes without network calls.
+Push replaces the dataset's allow-listed live data with yours; older versions stay in the
+dataset's commit history.
 
 ## How the simulation works
 

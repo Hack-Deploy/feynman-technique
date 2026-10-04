@@ -1,7 +1,7 @@
 """The vendor DiscoveryAgent turned into a bounty hunter: it settles a posted hypothesis
 (supported / refuted) instead of submitting a law, pays per round and per experiment, states its
-assessment and p_success every round, may walk away or withdraw, and sees the public record of
-failed runs.
+assessment and p_success every round, may walk away or withdraw, and may buy access to the
+public record of failed runs.
 
 The vendor loop (``DiscoveryAgent.run``) cannot be extended from outside, so ``run`` is
 re-implemented here from vendor commit 450818fa. Critic, random-experiment and no-MSE modes
@@ -14,6 +14,8 @@ import json
 import sys
 from copy import deepcopy
 from typing import Callable, Optional
+
+import numpy as np
 
 from scienceagent import llm_client
 from scienceagent.agent import (
@@ -31,11 +33,14 @@ Complete = Callable[..., str]
 class MeteredExecutor:
     """Prices a batch of experiments, refuses it if over budget, charges it only if it runs."""
 
-    def __init__(self, inner, cfg: Config, hyp: Hypothesis, account: Account):
+    def __init__(self, inner, cfg: Config, hyp: Hypothesis, account: Account,
+                 velocity_noise_std: float, noise_seed: int):
         self.inner = inner
         self.cfg = cfg
         self.hyp = hyp
         self.account = account
+        self.velocity_noise_std = velocity_noise_std
+        self._vel_rng = np.random.default_rng([noise_seed, 1])
         self.round_num = 0
         self.round_cost = 0.0
         self.experiments = 0
@@ -56,6 +61,19 @@ class MeteredExecutor:
             self.account.refuse(total, self.round_num, len(exp_input))
             raise OverBudget(total, self.account.remaining)
         results = self.inner.run(exp_input)
+        if self.velocity_noise_std != 0:
+            for result in results:
+                if not isinstance(result, dict):
+                    continue
+                for key in ("velocity1", "velocity2", "velocities"):
+                    value = result.get(key)
+                    if value is not None:
+                        array = np.asarray(value, dtype=float)
+                        result[key] = (
+                            array + self._vel_rng.normal(
+                                0, self.velocity_noise_std, array.shape
+                            )
+                        ).tolist()
         self.account.charge("experiments_charged", total, self.round_num,
                             {"count": len(exp_input), "items": [b for _, b in priced]})
         self.round_cost = round(self.round_cost + total, 6)
@@ -66,7 +84,8 @@ class MeteredExecutor:
 class MarketAgent(DiscoveryAgent):
     def __init__(self, *, cfg: Config, hyp: Hypothesis, account: Account,
                  ledger_entries: list[dict], complete: Optional[Complete] = None,
-                 on_round: Callable[[dict], None] | None = None, **kwargs):
+                 on_round: Callable[[dict], None] | None = None, noise_seed: int = 0,
+                 **kwargs):
         # Set before super().__init__, which builds the system prompt.
         self.cfg = cfg
         self.hyp = hyp
@@ -74,7 +93,12 @@ class MarketAgent(DiscoveryAgent):
         self.ledger_entries = ledger_entries
         self.on_round = on_round
         self._complete = complete or llm_client.complete
-        executor = MeteredExecutor(kwargs.pop("executor"), cfg, hyp, account)
+        self.record_bought = False
+        self.record_fee = 0.0
+        executor = MeteredExecutor(
+            kwargs.pop("executor"), cfg, hyp, account,
+            cfg.velocity_noise_std, noise_seed,
+        )
         super().__init__(executor=executor, max_rounds=cfg.max_rounds, min_rounds=1,
                          critic=None, random_experiments=False, no_mse=False, **kwargs)
         self.outcome: str | None = None  # verdict | walked_away | withdrawn | out_of_rounds
@@ -89,7 +113,9 @@ class MarketAgent(DiscoveryAgent):
         base = _load_system_prompt(self._system_prompt_path, self._instructions_path)
         return "\n\n".join([base.rstrip(), self._run_policy_note(),
                             protocol.market_block(self.cfg, self.hyp),
-                            protocol.ledger_block(self.ledger_entries)])
+                            protocol.record_offer_block(
+                                len(self.ledger_entries), self.cfg.ledger_read_fee
+                            )])
 
     def _run_policy_note(self) -> str:
         note = (
@@ -142,6 +168,8 @@ class MarketAgent(DiscoveryAgent):
         """Returns the verdict, or None if the agent walked away, withdrew or ran out of rounds."""
         self.conversation_log = []
         self.outcome = self.verdict = self.evidence = self.withdraw_reason = None
+        self.record_bought = False
+        self.record_fee = 0.0
         messages: list[dict] = []
         if self.mission:
             messages.append({"role": "user", "content": self.mission})
@@ -154,7 +182,7 @@ class MarketAgent(DiscoveryAgent):
                 "experiment_input": None, "experiment_output": None, "experiment_error": None,
                 "mse_fit_input": None, "mse_fit_output": None, "assessment": None,
                 "p_success": None, "verdict": None, "evidence": None,
-                "withdraw_reason": None,
+                "withdraw_reason": None, "record_bought": False, "buy_reply": None,
             }
             if self.max_rounds >= 2 and round_num == self.max_rounds - 1:
                 warn = (
@@ -174,6 +202,40 @@ class MarketAgent(DiscoveryAgent):
             reply = self._ask(messages)
             entry["llm_reply"] = reply
             messages.append({"role": "assistant", "content": reply})
+            if protocol.parse_buy_record(reply):
+                entry["buy_reply"] = reply
+                fee = self.cfg.ledger_read_fee
+                if self.record_bought:
+                    notice = (
+                        "The public record was already bought; there is no additional charge. "
+                        "Now choose this round's action."
+                    )
+                elif not self.ledger_entries:
+                    notice = (
+                        "There are no earlier failed runs, so there is nothing to buy. "
+                        "No charge was made. Now choose this round's action."
+                    )
+                elif not self.account.can_afford(fee):
+                    notice = (
+                        f"The public record costs {fee:g} credits, which you cannot afford. "
+                        "No charge was made. Now choose this round's action."
+                    )
+                else:
+                    self.account.charge(
+                        "record_charged", fee, round_num, {"entries": len(self.ledger_entries)}
+                    )
+                    self.record_bought = True
+                    self.record_fee = fee
+                    entry["record_bought"] = True
+                    notice = (
+                        protocol.ledger_block(self.ledger_entries)
+                        + f"\n\nRecord bought for {fee:g} credits. Now choose this round's action."
+                    )
+                messages.append({"role": "user", "content": notice})
+                follow = self._ask(messages)
+                entry["llm_reply"] = follow
+                messages.append({"role": "assistant", "content": follow})
+                reply = follow
             self._read_confidence(reply, messages, entry)
 
             verdict = protocol.parse_verdict(reply)

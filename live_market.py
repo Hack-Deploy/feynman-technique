@@ -61,6 +61,10 @@ def info() -> dict:
         reasons.append("DM_MAX_USD must be set to a positive amount.")
     run_cfg = replace(cfg, max_rounds=settings.max_rounds)
     attempt_records = _records(C.ATTEMPTS_PATH)
+    solved_records = {
+        hyp.id: bench.solved_by(attempt_records, hyp.id)
+        for hyp in cfg.hypotheses
+    }
     projected = {}
     for model in settings.models:
         per_hypothesis = []
@@ -85,10 +89,17 @@ def info() -> dict:
                 "hypothesis": hyp.hypothesis,
                 "resolution_criteria": hyp.resolution_criteria,
                 "prize": hyp.prize,
+                "solved_by": (
+                    solved_records[hyp.id].solver
+                    if solved_records[hyp.id] is not None else None
+                ),
             }
             for hyp in cfg.hypotheses
         ],
+        "ledger_read_fee": cfg.ledger_read_fee,
         "round_fee": cfg.round_fee,
+        "noise_std": cfg.noise_std,
+        "velocity_noise_std": cfg.velocity_noise_std,
         "experiment_costs": dict(cfg.experiment_costs),
         "max_rounds": cfg.max_rounds,
         "budget": cfg.budget,
@@ -292,6 +303,11 @@ def start(hypothesis_id: str, model: str, scripted: bool) -> dict:
             hyp = cfg.hypothesis(hypothesis_id)
         except KeyError:
             raise ValueError(f"unknown hypothesis: {hypothesis_id}") from None
+
+        if not scripted:
+            solver = bench.solved_by(_records(C.ATTEMPTS_PATH), hyp.id)
+            if solver is not None:
+                raise ValueError(f"{hyp.id} was solved by {solver.solver}; it is off the market.")
 
         projection = 0.0
         live_settings = None

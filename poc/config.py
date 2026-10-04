@@ -50,6 +50,7 @@ class Hypothesis:
 class Config:
     max_rounds: int
     noise_std: float
+    velocity_noise_std: float
     budget: float | None
     payout_rule: str
     round_fee: float
@@ -57,6 +58,7 @@ class Config:
     hypotheses: tuple[Hypothesis, ...]
     ledger_max_entries: int
     ledger_max_data_chars: int
+    ledger_read_fee: float
 
     def hypothesis(self, hid: str) -> Hypothesis:
         for h in self.hypotheses:
@@ -108,6 +110,7 @@ def load(path: Path = CONFIG_PATH) -> Config:
     return Config(
         max_rounds=max_rounds,
         noise_std=_amount(d.get("noise_std", 0.075), "noise_std"),
+        velocity_noise_std=_amount(d.get("velocity_noise_std", 0.0), "velocity_noise_std"),
         budget=None if budget is None else _amount(budget, "budget"),
         payout_rule=payout_rule,
         round_fee=_amount(d.get("round_fee", 0), "round_fee"),
@@ -115,4 +118,5 @@ def load(path: Path = CONFIG_PATH) -> Config:
         hypotheses=tuple(hypotheses),
         ledger_max_entries=int(ledger.get("max_entries", 10)),
         ledger_max_data_chars=int(ledger.get("max_data_chars", 6000)),
+        ledger_read_fee=_amount(ledger.get("read_fee", 30), "ledger.read_fee"),
     )

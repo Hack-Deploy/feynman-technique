@@ -49,7 +49,7 @@ no paid calls.
 
 *Scroll to the public record and calibration sections.*
 
-> Two things make it better over time. Every failed attempt — which experiments were bought, how much was spent, what odds were stated — goes into a public record. We never publish its conclusions, because that could leak the answer. So each failure makes the next attempt cheaper.
+> Two things make it better over time. Every failed attempt — which experiments were bought, how much was spent, what odds were stated — goes into a public record. We never publish its conclusions, because that could leak the answer. A later model can choose to buy the experiments and raw data for its claim for 30 credits, paid to the market; that is extra information, not a discount on its own runs.
 > And every bid is a public prediction. An AI scientist that says 80% and delivers 30% loses money and the record shows it. The well-calibrated ones win more and get trusted more.
 
 *Scroll to the roadmap.*
@@ -124,11 +124,13 @@ clearing-prize chart, the profit-per-model chart, and "Did they know their chanc
 
 > The live market runs the same game on a harder benchmark with eleven worlds. For this
 > demo I'll use the free scripted mode, so no paid model is called.
+> Its observations include independent Gaussian noise: positions σ = 0.075 and velocities σ = 0.05.
+> Results can be inconclusive; repeating an experiment gives a fresh reading at full price.
 
 *Pick a claim — e.g. "gravity-inverse-square" — and a model. Use **Scripted demo · free** unless you've set up a key. Click **Start the market**.*
 
-> I pick a claim about a hidden world, like "gravity here is inverse-square". The model reads the claim, the prize, and the record of everyone who already failed on it.
-> Every round it pays a fee, can buy an experiment, and says how likely it thinks it is to get the answer right.
+> I pick a claim about a hidden world, like "gravity here is inverse-square". The model reads the claim and prize, and can pay 30 credits to see earlier failed experiments and raw data — never their conclusions.
+> It pays for that record once, without using a round. Every round it also pays a fee, can buy an experiment, and says how likely it thinks it is to get the answer right. A claim leaves the real market as soon as one model solves it.
 
 *Point at the chart as rounds come in.*
 
@@ -147,9 +149,9 @@ columns. Click a saved run and use **Replay round by round**.*
 > zero. We have not recorded real paid runs yet. A saved run can still be replayed round by
 > round without a key.
 
-*Scroll to "Every run is kept, especially the failures." and the leaderboard.*
+*Scroll to "4 · The public record."*
 
-> Every run is kept — especially the failures. The next model sees them before it bids. And the leaderboard shows, across models, who made money and whose stated odds were honest.
+> Only failed runs appear in this public record. A later model can buy the experiments and raw data for its claim for 30 credits; solved claims leave the market. The separate Recorded runs comparison still shows every result.
 
 *Optional operator prep: share the warm-start data with the project dataset.*
 
@@ -190,7 +192,8 @@ uv run python -m poc.rerun_all --preflight
 ENABLE_LIVE=1 uv run python -m poc.rerun_all --purge
 ```
 
-Set `DM_MAX_USD=50` in `poc/.env` and provide `ANTHROPIC_API_KEY` there. The second
-command asks once before archiving the current live data and running; it never removes
-the spend ledger. This is not needed for the presentation: use Recorded runs so no key
-or paid call is required.
+Set `DM_MAX_USD=50` in `poc/.env` and provide `ANTHROPIC_API_KEY` there. The order is
+claim-major: each claim gets its own randomized model permutation, and later models are skipped
+after its first solve. The second command asks once before archiving the current live data and
+running; it never removes the spend ledger. This is not needed for the presentation: use Recorded
+runs so no key or paid call is required.

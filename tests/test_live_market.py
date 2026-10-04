@@ -14,7 +14,7 @@ import scienceagent.llm_client
 import app
 import live_market
 from dm.store import AttemptStore
-from dm.types import SubmittedAttempt
+from dm.types import AttemptRecord, SubmittedAttempt
 from poc import bench, config as C, live_cache, spend
 from poc.llm import MeteredLLM, anthropic_transport
 
@@ -186,6 +186,10 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     assert len(disabled["live"]["reasons"]) == 3
     assert all("answer" not in hyp for hyp in disabled["hypotheses"])
     assert '"answer":' not in json.dumps(disabled)
+    assert disabled["ledger_read_fee"] == C.load().ledger_read_fee
+    assert all(hyp["solved_by"] is None for hyp in disabled["hypotheses"])
+    assert disabled["noise_std"] == C.load().noise_std
+    assert disabled["velocity_noise_std"] == C.load().velocity_noise_std
 
     secret = "test-secret-never-return"
     monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
@@ -210,7 +214,96 @@ def test_info_hides_answers_and_redacts_api_key(app_server, monkeypatch):
     status, headers, body = _request(f"{app_server}/api/live/info")
     assert status == 200
     assert "json" in headers.get("Content-Type", "").lower()
-    assert json.loads(body)["live"]["enabled"] is True
+    api_info = json.loads(body)
+    assert api_info["live"]["enabled"] is True
+    assert api_info["noise_std"] == C.load().noise_std
+    assert api_info["velocity_noise_std"] == C.load().velocity_noise_std
+
+
+def _solved_record(hypothesis_id, solver="prior-solver"):
+    hyp = C.load().hypothesis(hypothesis_id)
+    return AttemptRecord(
+        attempt_id=f"solved-{hypothesis_id}",
+        source="live",
+        protocol=C.PROTOCOL,
+        venue=C.VENUE,
+        world=hyp.world,
+        solver=solver,
+        seed=0,
+        stated_p_success=0.9,
+        rounds=1,
+        experiments=0,
+        lab_cost=10,
+        verdict={"passed": True, "agent_verdict": hyp.answer, "answer": hyp.answer},
+        extra={"hypothesis_id": hypothesis_id},
+    )
+
+
+def test_info_reports_solved_by_and_record_fee():
+    hyp_id = "gravity-inverse-square"
+    AttemptStore(C.ATTEMPTS_PATH).append([_solved_record(hyp_id)])
+
+    data = live_market.info()
+
+    assert data["ledger_read_fee"] == C.load().ledger_read_fee
+    claim = next(hyp for hyp in data["hypotheses"] if hyp["id"] == hyp_id)
+    assert claim["solved_by"] == "prior-solver"
+
+
+def test_real_live_start_refuses_solved_claim_without_reserving_spend(
+    app_server,
+):
+    hyp_id = "gravity-inverse-square"
+    AttemptStore(C.ATTEMPTS_PATH).append([_solved_record(hyp_id)])
+
+    status, _, body = _post_start(
+        app_server, hypothesis_id=hyp_id, scripted=False, model="claude-sonnet-5-5"
+    )
+
+    assert status == 400
+    assert json.loads(body)["error"] == (
+        f"{hyp_id} was solved by prior-solver; it is off the market."
+    )
+    assert spend.SpendLedger(spend.LEDGER_PATH).totals()["committed_usd"] == 0
+
+
+def test_scripted_live_start_remains_available_for_solved_claim(monkeypatch):
+    hyp_id = "gravity-inverse-square"
+    AttemptStore(C.ATTEMPTS_PATH).append([_solved_record(hyp_id)])
+
+    def fake_run(model, hypothesis_id, seed, ledger, cfg=None, **_kwargs):
+        hyp = cfg.hypothesis(hypothesis_id)
+        return SubmittedAttempt(
+            source="live",
+            protocol=C.PROTOCOL,
+            venue=C.VENUE,
+            world=hyp.world,
+            solver=model,
+            seed=seed,
+            stated_p_success=0.8,
+            rounds=1,
+            experiments=0,
+            lab_cost=0,
+            extra={
+                "hypothesis_id": hyp.id,
+                "outcome": "verdict",
+                "agent_verdict": hyp.answer,
+                "prize": hyp.prize,
+                "first_p": 0.8,
+                "final_p": 0.8,
+            },
+        )
+
+    monkeypatch.setattr(live_market, "run_attempt", fake_run)
+    started = live_market.start(hyp_id, "scripted-demo", scripted=True)
+
+    deadline = time.monotonic() + 5
+    current = live_market.job(started["job_id"])
+    while current["state"] == "running" and time.monotonic() < deadline:
+        time.sleep(0.01)
+        current = live_market.job(started["job_id"])
+    assert current["state"] == "done"
+    assert current["run"]["hypothesis_id"] == hyp_id
 
 
 def test_live_start_refuses_disabled_and_over_budget_runs(app_server, monkeypatch):
@@ -392,12 +485,14 @@ def test_job_round_payload_caps_large_fields():
         "experiment_input": [{"payload": "x" * 700}],
         "llm_reply": "y" * 5000,
         "mse_fit_output": "z" * 900,
+        "record_bought": True,
     })
 
     assert len(compact["experiment_input"][0]["truncated"]) == 600
     assert len(compact["reply"]) == 4000
     assert len(compact["mse_fit"]) == 800
     assert compact["cut_off"] is False
+    assert compact["record_bought"] is True
 
 
 def test_job_round_callback_marks_only_new_max_token_cutoffs():
