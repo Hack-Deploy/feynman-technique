@@ -21,28 +21,17 @@ The local app has three pages:
   An explicitly enabled paid mode starts new runs; the recorded-runs comparison
   shows the full local cache when available.
 
-The picker reads `attempts/fixtures/live/runs.jsonl`, so pulling the dataset
-updates its claims and models without rebuilding a selected sample. The snapshot
-imported on 4 October 2026 contains 21 runs across 11 claims and four models
-(revision `d240272bae837eb24afa2089f31bc6ef4de4388e`). Run
-`uv run python -m poc.hf_data pull` to refresh it.
+The picker reads `attempts/fixtures/live/runs.jsonl`: the real-model runs re-recorded on
+4 October 2026 with `poc.rerun_all` under the current claim protocol, up to 7 rounds per run.
+Earlier recorded runs are archived under `attempts/archive/` (git-ignored) and no longer shown.
 
 Each claim has **Success replay** and **Failure replay** tabs, where those outcomes
-exist. Examples favor useful measurements and richer probe trajectories. All
-recorded selections and live jobs share the same visualization, playback controls,
-estimates, reasoning trail, and result panel. Switch between motion over time and
-particle paths; the matched gravity examples also retain the force-law comparison.
-See [the selected examples and data limitations](docs/HF-REPLAYS.md).
-
-The round-by-round replay uses a matched pair from the public
-[discovery-market-live dataset](https://huggingface.co/datasets/arushisinha98/discovery-market-live):
-Sonnet 5.5's correct refutation and Sonnet 5's incorrect support of the same gravity
-hypothesis at seed 0. The source records are archived in
-`attempts/fixtures/demo/hf_representatives.jsonl`; regenerate the visualization with
-`uv run python -m poc.representatives`. These runs were scored against an answer key,
-not the current stricter checker. The successful run reported uncertainty above its
-requested precision target, which the replay discloses. Pull readings are derived
-from recorded positions; absent numeric estimates are left blank.
+exist. All recorded selections and live jobs share the same visualization, playback
+controls, estimates, reasoning trail, and result panel. Switch between motion over time
+and particle paths. Runs that released a probe at rest near a single source also get
+**Force versus distance**: pull readings derived from the recorded positions, the same
+launches replayed noise-free as the reference, and the claimed law where the claim names
+one (`poc/recorded_replay.py`, `law`).
 
 Completed runs started from the form use the same round controls and hypothesis
 trail. Gravity claims replay the force law; other claims plot recorded inward

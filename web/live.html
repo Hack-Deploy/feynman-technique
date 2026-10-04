@@ -274,7 +274,7 @@
   <div class="controls" style="margin-top:18px">
     <label>Claim <select id="hyp"></select></label>
     <label>Model <select id="model"></select></label>
-    <span class="mode" id="mode"><button data-m="recorded" class="on">Hugging Face replay · free</button><button data-m="live">New run · paid</button></span>
+    <span class="mode" id="mode"><button data-m="recorded" class="on">Recorded replay · free</button><button data-m="live">New run · paid</button></span>
     <button class="btn" id="go" disabled>Replay recorded run</button>
   </div>
   <div id="hypCard"></div>
@@ -391,9 +391,7 @@ document.querySelectorAll("[data-example]").forEach(b => b.addEventListener("cli
   const id = (RECOMMENDATIONS[$("#hyp").value] || {})[b.dataset.example];
   if (id) openReplay(id);
 }));
-const HF_URL = "https://huggingface.co/datasets/arushisinha98/discovery-market-live";
 const HF_DATA = fetch("/api/live/recorded", {cache: "no-store"}).then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)));
-const LEARNING_DATA = fetch("/web/data/learning.json").then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)));
 function selectedRecording() {
   return HF_RUNS.find(r => r.hypothesis_id === $("#hyp").value && r.model === $("#model").value);
 }
@@ -426,7 +424,7 @@ function renderClaim(c) {
 function renderStatus() {
   const l = INFO.live;
   $("#status").innerHTML = MODE === "recorded"
-    ? `<div class="status on"><span class="pill pass">recorded data</span><div>Replay ${HF_RUNS.length} real model runs across ${new Set(HF_RUNS.map(r => r.hypothesis_id)).size} claims and ${new Set(HF_RUNS.map(r => r.model)).size} models from the <a href="${HF_URL}" target="_blank" rel="noopener">Hugging Face dataset</a>. Choose a claim and model to watch its saved experiments and verdict. Replays are free and make no API calls.</div></div>`
+    ? `<div class="status on"><span class="pill pass">recorded data</span><div>Replay ${HF_RUNS.length} real model runs across ${new Set(HF_RUNS.map(r => r.hypothesis_id)).size} claims and ${new Set(HF_RUNS.map(r => r.model)).size} models, recorded on this machine. Choose a claim and model to watch its saved experiments and verdict. Replays are free and make no API calls.</div></div>`
     : l.enabled
     ? `<div class="status on"><span class="pill pass">real models on</span><div>Spend cap $${usd(l.max_usd)}: $${usd(l.spent_usd)} spent so far (shared with the command-line grid), $${usd(l.remaining_usd)} left. A run is refused if its worst case would go over the cap.</div></div>`
     : `<div class="status off"><span class="pill warn">real models off</span><div>The scripted demo runs the full market for free with a pre-written AI scientist: it buys one experiment, then always answers “supported”, so it wins on true claims and loses on false ones. To use a real model on this machine:<ul>${(l.reasons || []).map(r => `<li>${esc(r)}</li>`).join("")}</ul></div></div>`;
@@ -541,18 +539,7 @@ async function replaySelectedRecording(autoplay = true, attemptId = null) {
     JOB = {state: "done", model: r.model, scripted: false, rounds: d.rounds || [], run: d.run};
     CLAIM = {id: r.hypothesis_id, hypothesis: r.hypothesis, resolution_criteria: r.resolution_criteria,
       world: r.world, prize: r.prize, model: `${r.model_label || r.model} · seed ${r.seed}`};
-    // The matched gravity examples include recorded numeric estimates and a disclosed simulator reference.
-    const examples = await LEARNING_DATA.catch(() => ({runs: []}));
-    if (request !== REPLAY_REQUEST) return;
-    const law = (examples.runs || []).find(x => x.id === r.attempt_id);
     if (!d.replay) throw new Error("This recorded run has no replay data yet.");
-    if (law) {
-      d.replay.law = law;
-      d.replay.rounds.forEach(rd => {
-        const source = law.rounds.find(x => x.round === rd.round);
-        if (source) rd.estimates = {...rd.estimates, ...source.estimates};
-      });
-    }
     showView("replay");
     updateReplayTabs(r.attempt_id);
     if (!window.showRecordedReplay) await new Promise(resolve => window.addEventListener("replay-ready", resolve, {once: true}));

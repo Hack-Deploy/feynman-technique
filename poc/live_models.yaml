@@ -10,7 +10,7 @@ models:
   - {label: Claude Haiku 4.5,  id: claude-haiku-4-5-20251001, input: 1, output: 5}
 live:
   max_usd: 50
-  max_rounds: 3
+  max_rounds: 7
   max_tokens: 16000
 projection:
   chars_per_token: 3.0

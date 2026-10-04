@@ -6,7 +6,7 @@
   let data = null, at = 0, elapsed = 0, playing = false, last = null;
   let renderedStep = null;
   const duration = 3.4;
-  function axes(series, xLabel, yLabel) {
+  function axes(series, xLabel, yLabel, tick = fmt) {
     const xs = series.flatMap(t => t.map(p => p[0])), ys = series.flatMap(t => t.map(p => p[1]));
     let xmin = Math.min(0, ...xs), xmax = Math.max(0, ...xs), ymin = Math.min(0, ...ys), ymax = Math.max(0, ...ys);
     const xp = Math.max(xmax - xmin, .01) * .06, yp = Math.max(ymax - ymin, .01) * .12;
@@ -16,13 +16,20 @@
     let svg = "";
     for (let i = 0; i <= 4; i++) {
       const xv = xmin + (xmax - xmin) * i / 4, yv = ymin + (ymax - ymin) * i / 4;
-      svg += `<line x1="${x(xv)}" x2="${x(xv)}" y1="14" y2="336" stroke="#E6E6E2"/><text x="${x(xv)}" y="354" text-anchor="middle" font-size="11" fill="#6B6B67">${fmt(xv)}</text>`;
-      svg += `<line x1="58" x2="624" y1="${y(yv)}" y2="${y(yv)}" stroke="#E6E6E2"/><text x="50" y="${y(yv) + 4}" text-anchor="end" font-size="11" fill="#6B6B67">${fmt(yv)}</text>`;
+      svg += `<line x1="${x(xv)}" x2="${x(xv)}" y1="14" y2="336" stroke="#E6E6E2"/><text x="${x(xv)}" y="354" text-anchor="middle" font-size="11" fill="#6B6B67">${tick(xv)}</text>`;
+      svg += `<line x1="58" x2="624" y1="${y(yv)}" y2="${y(yv)}" stroke="#E6E6E2"/><text x="50" y="${y(yv) + 4}" text-anchor="end" font-size="11" fill="#6B6B67">${tick(yv)}</text>`;
     }
     svg += `<text x="340" y="374" text-anchor="middle" font-size="12" fill="#6B6B67">${esc(xLabel)}</text><text transform="translate(14 180) rotate(-90)" text-anchor="middle" font-size="12" fill="#6B6B67">${esc(yLabel)}</text>`;
     return {x, y, svg};
   }
+  function logAxes(series) {
+    const L = c => c.filter(p => p[0] > 0 && p[1] > 0).map(p => [Math.log10(p[0]), Math.log10(p[1])]);
+    const ax = axes(series.map(L), "distance from the source, r (log scale)", "pull (log scale)", v => fmt(10 ** v));
+    const ok = (r, a) => r > 0 && a > 0;
+    return {svg: ax.svg, x: r => ax.x(Math.log10(r)), y: a => ax.y(Math.log10(a)), ok};
+  }
   function line(points, ax, color, dash = "") {
+    if (ax.ok) points = points.filter(p => ax.ok(p[0], p[1]));
     if (!points.length) return "";
     return `<polyline points="${points.map(p => `${ax.x(p[0])},${ax.y(p[1])}`).join(" ")}" fill="none" stroke="${color}" stroke-width="2.5" ${dash ? `stroke-dasharray="${dash}"` : ""}/>`;
   }
@@ -52,24 +59,34 @@
     const now = law.rounds.filter(r => r.round === round).flatMap(r => r.points || []);
     const before = law.rounds.filter(r => r.round < round).flatMap(r => r.points || []);
     const readings = [...before, ...now.slice(0, Math.ceil(now.length * p))];
-    const force = g => Array.from({length:111}, (_, i) => { const r = 1.5 + i * .05; return [r, g.a3 * (3 / r) ** g.n]; });
+    // Curves span the distances actually measured (default 1.5 to 7).
+    const rs = [...law.rounds.flatMap(r => r.points || []), ...(law.reference_points || [])].map(pt => pt.r);
+    const lo = Math.min(1.5, ...rs) * .9, hi = Math.max(7, ...rs) * 1.05;
+    const force = g => Array.from({length:111}, (_, i) => { const r = lo * (hi / lo) ** (i / 110); return [r, g.a3 * (3 / r) ** g.n]; });
     const toGuess = r => { const e = r?.estimates || {}; return e.n && e.a3 ? {n: e.n.value, a3: e.a3.value} : null; };
     const idx = data.rounds.indexOf(rd), guess = toGuess(rd), prev = idx > 0 ? toGuess(data.rounds[idx - 1]) : null;
-    const reference = force(law.true), hypothesis = force(law.expected), final = guess ? force(guess) : [];
+    const reference = law.true ? force(law.true) : [], hypothesis = law.expected ? force(law.expected) : [], final = guess ? force(guess) : [];
+    const refPoints = (law.reference_points || []).map(pt => [pt.r, pt.a]);
     let fit = final;
     if (guess && p < 1) fit = prev ? force({n: prev.n + (guess.n - prev.n) * ease, a3: prev.a3 + (guess.a3 - prev.a3) * ease})
                                    : final.slice(0, Math.max(2, Math.ceil(final.length * ease)));
     const allReadings = [...before, ...now].map(pt => [pt.r, pt.a]);
-    const ax = axes([reference, hypothesis, final, prev ? force(prev) : [], allReadings], "distance from the source, r", "pull on the probe");
+    // Short-range worlds span orders of magnitude; plot those on log scales.
+    const pulls = [...allReadings, ...refPoints].map(pt => pt[1]).filter(a => a > 0);
+    const log = pulls.length > 1 && Math.max(...pulls) / Math.min(...pulls) > 50;
+    const ax = log ? logAxes([reference, hypothesis, final, prev ? force(prev) : [], allReadings, refPoints])
+                   : axes([reference, hypothesis, final, prev ? force(prev) : [], allReadings, refPoints], "distance from the source, r", "pull on the probe");
     let svg = ax.svg + line(reference, ax, "#2E7D4F", "7 5") + line(hypothesis, ax, "#3D63B5", "2 5") + line(fit, ax, "#B7791F");
+    refPoints.filter(pt => !ax.ok || ax.ok(pt[0], pt[1])).forEach(pt => { svg += `<circle cx="${ax.x(pt[0])}" cy="${ax.y(pt[1])}" r="5" fill="none" stroke="#2E7D4F" stroke-width="2"><title>noise-free r=${fmt(pt[0])} · pull=${fmt(pt[1])}</title></circle>`; });
     readings.forEach((pt, k) => {
+      if (ax.ok && !ax.ok(pt.r, pt.a)) return;
       const fresh = p < 1 && k === readings.length - 1 && k >= before.length;
       if (fresh) svg += `<circle cx="${ax.x(pt.r)}" cy="${ax.y(pt.a)}" r="${5 + 14 * ((elapsed * 3) % 1)}" fill="none" stroke="#1B3F8B" opacity="${1 - ((elapsed * 3) % 1)}"/>`;
       svg += `<circle cx="${ax.x(pt.r)}" cy="${ax.y(pt.a)}" r="5" fill="#1B3F8B" stroke="#fff"><title>r=${fmt(pt.r)} · approximate pull=${fmt(pt.a)}</title></circle>`;
     });
     $("#lc").innerHTML = svg;
     $("#lc").setAttribute("aria-label", "Recorded pull readings and fitted force law against hypothesis and simulator reference");
-    $("#learn .legend").innerHTML = `<span><i class="dot"></i>Pull derived from recorded positions</span><span><i style="border-color:#B7791F"></i>Recorded numeric fit, when available</span><span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>Simulator reference</span><span><i style="border-color:#3D63B5;border-top-style:dotted"></i>Hypothesis</span>`;
+    $("#learn .legend").innerHTML = `<span><i class="dot"></i>Pull derived from recorded positions</span><span><i style="border-color:#B7791F"></i>Recorded numeric fit, when available</span><span><i style="border-color:#2E7D4F;border-top-style:dashed"></i>Simulator reference${law.reference_points?.length ? " (open circles: same launches, noise-free)" : ""}</span>${law.expected ? '<span><i style="border-color:#3D63B5;border-top-style:dotted"></i>Hypothesis</span>' : ""}`;
   }
   function drawMetric(idx) {
     const metric = $("#replayMetric").value;
@@ -130,7 +147,7 @@
     $("#replayMetric").innerHTML = '<option value="confidence">Stated chance and spend</option>' + keys.map(k => `<option value="${esc(k)}">Recorded ${esc(k)}</option>`).join("");
     $("#replayMetric").value = data.law && keys.includes("n") ? "n" : "confidence";
     const curves = (data.traces || []).filter(t => t.times.length > 1).length, points = (data.traces || []).reduce((s,t)=>s+t.times.length,0);
-    $("#watchLead").innerHTML = `${esc(data.agent)} on ${esc(data.hypothesis_id)}: ${curves} recorded paths with multiple measurements, ${points} measured points. Compare its experiments, estimates and reasoning round by round. <a href="${esc(data.source_url || HF_URL)}" target="_blank" rel="noopener">Source data</a>.`;
+    $("#watchLead").innerHTML = `${esc(data.agent)} on ${esc(data.hypothesis_id)}: ${curves} recorded paths with multiple measurements, ${points} measured points. Compare its experiments, estimates and reasoning round by round.${data.source_url ? ` <a href="${esc(data.source_url)}" target="_blank" rel="noopener">Source data</a>.` : ""}`;
     render();
   };
   window.renderMarketJob = (job, claim) => {

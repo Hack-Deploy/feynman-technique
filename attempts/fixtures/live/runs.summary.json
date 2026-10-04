@@ -1,251 +1,169 @@
 {
   "claim_order": {
     "circle-ordinary-gravity": [
+      "claude-sonnet-5",
       "claude-haiku-4-5-20251001",
       "claude-sonnet-5-5",
-      "claude-sonnet-5",
       "claude-opus-5-5"
-    ],
-    "coulomb-source-strength": [
-      "claude-sonnet-5",
-      "claude-haiku-4-5-20251001",
-      "claude-opus-5-5",
-      "claude-sonnet-5-5"
     ],
     "dark-matter-unseen-pull": [
-      "claude-opus-5-5",
       "claude-haiku-4-5-20251001",
-      "claude-sonnet-5-5",
-      "claude-sonnet-5"
+      "claude-opus-5-5",
+      "claude-sonnet-5",
+      "claude-sonnet-5-5"
     ],
     "ether-outward-push": [
-      "claude-sonnet-5",
-      "claude-haiku-4-5-20251001",
       "claude-sonnet-5-5",
-      "claude-opus-5-5"
-    ],
-    "extra-dimensions-short-range": [
+      "claude-haiku-4-5-20251001",
       "claude-opus-5-5",
-      "claude-sonnet-5-5",
-      "claude-sonnet-5",
-      "claude-haiku-4-5-20251001"
+      "claude-sonnet-5"
     ],
-    "fractional-p2-inertia": [
-      "claude-haiku-4-5-20251001",
+    "fractional-2d-gravity": [
       "claude-sonnet-5-5",
-      "claude-sonnet-5",
-      "claude-opus-5-5"
+      "claude-haiku-4-5-20251001",
+      "claude-opus-5-5",
+      "claude-sonnet-5"
     ],
     "gravity-inverse-square": [
       "claude-sonnet-5",
-      "claude-sonnet-5-5",
+      "claude-haiku-4-5-20251001",
       "claude-opus-5-5",
-      "claude-haiku-4-5-20251001"
+      "claude-sonnet-5-5"
     ],
     "hubble-outward-push": [
       "claude-opus-5-5",
-      "claude-haiku-4-5-20251001",
       "claude-sonnet-5-5",
-      "claude-sonnet-5"
-    ],
-    "oscillator-time-varying": [
-      "claude-sonnet-5",
-      "claude-opus-5-5",
-      "claude-haiku-4-5-20251001",
-      "claude-sonnet-5-5"
-    ],
-    "three-species-repulsion": [
-      "claude-sonnet-5-5",
-      "claude-opus-5-5",
       "claude-sonnet-5",
       "claude-haiku-4-5-20251001"
     ],
-    "yukawa-screened": [
-      "claude-haiku-4-5-20251001",
+    "oscillator-time-varying": [
       "claude-opus-5-5",
+      "claude-sonnet-5",
       "claude-sonnet-5-5",
-      "claude-sonnet-5"
+      "claude-haiku-4-5-20251001"
+    ],
+    "yukawa-screened": [
+      "claude-sonnet-5-5",
+      "claude-sonnet-5",
+      "claude-opus-5-5",
+      "claude-haiku-4-5-20251001"
     ]
   },
   "comparison": [
     {
-      "brier": 0.0725,
-      "credits_spent": 338.466,
+      "brier": 0.1963,
+      "credits_spent": 212.0,
       "label": "Claude Sonnet 5.5",
       "model": "claude-sonnet-5-5",
       "points": [
         {
-          "attempt_id": "e0d7106a-e12e-5267-b0cd-5ccf1e62e5d1",
-          "hypothesis_id": "gravity-inverse-square",
+          "attempt_id": "bf459bc3-5192-5a4f-97d5-795e36ca9aaf",
+          "hypothesis_id": "fractional-2d-gravity",
           "p": 0.7,
           "passed": true
         },
         {
-          "attempt_id": "32988fa0-ad00-5b92-9108-e08584364e0f",
-          "hypothesis_id": "oscillator-time-varying",
-          "p": 0.9,
-          "passed": true
-        },
-        {
-          "attempt_id": "95c6b13c-deb6-5ff8-a79a-9bf3b81617e7",
+          "attempt_id": "981e3fe5-9040-5b3e-aca8-945de6465cfc",
           "hypothesis_id": "yukawa-screened",
-          "p": 0.75,
-          "passed": true
-        },
-        {
-          "attempt_id": "6641cf26-25a9-5e13-b1c7-721ad1b87c99",
-          "hypothesis_id": "extra-dimensions-short-range",
-          "p": 0.8,
-          "passed": true
-        },
-        {
-          "attempt_id": "c72be55b-b50e-5627-a49c-44e8a7da7680",
-          "hypothesis_id": "three-species-repulsion",
-          "p": 0.6,
-          "passed": true
+          "p": 0.55,
+          "passed": false
         }
       ],
-      "prize_paid": 500.0,
-      "profit": 161.534,
-      "runs": 6,
-      "usd_spent": 0.458918,
-      "win_rate": 0.8333,
-      "wins": 5
+      "prize_paid": 130.0,
+      "profit": -82.0,
+      "runs": 2,
+      "usd_spent": 0.289812,
+      "win_rate": 0.5,
+      "wins": 1
     },
     {
-      "brier": 0.2358,
-      "credits_spent": 273.0,
+      "brier": 0.25,
+      "credits_spent": 235.5,
       "label": "Claude Sonnet 5",
       "model": "claude-sonnet-5",
       "points": [
         {
-          "attempt_id": "ff82088a-ed34-54ef-b744-d725077149f2",
-          "hypothesis_id": "gravity-inverse-square",
-          "p": 0.85,
-          "passed": false
-        },
-        {
-          "attempt_id": "bbae52eb-6033-5987-ad8e-50be5adca601",
-          "hypothesis_id": "oscillator-time-varying",
-          "p": 0.65,
-          "passed": false
-        },
-        {
-          "attempt_id": "130172f3-a10b-5896-b253-027dba579639",
-          "hypothesis_id": "dark-matter-unseen-pull",
-          "p": 0.15,
-          "passed": false
-        },
-        {
-          "attempt_id": "ac6488be-2af1-5c28-ac7a-fdb5b12c1cc6",
-          "hypothesis_id": "coulomb-source-strength",
-          "p": 0.92,
-          "passed": true
-        },
-        {
-          "attempt_id": "091175de-5995-5704-960c-56de7ab8fb22",
-          "hypothesis_id": "ether-outward-push",
-          "p": 0.93,
+          "attempt_id": "5140f232-45a2-5489-ad91-3956d275bae5",
+          "hypothesis_id": "yukawa-screened",
+          "p": 0.5,
           "passed": true
         }
       ],
-      "prize_paid": 200.0,
-      "profit": -73.0,
-      "runs": 5,
-      "usd_spent": 1.02347,
-      "win_rate": 0.4,
-      "wins": 2
+      "prize_paid": 220.0,
+      "profit": -15.5,
+      "runs": 2,
+      "usd_spent": 1.579224,
+      "win_rate": 0.5,
+      "wins": 1
     },
     {
-      "brier": 0.04,
-      "credits_spent": 88.8,
+      "brier": 0.0692,
+      "credits_spent": 163.0,
       "label": "Claude Opus 5.5",
       "model": "claude-opus-5-5",
       "points": [
         {
-          "attempt_id": "41768fcd-6e1f-5200-8274-2e301d8a77ff",
-          "hypothesis_id": "hubble-outward-push",
-          "p": 0.8,
+          "attempt_id": "dcfb8105-5c0c-5dce-af4c-f74cc192c029",
+          "hypothesis_id": "gravity-inverse-square",
+          "p": 0.75,
+          "passed": true
+        },
+        {
+          "attempt_id": "85fcda5c-65d2-54aa-b336-79ef492a47ee",
+          "hypothesis_id": "oscillator-time-varying",
+          "p": 0.65,
+          "passed": true
+        },
+        {
+          "attempt_id": "e9e618db-89d4-5b9e-8b56-da14796292ac",
+          "hypothesis_id": "dark-matter-unseen-pull",
+          "p": 0.85,
           "passed": true
         }
       ],
-      "prize_paid": 100.0,
-      "profit": 11.2,
-      "runs": 5,
-      "usd_spent": 0.440532,
-      "win_rate": 0.2,
-      "wins": 1
+      "prize_paid": 270.0,
+      "profit": 107.0,
+      "runs": 3,
+      "usd_spent": 0.758024,
+      "win_rate": 1.0,
+      "wins": 3
     },
     {
-      "brier": 0.1592,
-      "credits_spent": 396.0,
+      "brier": null,
+      "credits_spent": 0.0,
       "label": "Claude Haiku 4.5",
       "model": "claude-haiku-4-5-20251001",
-      "points": [
-        {
-          "attempt_id": "3629c306-5f34-58e7-9972-9f5e7d017f5e",
-          "hypothesis_id": "oscillator-time-varying",
-          "p": 0.85,
-          "passed": false
-        },
-        {
-          "attempt_id": "f453f9c7-2ab0-5e10-b948-590fe28d9cdd",
-          "hypothesis_id": "dark-matter-unseen-pull",
-          "p": 0.0,
-          "passed": false
-        },
-        {
-          "attempt_id": "8c80c2e9-cc1a-5761-8d06-28ea938c16f7",
-          "hypothesis_id": "yukawa-screened",
-          "p": 0.15,
-          "passed": false
-        },
-        {
-          "attempt_id": "1cca550b-487e-51c1-84c8-f97b34f1c8a2",
-          "hypothesis_id": "fractional-p2-inertia",
-          "p": 0.78,
-          "passed": true
-        },
-        {
-          "attempt_id": "3d8102a1-6b45-55d3-bce2-6dac076cfeb1",
-          "hypothesis_id": "circle-ordinary-gravity",
-          "p": 0.95,
-          "passed": true
-        }
-      ],
-      "prize_paid": 200.0,
-      "profit": -196.0,
-      "runs": 5,
-      "usd_spent": 0.181961,
-      "win_rate": 0.4,
-      "wins": 2
+      "points": [],
+      "prize_paid": 0.0,
+      "profit": 0.0,
+      "runs": 2,
+      "usd_spent": 0.01828,
+      "win_rate": 0.0,
+      "wins": 0
     }
   ],
-  "generated_from": "/home/rue/Documents/feynman-technique/attempts/fixtures/live/runs.jsonl",
+  "generated_from": "/Users/sami/project/experiment/feynman-technique/attempts/fixtures/live/runs.jsonl",
   "models_checked": "2026-10-03",
   "models_source": {
     "checked": "2026-10-03",
     "models": "https://platform.claude.com/docs/en/about-claude/models/overview",
     "pricing": "https://platform.claude.com/docs/en/about-claude/pricing"
   },
-  "order_seed": 1100522984,
+  "order_seed": 771773119,
   "settings": {
     "chars_per_token": 3.0,
     "data_chars_per_round": 8000,
     "hypotheses": [
       "gravity-inverse-square",
+      "fractional-2d-gravity",
+      "yukawa-screened",
       "oscillator-time-varying",
       "dark-matter-unseen-pull",
-      "yukawa-screened",
-      "coulomb-source-strength",
-      "fractional-p2-inertia",
-      "extra-dimensions-short-range",
       "circle-ordinary-gravity",
-      "three-species-repulsion",
       "ether-outward-push",
       "hubble-outward-push"
     ],
-    "max_rounds": 3,
+    "max_rounds": 7,
     "max_tokens": 16000,
     "max_usd": 50.0,
     "seeds": [

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import threading
@@ -497,6 +498,16 @@ def recorded() -> dict:
     }
 
 
+@functools.lru_cache(maxsize=64)
+def _recorded_law_cached(attempt_id: str, entry_json: str) -> dict | None:
+    from poc import recorded_replay
+    return recorded_replay.law(json.loads(entry_json))
+
+
+def _recorded_law(entry: dict) -> dict | None:
+    return _recorded_law_cached(entry["record"]["attempt_id"], json.dumps(entry, sort_keys=True))
+
+
 def recorded_run(attempt_id: str) -> dict | None:
     from poc import recorded_replay
     for path in (live_cache.RUNS_PATH,):
@@ -514,8 +525,12 @@ def recorded_run(attempt_id: str) -> dict | None:
                 "source": entry.get("source"),
                 "calls": record.llm_usage.get("calls", 0),
             })
+            replay = recorded_replay.build(entry)
+            law = _recorded_law(entry)
+            if law:
+                replay["law"] = law
             return {
-                "replay": recorded_replay.build(entry),
+                "replay": replay,
                 "run": row,
                 "rounds": [
                     {**round_entry, "cut_off": round_entry.get("cut_off", False),

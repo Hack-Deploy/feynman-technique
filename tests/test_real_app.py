@@ -270,8 +270,8 @@ def test_three_pages_removed_routes_static_and_api_data(app_server, monkeypatch)
     assert _request(f"{app_server}/web/%2e%2e/app.py")[0] == 404
     assert _request(f"{app_server}/web/data/%2e%2e/style.css")[0] == 404
     assert _request(f"{app_server}/web/data/missing.json")[0] == 404
-    status, _, body = _request(f"{app_server}/web/data/experiments.json")
-    assert status == 200 and json.loads(body)["launches"]
+    status, _, body = _request(f"{app_server}/web/data/original.json")
+    assert status == 200 and json.loads(body)
 
     status, headers, body = _request(f"{app_server}/api/real")
     assert status == 200

@@ -89,8 +89,7 @@ def build(entry: dict) -> dict:
             'verdict': x.get('agent_verdict'), 'passed': record['verdict'].get('passed', False),
             'outcome': 'confirmed' if record['verdict'].get('passed') else 'false_claim',
             'prize': x.get('prize'), 'prize_paid': paid, 'spent': record['lab_cost'],
-            'profit': paid - record['lab_cost'], 'usd': entry.get('usd', record.get('llm_usage', {}).get('usd', 0)),
-            'source_url': 'https://huggingface.co/datasets/arushisinha98/discovery-market-live'}
+            'profit': paid - record['lab_cost'], 'usd': entry.get('usd', record.get('llm_usage', {}).get('usd', 0))}
 
 
 def recommendations(rows: list[dict]) -> dict:
@@ -106,4 +105,60 @@ def recommendations(rows: list[dict]) -> dict:
             else:
                 choices[name] = None
         result[claim] = choices
+    return result
+
+
+TIME_VARYING = ('oscillator',)
+
+
+def _support_guesses() -> dict:
+    from poc.baselines import SUPPORT_GUESS
+    return {k: {'n': v['n'], 'a3': v['a3']} for k, v in SUPPORT_GUESS.items() if 'n' in v and 'a3' in v}
+
+
+SUPPORT_GUESS_LAW = _support_guesses()
+
+
+def law(entry: dict) -> dict | None:
+    """Pull readings by round for runs that released a probe at rest near one source, with the
+    same launches replayed on the noise-free simulator as the reference."""
+    import numpy as np
+    from scienceagent.worlds import get_world
+
+    from poc import animate
+    from poc import config as C
+
+    record = entry['record']
+    if record['world'] in TIME_VARYING:
+        return None  # the pull changes over time, so one curve against distance would mislead
+    runs = (record.get('extra') or {}).get('runs') or []
+    rounds: dict = {}
+    reference = []
+    executor = None
+    for run in runs:
+        reading = animate._reading(run)
+        if not reading:
+            continue
+        rounds.setdefault(run.get('round', 1), []).append(reading)
+        try:
+            executor = executor or get_world(record['world'], engine=C.ENGINE, noise_std=0.0,
+                                             noise_seed=record['seed'])['executor']
+            clean = animate._reading({'input': run['input'],
+                                      'output': executor.run([run['input']])[0]})
+        except Exception:  # a reference that fails to render never hides the readings
+            clean = None
+        if clean and clean['a'] > 0:
+            reference.append(clean)
+    if len({p['r'] for ps in rounds.values() for p in ps}) < 2:
+        return None
+    result = {'rounds': [{'round': k, 'points': v} for k, v in sorted(rounds.items())],
+              'reference_points': reference}
+    if len({p['r'] for p in reference}) >= 2:
+        # a ≈ a3 (3/r)^n through the noise-free readings, so the reference draws as a curve.
+        x = np.log([3 / p['r'] for p in reference])
+        n, log_a3 = np.polyfit(x, np.log([p['a'] for p in reference]), 1)
+        result['true'] = {'n': round(float(n), 4), 'a3': round(float(np.exp(log_a3)), 5)}
+    guess = SUPPORT_GUESS_LAW.get((record.get('extra') or {}).get('hypothesis_id'))
+    if guess:
+        result['expected'] = guess  # the law the claim says holds, drawn as the hypothesis
     return result
