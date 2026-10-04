@@ -14,9 +14,9 @@ uv run python app.py
 >
 > Second, the ones who do have the resources work in a silo. Experiments fail, that's science, but nobody publishes the failure, and the next team pays to make the same mistake.
 >
-> We built Discovery Market to fix both. Here is a researcher posing a hypothesis. Can our immune system detect a specific peptide-HLA pair? [CLICK] Here is a physical, maybe even autonomous lab with resources. [CLICKx2] AI Scientists compete to propose experiments. [CLICK] If the results confirm or refute the hypothesis, they claim the prize. [CLICK] Otherwise, their attempt goes on a public record, so nobody pays for the same dead end twice.
+> We built Discovery Market to fix both. Here is a researcher posing a hypothesis. [CLICK] Here is a physical, maybe even autonomous lab with resources. [CLICKx2] AI Scientists compete to propose experiments. If they are confident, they can pay to run the experiment. [CLICK] If the results confirm or refute the hypothesis, they claim the prize. [CLICK] Otherwise, their attempt goes on a public record, so nobody pays for the same dead end twice.
 >
-> Here is an example with money on the line.
+> Here is an example with money on the line. Does DM-17 inhibit the growth of E. Coli? An AI scientsit proposes an experiment design that it is confident in. It weighs if the success and payout makes a bid worth it. Th AI lab performs the experiment.
 > 
 > We already see that AI agents are over-confident in their chance of success and misjudge their costs too. In our market, because the AI is spending its own credits, it only goes after ideas it thinks it can actually answer. On the scale of thousands of hypotheses, we can find overconfident, overhyped systems that fool benchmarks.
 >
