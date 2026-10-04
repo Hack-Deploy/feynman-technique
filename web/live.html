@@ -267,6 +267,7 @@ async function poll(id) {
     if (j.state === "running") { POLL = setTimeout(() => poll(id), 1200); return; }
   } catch (e) { $("#result").innerHTML = `<p class="pill fail">${esc(e.message)}</p>`; }
   $("#go").disabled = false;
+  loadRecorded();
 }
 $("#go").addEventListener("click", async () => {
   clearTimeout(POLL);
@@ -377,8 +378,11 @@ async function openReplay(id) {
 }
 $("#repPlay").addEventListener("click", () => REPLAY && playReplay());
 $("#repAll").addEventListener("click", () => { if (REPLAY) { clearTimeout(REPLAY.timer); showReplay(REPLAY.rounds.length); } });
-fetch("/api/live/recorded").then(r => r.json()).then(renderRecorded)
-  .catch(e => { $("#recBanner").innerHTML = `<p class="pill fail">Could not load recorded runs: ${esc(e.message)}</p>`; });
+function loadRecorded() {
+  return fetch("/api/live/recorded", {cache: "no-store"}).then(r => r.json()).then(renderRecorded)
+    .catch(e => { $("#recBanner").innerHTML = `<p class="pill fail">Could not load recorded runs: ${esc(e.message)}</p>`; });
+}
+loadRecorded();
 
 fetch("/api/live/info").then(r => r.json()).then(info => {
   INFO = info;
