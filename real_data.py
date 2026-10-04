@@ -50,6 +50,11 @@ def _source(path: Path) -> tuple[Path, bool]:
     return (snap, True) if snap.exists() else (path, False)
 
 
+def _stale_grid(grid: dict) -> bool:
+    results = grid.get("results") or []
+    return bool(results) and not any("top_model" in row for row in results)
+
+
 def _read_json(path: Path) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
 
@@ -176,6 +181,17 @@ def forcebench_data() -> dict:
 
     grid_path, snapshot = _source(FORCEBENCH_GRID)
     grid = _read_json(grid_path)
+    if (
+        not snapshot
+        and grid is not None
+        and _stale_grid(grid)
+        and FORCEBENCH_GRID in SNAPSHOTS
+    ):
+        snapshot_path = SNAPSHOTS[FORCEBENCH_GRID]
+        if snapshot_path.exists():
+            grid_path = snapshot_path
+            grid = _read_json(grid_path)
+            snapshot = True
     source = ("snapshot" if snapshot else "output") if grid is not None else None
     out = {"worlds": list(WORLDS), "solvers": list(SOLVERS), "seeds": [0, 1, 2, 3, 4],
            "wallet": LIVE_WALLET, "price": LIVE_PRICE, "available": grid is not None,
