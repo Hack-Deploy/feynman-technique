@@ -267,8 +267,26 @@
   </div>
 </section>
 
+<section id="recorded">
+  <p class="label"><span class="num">[01]</span>Recorded runs</p>
+  <h2>Replay runs that were already played.</h2>
+  <p class="sub">Every model got the same claims, the same prices and the same spending cap. Replays read saved results from this machine; nothing is sent to an AI model.</p>
+  <div id="recBanner"><p class="wait">Loading…</p></div>
+  <div id="recBody">
+  <h3 style="margin-top:22px">How the models compare</h3>
+  <div class="cmp">
+    <div id="recCompare"></div>
+    <div class="fig"><svg viewBox="0 0 420 300" id="calChart" role="img" aria-label="Stated chance against what happened, per model"></svg>
+      <p class="cap">Each small dot is one run: how sure the model said it was at the end (left to right) and whether it won (top) or not (bottom). The big dot is the model's average. A well-calibrated model sits on the dashed line: when it says 70%, it wins about 70% of the time.</p></div>
+  </div>
+  <h3 style="margin-top:26px">Pick a run to replay</h3>
+  <div id="recRuns"></div>
+  </div>
+
+</section>
+
 <section id="start">
-  <p class="label"><span class="num">[01]</span>Choose a recorded run</p>
+  <p class="label"><span class="num">[02]</span>Choose a recorded run</p>
   <h2>Choose a claim and an AI scientist.</h2>
   <div id="status"></div>
   <div class="controls" style="margin-top:18px">
@@ -329,24 +347,6 @@
   </div>
   </div>
 </div>
-</section>
-
-<section id="recorded">
-  <p class="label"><span class="num">[02]</span>Recorded runs</p>
-  <h2>Replay runs that were already played.</h2>
-  <p class="sub">Every model got the same claims, the same prices and the same spending cap. Replays read saved results from this machine; nothing is sent to an AI model.</p>
-  <div id="recBanner"><p class="wait">Loading…</p></div>
-  <div id="recBody">
-  <h3 style="margin-top:22px">How the models compare</h3>
-  <div class="cmp">
-    <div id="recCompare"></div>
-    <div class="fig"><svg viewBox="0 0 420 300" id="calChart" role="img" aria-label="Stated chance against what happened, per model"></svg>
-      <p class="cap">Each small dot is one run: how sure the model said it was at the end (left to right) and whether it won (top) or not (bottom). The big dot is the model's average. A well-calibrated model sits on the dashed line: when it says 70%, it wins about 70% of the time.</p></div>
-  </div>
-  <h3 style="margin-top:26px">Pick a run to replay</h3>
-  <div id="recRuns"></div>
-  </div>
-
 </section>
 
 <section id="record">
