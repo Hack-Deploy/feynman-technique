@@ -683,3 +683,7 @@ rewards being right and knowing when you're right.
   σ bars against the checker's acceptance band, the model's words, and the checker's result.
   The hook section above is unchanged.
 - Check: `uv run pytest -q` 701 passed, 12 skipped.
+- **Tab 04 on every page.** Vision, How it works and Live market now link to /experiments ("04 One
+  real run") in the top bar. The narrow-screen top bar rule moved from experiments.html into
+  `style.css` so four tabs fit at 390 px on every page. (Wide tables on / and /live still scroll
+  sideways at 390 px; that predates this change.) Check: `uv run pytest -q` 701 passed, 12 skipped.
