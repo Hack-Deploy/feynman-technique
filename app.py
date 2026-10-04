@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Discovery Market – local app for the vision, simulation and live market pages.
+"""Discovery Market – local app for the pitch, simulation and live market pages.
 
 Run: uv run python app.py   (then open http://localhost:8000)
 """
@@ -44,7 +44,7 @@ TIMEOUTS = {"/api/real/grid": 1800}
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 _BUSY = threading.Lock()
 PAGE_ROUTES = {
-    "/": "vision.html",
+    "/": "pitch.html",
     "/simulation": "simulation.html",
     "/live": "live.html",
     "/pitch": "pitch.html",
