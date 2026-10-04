@@ -226,16 +226,16 @@ def pull(
             if _is_allowlisted(relative):
                 downloads.append((relative, path))
         downloads.sort()
-        conflicts = [
+        existing = [
             Path(root) / relative
-            for relative, _ in downloads
+            for relative in (*ALLOWLIST_FILES, *ALLOWLIST_DIRS)
             if (Path(root) / relative).exists()
         ]
         protected = [
             Path(spend.LEDGER_PATH),
             Path(f"{spend.LEDGER_PATH}.lock"),
         ]
-        archive.archive_paths(conflicts, root, out=out, protected_paths=protected)
+        archive.archive_paths(existing, root, out=out, protected_paths=protected)
         for relative, source in downloads:
             target = Path(root) / relative
             target.parent.mkdir(parents=True, exist_ok=True)

@@ -587,3 +587,12 @@ Check: `uv run pytest -q -p no:cacheprovider` — 635 passed, 4 skipped, 0 xfail
   callbacks; public Hugging Face pulls need no token, and the dataset defaults to
   `arushisinha98/discovery-market-live`. README documents the cold-start pull and resume path.
 - No paid API calls were made and no vendor files were edited.
+
+## PR #28 review fixes
+
+- Grid resumes reconcile cached real attempts into the store; rerun-all enforces cached order
+  seeds; HF pulls replace allow-listed local data after archiving it; archive destinations retry
+  timestamp collisions.
+- Focused suite: 47 passed (`tests/test_rerun_all.py`, `tests/test_hf_data.py`,
+  `tests/test_live_spend.py`, `tests/test_live_market.py`).
+- Full suite: `uv run pytest -q` — 704 passed, 3 skipped, 34 warnings.

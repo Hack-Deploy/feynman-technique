@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from datetime import datetime, timezone
 
 import pytest
 
 from dm.store import AttemptStore
-from poc import bench, config as C, live_cache, rerun_all, spend
+from poc import archive, bench, config as C, live_cache, rerun_all, spend
 from poc.spend import SpendLedger
 
 
@@ -85,6 +86,17 @@ def test_order_runs_position_major():
     assert order == expected
 
 
+def test_cached_order_seed_resolution_rejects_mismatch_and_conflicts():
+    entries = [{"order_seed": 3}, {"order_seed": 3}]
+    assert rerun_all._resolve_order_seed(entries, 3) == 3
+    assert rerun_all._resolve_order_seed(entries, 4, reuse_cached=False) == 4
+
+    with pytest.raises(ValueError, match="cache was run with order seed 3"):
+        rerun_all._resolve_order_seed(entries, 4)
+    with pytest.raises(ValueError, match="conflicting order seeds"):
+        rerun_all._resolve_order_seed([{"order_seed": 3}, {"order_seed": 4}], 3)
+
+
 def _make_live_files(monkeypatch, root):
     runs = root / "attempts" / "fixtures" / "live" / "runs.jsonl"
     store = root / "attempts" / "poc_dp_bench.jsonl"
@@ -150,6 +162,31 @@ def test_purge_archives_live_files_and_leaves_protected_data(monkeypatch, tmp_pa
     assert old_archive.read_text() == "archive"
 
 
+def test_archive_paths_retries_same_timestamp_with_suffix(monkeypatch, tmp_path):
+    fixed = datetime(2025, 1, 2, 3, 4, 5, 6789, tzinfo=timezone.utc)
+
+    class FrozenClock:
+        @classmethod
+        def now(cls, _timezone):
+            return fixed
+
+    monkeypatch.setattr(archive, "datetime", FrozenClock)
+    first = tmp_path / "attempts" / "poc_dp_bench.jsonl"
+    second = tmp_path / "attempts" / "transcripts" / "poc_dp" / "one.json"
+    first.parent.mkdir(parents=True)
+    second.parent.mkdir(parents=True)
+    first.write_text("first")
+    second.write_text("second")
+
+    first_archived = archive.archive_paths([first], tmp_path, out=lambda _line: None)
+    second_archived = archive.archive_paths([second], tmp_path, out=lambda _line: None)
+
+    assert first_archived[0][1].read_text() == "first"
+    assert second_archived[0][1].read_text() == "second"
+    assert first_archived[0][1].parents[1].name == "20250102T030405006789Z"
+    assert second_archived[0][1].parents[3].name == "20250102T030405006789Z-1"
+
+
 def test_declined_purge_leaves_files_in_place(monkeypatch, tmp_path, capsys):
     runs, store, transcripts, ledger, scripted, ara_cache, old_archive = _make_live_files(
         monkeypatch, tmp_path
@@ -195,6 +232,61 @@ def test_live_gate_refusal_does_not_purge(monkeypatch, tmp_path):
     assert (transcripts / "transcript.json").read_text() == "transcript"
     archive_root = tmp_path / "attempts" / "archive"
     assert list(archive_root.iterdir()) == [old_archive.parent]
+
+
+def test_order_seed_mismatch_refuses_before_archiving_or_running(
+    monkeypatch, tmp_path, capsys
+):
+    runs, store, transcripts, ledger, scripted, ara_cache, old_archive = _make_live_files(
+        monkeypatch, tmp_path
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        rerun_all.main([
+            "--fake",
+            "--order-seed", "4",
+            "--cache", str(runs),
+            "--store", str(store),
+            "--transcripts", str(transcripts),
+    ])
+
+    assert exc_info.value.code == 2
+    error = capsys.readouterr().err
+    assert (
+        "cache was run with order seed 3; use --purge to start a new order or omit "
+        "--order-seed"
+    ) in error
+    assert json.loads(runs.read_text())["order_seed"] == 3
+    assert store.read_text() == "store"
+    assert (transcripts / "transcript.json").read_text() == "transcript"
+    assert list((tmp_path / "attempts" / "archive").iterdir()) == [old_archive.parent]
+    assert ledger.exists() and scripted.exists() and ara_cache.exists()
+
+
+def test_purge_allows_a_new_order_seed(monkeypatch, tmp_path):
+    runs, store, transcripts, _ledger, _scripted, _ara_cache, old_archive = _make_live_files(
+        monkeypatch, tmp_path
+    )
+    cfg, settings = _fake_configuration(monkeypatch)
+
+    rerun_all.main([
+        "--fake",
+        "--purge",
+        "--yes",
+        "--order-seed", "4",
+        "--cache", str(runs),
+        "--store", str(store),
+        "--transcripts", str(transcripts),
+    ])
+
+    entries = live_cache.load(runs)
+    assert len(entries) == len(cfg.hypotheses) * len(settings.models)
+    assert {entry["order_seed"] for entry in entries} == {4}
+    assert len(AttemptStore(store).load()) == len(entries)
+    archives = list((tmp_path / "attempts" / "archive").iterdir())
+    archives.remove(old_archive.parent)
+    assert len(archives) == 1
+    assert (archives[0] / "attempts" / "fixtures" / "live" / "runs.jsonl").exists()
 
 
 def test_fake_rerun_writes_order_metadata_and_conserves_credits(

@@ -40,14 +40,17 @@ def archive_paths(
     if not sources:
         return []
 
-    archive_dir = (
-        root
-        / "attempts"
-        / "archive"
-        / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    )
-    if archive_dir.exists():
-        raise FileExistsError(f"archive destination already exists: {archive_dir}")
+    archive_root = root / "attempts" / "archive"
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    archive_dir = archive_root / timestamp
+    suffix = 0
+    while True:
+        try:
+            archive_dir.mkdir(parents=True, exist_ok=False)
+            break
+        except FileExistsError:
+            suffix += 1
+            archive_dir = archive_root / f"{timestamp}-{suffix}"
 
     archived = []
     for source in sources:
