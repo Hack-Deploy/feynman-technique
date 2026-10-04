@@ -88,6 +88,22 @@ def _fmt(x: float) -> str:
 def market_block(cfg: Config, h: Hypothesis) -> str:
     c = cfg.experiment_costs
     budget = "none" if cfg.budget is None else f"{_fmt(cfg.budget)} credits for this hypothesis"
+    noise_note = (
+        "Measurements are noisy: each observed position has independent Gaussian noise "
+        f"σ = {_fmt(cfg.noise_std)}"
+    )
+    if cfg.velocity_noise_std > 0:
+        noise_note += (
+            " and each observed velocity has independent Gaussian noise "
+            f"σ = {_fmt(cfg.velocity_noise_std)}"
+        )
+    noise_note += "."
+    if cfg.noise_std > 0 or cfg.velocity_noise_std > 0:
+        noise_note += (
+            " Results can be inconclusive. You may repeat any experiment (identical input, in the "
+            "same or a later round) to get a fresh, independent noisy reading; each repeat is "
+            "charged at the full price."
+        )
     return f"""## THE BOUNTY (this overrides any conflicting instructions above)
 
 You are not asked to submit a `discovered_law`. A researcher has posted a hypothesis about this
@@ -97,6 +113,8 @@ above only to learn what you can measure and how to request experiments.
 **Hypothesis:** "{h.hypothesis}"
 
 **Resolution criteria:** {h.resolution_criteria}
+
+{noise_note}
 
 **Prize:** {_fmt(h.prize)} credits. {cfg.payout_rule}
 

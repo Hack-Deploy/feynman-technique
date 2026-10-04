@@ -47,6 +47,11 @@ uv run python -m poc.report --dashboard                 # summary + output/poc_d
 
 ## Run the live market with your key
 
+Live-market observations include independent Gaussian noise: positions σ = 0.075 and velocities
+σ = 0.05. The Poc wrapper adds velocity noise because the vendor executor only noises positions.
+Results can be inconclusive; repeating an experiment in the same or a later round gives a fresh
+reading and is charged at full price.
+
 ```bash
 cp poc/.env.example poc/.env
 # Set ANTHROPIC_API_KEY in poc/.env.

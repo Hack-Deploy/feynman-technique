@@ -9,6 +9,7 @@
 # ---------------------------------------------------------------- protocol
 max_rounds: 16        # rounds per hypothesis (paper default)
 noise_std: 0.075      # absolute Gaussian noise on observed positions (paper default)
+velocity_noise_std: 0.05  # absolute Gaussian noise on observed velocities (vendor noises positions only)
 default_prize: 100    # for any hypothesis without its own prize
 budget: null          # optional cap on total spend per agent per hypothesis; null = none.
                       # Experiments that would exceed it are refused; round fees are always charged.
@@ -42,7 +43,7 @@ hypotheses:
     world: gravity
     hypothesis: In this simulated world, gravity between particles falls off as 1/r², as in Newtonian physics.
     resolution_criteria: >-
-      Measure the probe's acceleration toward the source at three or more separations spanning at least a factor of 3 (for example r = 2 to 6), with p1 and p2 fixed, and fit a ∝ r^-n. Supported if n is within 0.2 of 2; refuted if n differs from 2 by more than 0.2. The uncertainty on n must be below 0.1 given the position noise (σ = 0.075).
+      Measure the probe's acceleration toward the source at three or more separations spanning at least a factor of 3 (for example r = 2 to 6), with p1 and p2 fixed, and fit a ∝ r^-n. Supported if n is within 0.2 of 2; refuted if n differs from 2 by more than 0.2. The uncertainty on n must be below 0.1 given the measurement noise (positions σ = 0.075, velocities σ = 0.05).
     answer: refuted        # 2D Laplacian: force falls off as 1/r
     prize: 100
   - id: oscillator-time-varying
